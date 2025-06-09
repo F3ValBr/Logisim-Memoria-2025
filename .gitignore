@@ -3,6 +3,7 @@
 /workspace.xml
 /out/
 .idea/
+*.iml
 # Editor-based HTTP Client requests
 /httpRequests/
 # Environment-dependent path to Maven home directory
