@@ -45,6 +45,10 @@ public class ProjectCircuitActions {
 		}
 	}
 
+	public static void doImportJsonVerilog(Project proj) {
+		System.out.println("Importing JSON verilog...");
+	}
+
 	private static String promptForCircuitName(JFrame frame,
 			Library lib, String initialValue) {
 		JLabel label = new JLabel(Strings.get("circuitNamePrompt"));

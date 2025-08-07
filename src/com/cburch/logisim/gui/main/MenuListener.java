@@ -132,6 +132,7 @@ class MenuListener {
 			}
 			
 			menubar.addActionListener(LogisimMenuBar.ADD_CIRCUIT, this);
+			menubar.addActionListener(LogisimMenuBar.IMPORT_JSON_VERILOG, this);
 			menubar.addActionListener(LogisimMenuBar.MOVE_CIRCUIT_UP, this);
 			menubar.addActionListener(LogisimMenuBar.MOVE_CIRCUIT_DOWN, this);
 			menubar.addActionListener(LogisimMenuBar.SET_MAIN_CIRCUIT, this);
@@ -178,6 +179,8 @@ class MenuListener {
 			Circuit cur = proj == null ? null : proj.getCurrentCircuit();
 			if (src == LogisimMenuBar.ADD_CIRCUIT) {
 				ProjectCircuitActions.doAddCircuit(proj);
+			} else if (src == LogisimMenuBar.IMPORT_JSON_VERILOG) {
+				ProjectCircuitActions.doImportJsonVerilog(proj);
 			} else if (src == LogisimMenuBar.MOVE_CIRCUIT_UP) {
 				ProjectCircuitActions.doMoveCircuit(proj, cur, -1);
 			} else if (src == LogisimMenuBar.MOVE_CIRCUIT_DOWN) {
@@ -232,6 +235,7 @@ class MenuListener {
 			}
 			
 			menubar.setEnabled(LogisimMenuBar.ADD_CIRCUIT, true);
+			menubar.setEnabled(LogisimMenuBar.IMPORT_JSON_VERILOG, true);
 			menubar.setEnabled(LogisimMenuBar.MOVE_CIRCUIT_UP, canMoveUp);
 			menubar.setEnabled(LogisimMenuBar.MOVE_CIRCUIT_DOWN, canMoveDown);
 			menubar.setEnabled(LogisimMenuBar.SET_MAIN_CIRCUIT, canSetMain);
