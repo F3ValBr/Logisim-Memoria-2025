@@ -30,6 +30,7 @@ public class Loader implements LibraryLoader {
 	public static final String LOGISIM_EXTENSION = ".circ";
 	public static final FileFilter LOGISIM_FILTER = new LogisimFileFilter();
 	public static final FileFilter JAR_FILTER = new JarFileFilter();
+	public static final FileFilter JSON_FILTER = new JSONFileFilter();
 
 	private static class LogisimFileFilter extends FileFilter {
 		@Override
@@ -41,6 +42,19 @@ public class Loader implements LibraryLoader {
 		@Override
 		public String getDescription() {
 			return Strings.get("logisimFileFilter");
+		}
+	}
+
+	private static class JSONFileFilter extends FileFilter {
+		@Override
+		public boolean accept(File f) {
+			return f.isDirectory()
+				|| f.getName().endsWith(".json");
+		}
+
+		@Override
+		public String getDescription() {
+			return Strings.get("jsonFileFilter");
 		}
 	}
 
@@ -427,4 +441,27 @@ public class Loader implements LibraryLoader {
 		}
 	}
 
+	public String JSONImportChooser(Component window) {
+		JFileChooser chooser = createChooser();
+		chooser.setFileFilter(JSON_FILTER);
+		chooser.setDialogTitle(Strings.get("jsonOpenDialog"));
+		int check = chooser.showOpenDialog(window);
+		if (check != JFileChooser.APPROVE_OPTION) {
+			return null;
+		}
+		File f = chooser.getSelectedFile();
+		if (f == null || !f.exists() || !f.canRead()) {
+			return null;
+		}
+		try {
+			// TODO: real logic for JSON import
+			return f.getCanonicalPath();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(window,
+				StringUtil.format(Strings.get("jsonOpenError"), e.toString()),
+				Strings.get("fileErrorTitle"),
+				JOptionPane.ERROR_MESSAGE);
+			return null;
+		}
+	}
 }

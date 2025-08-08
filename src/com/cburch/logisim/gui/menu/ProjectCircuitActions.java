@@ -11,12 +11,7 @@ import java.awt.event.WindowFocusListener;
 import java.util.ArrayList;
 import java.util.Map;
 
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 
 import com.cburch.logisim.analyze.gui.Analyzer;
 import com.cburch.logisim.analyze.gui.AnalyzerManager;
@@ -46,7 +41,14 @@ public class ProjectCircuitActions {
 	}
 
 	public static void doImportJsonVerilog(Project proj) {
-		System.out.println("Importing JSON verilog...");
+		System.out.println("Importing JSON Verilog...");
+		String jsonFile = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());
+		if (jsonFile == null) {
+			System.out.println("Import cancelled.");
+			return;
+		}
+		// TODO: Implement the actual import logic here
+		System.out.println("Importing from file: " + jsonFile);
 	}
 
 	private static String promptForCircuitName(JFrame frame,
