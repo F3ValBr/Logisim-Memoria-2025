@@ -40,6 +40,12 @@ public class ProjectCircuitActions {
 		}
 	}
 
+	/**
+	 * Imports a circuit from a JSON file, which is expected to be in JSON format from YoSYS synthesis.
+	 * The actual import logic is not implemented in this stub method.
+	 *
+	 * @param proj the project to which the circuit will be imported
+	 */
 	public static void doImportJsonVerilog(Project proj) {
 		System.out.println("Importing JSON Verilog...");
 		String jsonFile = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());

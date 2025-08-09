@@ -441,6 +441,12 @@ public class Loader implements LibraryLoader {
 		}
 	}
 
+	/**
+	 * Opens a file chooser dialog for importing a JSON file.
+	 *
+	 * @param window the parent component for the dialog
+	 * @return the canonical path of the selected file, or null if no file was selected or an error occurred
+	 */
 	public String JSONImportChooser(Component window) {
 		JFileChooser chooser = createChooser();
 		chooser.setFileFilter(JSON_FILTER);
