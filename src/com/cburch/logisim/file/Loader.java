@@ -25,6 +25,9 @@ import com.cburch.logisim.util.JFileChoosers;
 import com.cburch.logisim.util.MacCompatibility;
 import com.cburch.logisim.util.StringUtil;
 import com.cburch.logisim.util.ZipClassLoader;
+import com.cburch.logisim.verilog.file.JsonSynthFile;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class Loader implements LibraryLoader {
 	public static final String LOGISIM_EXTENSION = ".circ";
@@ -447,7 +450,7 @@ public class Loader implements LibraryLoader {
 	 * @param window the parent component for the dialog
 	 * @return the canonical path of the selected file, or null if no file was selected or an error occurred
 	 */
-	public String JSONImportChooser(Component window) {
+	public JsonNode JSONImportChooser(Component window) {
 		JFileChooser chooser = createChooser();
 		chooser.setFileFilter(JSON_FILTER);
 		chooser.setDialogTitle(Strings.get("jsonOpenDialog"));
@@ -461,10 +464,10 @@ public class Loader implements LibraryLoader {
 		}
 		try {
 			// TODO: real logic for JSON import
-			return f.getCanonicalPath();
+			return JsonSynthFile.loadAndValidate(f);
 		} catch (IOException e) {
 			JOptionPane.showMessageDialog(window,
-				StringUtil.format(Strings.get("jsonOpenError"), e.toString()),
+				Strings.get("jsonOpenError", e.getMessage()),
 				Strings.get("fileErrorTitle"),
 				JOptionPane.ERROR_MESSAGE);
 			return null;

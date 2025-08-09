@@ -28,6 +28,8 @@ import com.cburch.logisim.tools.AddTool;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.util.StringUtil;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class ProjectCircuitActions {
 	private ProjectCircuitActions() { }
 	
@@ -48,7 +50,7 @@ public class ProjectCircuitActions {
 	 */
 	public static void doImportJsonVerilog(Project proj) {
 		System.out.println("Importing JSON Verilog...");
-		String jsonFile = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());
+		JsonNode jsonFile = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());
 		if (jsonFile == null) {
 			System.out.println("Import cancelled.");
 			return;
