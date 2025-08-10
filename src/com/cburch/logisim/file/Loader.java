@@ -448,7 +448,8 @@ public class Loader implements LibraryLoader {
 	 * Opens a file chooser dialog for importing a JSON file.
 	 *
 	 * @param window the parent component for the dialog
-	 * @return the canonical path of the selected file, or null if no file was selected or an error occurred
+	 * @return a JsonNode representing the imported JSON file, or null if the user cancels
+	 *         or if an error occurs during loading
 	 */
 	public JsonNode JSONImportChooser(Component window) {
 		JFileChooser chooser = createChooser();
@@ -458,12 +459,13 @@ public class Loader implements LibraryLoader {
 		if (check != JFileChooser.APPROVE_OPTION) {
 			return null;
 		}
+
 		File f = chooser.getSelectedFile();
 		if (f == null || !f.exists() || !f.canRead()) {
 			return null;
 		}
+
 		try {
-			// TODO: real logic for JSON import
 			return JsonSynthFile.loadAndValidate(f);
 		} catch (IOException e) {
 			JOptionPane.showMessageDialog(window,
