@@ -11,12 +11,7 @@ import java.awt.event.WindowFocusListener;
 import java.util.ArrayList;
 import java.util.Map;
 
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 
 import com.cburch.logisim.analyze.gui.Analyzer;
 import com.cburch.logisim.analyze.gui.AnalyzerManager;
@@ -33,6 +28,8 @@ import com.cburch.logisim.tools.AddTool;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.util.StringUtil;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class ProjectCircuitActions {
 	private ProjectCircuitActions() { }
 	
@@ -43,6 +40,23 @@ public class ProjectCircuitActions {
 			proj.doAction(LogisimFileActions.addCircuit(circuit));
 			proj.setCurrentCircuit(circuit);
 		}
+	}
+
+	/**
+	 * Imports a circuit from a JSON file, which is expected to be in JSON format from YoSYS synthesis.
+	 * The actual import logic is not implemented in this stub method.
+	 *
+	 * @param proj the project to which the circuit will be imported
+	 */
+	public static void doImportJsonVerilog(Project proj) {
+		System.out.println("Importing JSON Verilog...");
+		JsonNode jsonFile = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());
+		if (jsonFile == null) {
+			System.out.println("Import cancelled.");
+			return;
+		}
+		// TODO: Implement the actual import logic here
+		System.out.println("Importing from file: " + jsonFile);
 	}
 
 	private static String promptForCircuitName(JFrame frame,

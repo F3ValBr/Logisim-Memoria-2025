@@ -25,11 +25,15 @@ import com.cburch.logisim.util.JFileChoosers;
 import com.cburch.logisim.util.MacCompatibility;
 import com.cburch.logisim.util.StringUtil;
 import com.cburch.logisim.util.ZipClassLoader;
+import com.cburch.logisim.verilog.file.JsonSynthFile;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class Loader implements LibraryLoader {
 	public static final String LOGISIM_EXTENSION = ".circ";
 	public static final FileFilter LOGISIM_FILTER = new LogisimFileFilter();
 	public static final FileFilter JAR_FILTER = new JarFileFilter();
+	public static final FileFilter JSON_FILTER = new JSONFileFilter();
 
 	private static class LogisimFileFilter extends FileFilter {
 		@Override
@@ -41,6 +45,19 @@ public class Loader implements LibraryLoader {
 		@Override
 		public String getDescription() {
 			return Strings.get("logisimFileFilter");
+		}
+	}
+
+	private static class JSONFileFilter extends FileFilter {
+		@Override
+		public boolean accept(File f) {
+			return f.isDirectory()
+				|| f.getName().endsWith(".json");
+		}
+
+		@Override
+		public String getDescription() {
+			return Strings.get("jsonFileFilter");
 		}
 	}
 
@@ -427,4 +444,35 @@ public class Loader implements LibraryLoader {
 		}
 	}
 
+	/**
+	 * Opens a file chooser dialog for importing a JSON file.
+	 *
+	 * @param window the parent component for the dialog
+	 * @return a JsonNode representing the imported JSON file, or null if the user cancels
+	 *         or if an error occurs during loading
+	 */
+	public JsonNode JSONImportChooser(Component window) {
+		JFileChooser chooser = createChooser();
+		chooser.setFileFilter(JSON_FILTER);
+		chooser.setDialogTitle(Strings.get("jsonOpenDialog"));
+		int check = chooser.showOpenDialog(window);
+		if (check != JFileChooser.APPROVE_OPTION) {
+			return null;
+		}
+
+		File f = chooser.getSelectedFile();
+		if (f == null || !f.exists() || !f.canRead()) {
+			return null;
+		}
+
+		try {
+			return JsonSynthFile.loadAndValidate(f);
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(window,
+				Strings.get("jsonOpenError", e.getMessage()),
+				Strings.get("fileErrorTitle"),
+				JOptionPane.ERROR_MESSAGE);
+			return null;
+		}
+	}
 }
