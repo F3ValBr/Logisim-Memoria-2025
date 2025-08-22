@@ -1,9 +1,9 @@
-package com.cburch.logisim.verilog.comp.aux;
+package com.cburch.logisim.verilog.comp.auxiliary;
 
 import com.cburch.logisim.verilog.comp.VerilogCell;
-import com.cburch.logisim.verilog.comp.aux.netconn.BitRef;
-import com.cburch.logisim.verilog.comp.aux.netconn.Direction;
-import com.cburch.logisim.verilog.comp.aux.netconn.NetBit;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.BitRef;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.Direction;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.NetBit;
 
 import java.util.Objects;
 

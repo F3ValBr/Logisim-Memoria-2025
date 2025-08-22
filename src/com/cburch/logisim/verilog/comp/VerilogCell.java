@@ -1,7 +1,7 @@
 package com.cburch.logisim.verilog.comp;
 
-import com.cburch.logisim.verilog.comp.aux.CellType;
-import com.cburch.logisim.verilog.comp.aux.PortEndpoint;
+import com.cburch.logisim.verilog.comp.auxiliary.CellType;
+import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
 import com.cburch.logisim.verilog.comp.specs.CellAttribs;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 

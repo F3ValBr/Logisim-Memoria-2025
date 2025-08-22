@@ -1,4 +1,4 @@
-package com.cburch.logisim.verilog.comp.aux;
+package com.cburch.logisim.verilog.comp.auxiliary;
 
 import java.util.*;
 

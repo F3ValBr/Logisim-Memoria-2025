@@ -1,4 +1,4 @@
-package com.cburch.logisim.verilog.comp.aux.netconn;
+package com.cburch.logisim.verilog.comp.auxiliary.netconn;
 
 public final class Const1 implements BitRef {
     private static final Const1 INSTANCE = new Const1();

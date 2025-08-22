@@ -1,8 +1,8 @@
 package com.cburch.logisim.verilog.comp;
 
-import com.cburch.logisim.verilog.comp.aux.PortEndpoint;
-import com.cburch.logisim.verilog.comp.aux.PortSignature;
-import com.cburch.logisim.verilog.comp.aux.netconn.*;
+import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
+import com.cburch.logisim.verilog.comp.auxiliary.PortSignature;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.*;
 
 import java.util.LinkedHashSet;
 import java.util.List;
