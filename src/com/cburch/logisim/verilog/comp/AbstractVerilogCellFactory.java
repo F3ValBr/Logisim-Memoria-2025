@@ -1,0 +1,83 @@
+package com.cburch.logisim.verilog.comp;
+
+import com.cburch.logisim.verilog.comp.aux.PortEndpoint;
+import com.cburch.logisim.verilog.comp.aux.PortSignature;
+import com.cburch.logisim.verilog.comp.aux.netconn.*;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+public abstract class AbstractVerilogCellFactory implements VerilogCellFactory {
+
+    protected int parseBin(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        return Integer.parseUnsignedInt(s, 2);
+    }
+
+    protected Direction toDirection(String d) {
+        if (d == null) return Direction.UNKNOWN;
+        return switch (d.toLowerCase()) {
+            case "input" -> Direction.INPUT;
+            case "output" -> Direction.OUTPUT;
+            case "inout" -> Direction.INOUT;
+            default -> Direction.UNKNOWN;
+        };
+    }
+
+    /** Convert element from JSON (Integer or "0"/"1") to BitRef
+     *
+     * @param raw The raw value to convert, can be Integer or String.
+     */
+    protected BitRef toBitRef(Object raw) {
+        if (raw instanceof Integer i) return new NetBit(i);
+        if (raw instanceof String s) {
+            if ("0".equals(s)) return Const0.getInstance();
+            if ("1".equals(s)) return Const1.getInstance();
+        }
+        throw new IllegalArgumentException("Bit no soportado: " + raw);
+    }
+
+    /** Creates PortEndpoint objects for each port in the cell.
+     *
+     * @param cell The VerilogCell to which the endpoints belong.
+     * @param portDirections Map of port names to their directions (INPUT/OUTPUT/INOUT).
+     * @param connections Map of port names to lists of bits (NetBit, Const0, Const1).
+     */
+    protected void buildEndpoints(
+            VerilogCell cell,
+            Map<String, String> portDirections,
+            Map<String, List<Object>> connections
+    ) {
+        // Unir nombres de puertos presentes en directions y/o en connections
+        Set<String> portNames = new LinkedHashSet<>();
+        portNames.addAll(portDirections.keySet());
+        portNames.addAll(connections.keySet());
+
+        for (String portName : portNames) {
+            Direction dir = toDirection(portDirections.get(portName)); // UNKNOWN si falta o inválido
+            List<Object> rawBits = connections.getOrDefault(portName, List.of());
+
+            PortSignature signature = new PortSignature(
+                    cell,       // celda dueña del puerto
+                    portName,   // nombre del puerto
+                    dir         // dirección del puerto (INPUT/OUTPUT/INOUT/UNKNOWN)
+            );
+
+            // Endpoints bit a bit (índice == posición en la lista; LSB primero)
+            for (int i = 0; i < rawBits.size(); i++) {
+                BitRef bit = toBitRef(rawBits.get(i));
+
+                PortEndpoint ep = new PortEndpoint(
+                        signature,   // PortSignature (celda, nombre de puerto, dirección)
+                        i,           // índice del bit en el bus (LSB = 0)
+                        bit          // BitRef (NetBit | Const0 | Const1)
+                );
+                cell.addPortEndpoint(ep);
+            }
+            // Si no hay bits en connections para este puerto, no se crean endpoints (width = 0).
+        }
+    }
+
+}

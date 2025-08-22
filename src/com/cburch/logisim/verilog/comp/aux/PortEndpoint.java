@@ -1,0 +1,59 @@
+package com.cburch.logisim.verilog.comp.aux;
+
+import com.cburch.logisim.verilog.comp.VerilogCell;
+import com.cburch.logisim.verilog.comp.aux.netconn.BitRef;
+import com.cburch.logisim.verilog.comp.aux.netconn.Direction;
+import com.cburch.logisim.verilog.comp.aux.netconn.NetBit;
+
+import java.util.Objects;
+
+public final class PortEndpoint {
+    private final PortSignature sig;    // Firma del puerto
+    private final int bitIndex;         // Posición dentro del bus
+    private final BitRef bitRef;        // Referencia al bit específico
+
+    public PortEndpoint(PortSignature sig, int bitIndex, BitRef bitRef) {
+        this.sig = sig;
+        this.bitIndex = bitIndex;
+        this.bitRef = bitRef;
+    }
+
+    public VerilogCell getCell() {
+        return sig.cell();
+    }
+
+    public String getPortName() {
+        return sig.portName();
+    }
+
+    public int getBitIndex() {
+        return bitIndex;
+    }
+
+    public Direction getDirection() {
+        return sig.direction();
+    }
+
+    public BitRef getBitRef() {
+        return bitRef;
+    }
+
+    public Integer getNetIdOrNull() {
+        return (bitRef instanceof NetBit nb) ? nb.getNetId() : null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PortEndpoint that)) return false;
+
+        return bitIndex == that.bitIndex
+                && Objects.equals(sig, that.sig)
+                && Objects.equals(bitRef, that.bitRef);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sig, bitIndex, bitRef);
+    }
+}
