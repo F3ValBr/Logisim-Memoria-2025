@@ -1,0 +1,30 @@
+package com.cburch.logisim.verilog.comp.factories.wordlvl;
+
+import com.cburch.logisim.verilog.comp.*;
+import com.cburch.logisim.verilog.comp.auxiliary.CellType;
+import com.cburch.logisim.verilog.comp.specs.CommonOpAttribs;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOp;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
+
+import java.util.List;
+import java.util.Map;
+
+public class BinaryOpFactory extends AbstractVerilogCellFactory {
+    @Override
+    public VerilogCell create(
+            String name,
+            String type,
+            Map<String, String> params,
+            Map<String, Object> attribs,
+            Map<String, String> ports,
+            Map<String, List<Object>> connections
+    ) {
+        BinaryOp op = BinaryOp.fromYosys(type);
+        var parameters = new BinaryOpParams(op, params);
+        var attributes = new CommonOpAttribs(attribs);
+        var cell = new WordLvlCellImpl(name, CellType.fromYosys(type), parameters, attributes);
+        buildEndpoints(cell, ports, connections);
+        return cell;
+    }
+}
+

@@ -1,5 +1,8 @@
 package com.cburch.logisim.verilog.comp.auxiliary;
 
+import com.cburch.logisim.verilog.comp.specs.gatelvl.GateOp;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.*;
+
 import java.util.*;
 
 public final class CellType {
@@ -39,40 +42,6 @@ public final class CellType {
     public boolean isComplexGate() { return kind  == Kind.COMPLEX_GATE; }
     public boolean isFlipFlop()    { return kind  == Kind.FLIP_FLOP; }
 
-    // ---- Mapas/sets de soporte ----
-    private static final Set<String> WORD_UNARY = Set.of(
-            "$buf","$logic_not","$neg","$not","$pos",
-            "$reduce_and","$reduce_bool","$reduce_or","$reduce_xnor","$reduce_xor"
-    );
-
-    private static final Set<String> WORD_BINARY = Set.of(
-            "$add","$and","$bweqx","$div","$divfloor","$eq","$eqx","$ge","$gt","$le",
-            "$logic_and","$logic_or","$lt","$mod","$modfloor","$mul","$ne","$nex",
-            "$or","$pow","$shift","$shiftx","$shl","$shr","$sshl","$sshr","$sub","$xnor","$xor"
-    );
-
-    private static final Set<String> WORD_MULTIPLEXERS = Set.of(
-            "$bmux","$bwmux","$demux","$mux","$pmux","$tribuf"
-    );
-
-    private static final Set<String> WORD_REGISTERS = Set.of(
-            "$adff","$adffe","$adlatch","$aldff","$aldffe","$dff","$dffe","$dffsr",
-            "$dffsre","$dlatch","$dlatchsr","$sdff","$sdffce","$sdffe","$sr"
-    );
-
-    private static final Set<String> WORD_MEMORIES = Set.of(
-            "$mem","$mem_v2","$meminit","$meminit_v2","$memrd","$memrd_v2","$memwr","$memwr_v2"
-    );
-
-    private static final Set<String> GATE_SIMPLE = Set.of(
-            "$_AND_","$_BUF_","$_MUX_","$_NAND_","$_NOR_","$_NOT_","$_OR_","$_XNOR_","$_XOR_"
-    );
-
-    private static final Set<String> GATE_COMPLEX = Set.of(
-            "$_ANDNOT_","$_ORNOT_","$_AOI3_","$_AOI4_","$_OAI3_","$_OAI4_",
-            "$_NMUX_","$_MUX4_","$_MUX8_","$_MUX16_"
-    );
-
     private static final Set<String> GATE_FLIP_FLOP = Set.of(
             "$_ALDFFE_NNN_", "$_ALDFFE_NNP_", "$_ALDFFE_NPN_", "$_ALDFFE_NPP_", "$_ALDFFE_PNN_",
             "$_ALDFFE_PNP_", "$_ALDFFE_PPN_", "$_ALDFFE_PPP_", "$_ALDFF_NN_", "$_ALDFF_NP_", "$_ALDFF_PN_",
@@ -98,36 +67,47 @@ public final class CellType {
     /** Clasificador principal: de typeId (Yosys) a CellType */
     public static CellType fromYosys(String typeId) {
         if (typeId == null || typeId.isEmpty()) {
-            return new CellType("<unknown>", Level.MODULE, Kind.OTHER); // fallback inocuo
+            return new CellType("<unknown>", Level.MODULE, Kind.OTHER);
         }
 
-        // 1) Gate-level (prefijo $_)
+        // Gate-level (prefijo $_)
         if (typeId.startsWith("$_")) {
-            if (GATE_SIMPLE.contains(typeId)) {
-                return new CellType(typeId, Level.GATE, Kind.SIMPLE_GATE);
+            // ¿es un gate simple/combined/mux-family?
+            if (GateOp.isGateTypeId(typeId)) {
+                GateOp op = GateOp.fromYosys(typeId);
+                return switch (op.category()) {
+                    case SIMPLE      -> new CellType(typeId, Level.GATE, Kind.SIMPLE_GATE);
+                    case COMBINED    -> new CellType(typeId, Level.GATE, Kind.COMPLEX_GATE);
+                    case MUX_FAMILY  -> new CellType(typeId, Level.GATE, Kind.MULTIPLEXER);
+                };
             }
-            if (GATE_COMPLEX.contains(typeId)) {
-                return new CellType(typeId, Level.GATE, Kind.COMPLEX_GATE);
-            }
-            if (GATE_FLIP_FLOP.contains(typeId)) {
-                return new CellType(typeId, Level.GATE, Kind.FLIP_FLOP);
-            }
-            // Gate-level desconocido pero sigue siendo gate
+            // ¿flip-flop gate-level?
+            // Por simplicidad: gates desconocidos
             return new CellType(typeId, Level.GATE, Kind.OTHER);
         }
 
-        // 2) Word-level (prefijo $ pero no $_)
+        // Word-level (prefijo $ pero no $_)
         if (typeId.startsWith("$")) {
-            if (WORD_UNARY.contains(typeId))  return new CellType(typeId, Level.WORD, Kind.UNARY);
-            if (WORD_BINARY.contains(typeId)) return new CellType(typeId, Level.WORD, Kind.BINARY);
-            if (WORD_MULTIPLEXERS.contains(typeId)) return new CellType(typeId, Level.WORD, Kind.MULTIPLEXER);
-            if (WORD_REGISTERS.contains(typeId))   return new CellType(typeId, Level.WORD, Kind.REGISTER);
-            if (WORD_MEMORIES.contains(typeId))    return new CellType(typeId, Level.WORD, Kind.MEMORY);
+            if (UnaryOp.isUnaryTypeId(typeId)) {
+                return new CellType(typeId, Level.WORD, Kind.UNARY);
+            }
+            if (BinaryOp.isBinaryTypeId(typeId)) {
+                return new CellType(typeId, Level.WORD, Kind.BINARY);
+            }
+            if (MuxOp.isMuxTypeId(typeId)) {
+                return new CellType(typeId, Level.WORD, Kind.MULTIPLEXER);
+            }
+            if (RegisterOp.isTypeId(typeId)) {
+                return new CellType(typeId, Level.WORD, Kind.REGISTER);
+            }
+            if (MemoryOp.isTypeId(typeId)) {
+                return new CellType(typeId, Level.WORD, Kind.MEMORY);
+            }
             // Word-level desconocido
             return new CellType(typeId, Level.WORD, Kind.OTHER);
         }
 
-        // 3) Si no empieza con '$' → normalmente instancia de módulo del usuario
+        // Instancia de módulo del usuario (sin '$')
         return new CellType(typeId, Level.MODULE, Kind.OTHER);
     }
 

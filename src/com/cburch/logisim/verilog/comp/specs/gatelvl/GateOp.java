@@ -1,36 +1,74 @@
 package com.cburch.logisim.verilog.comp.specs.gatelvl;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 public enum GateOp {
-    AND, BUF, MUX, NAND, NOR, NOT, OR, XNOR, XOR,
-    ANDNOT, AOI3, AOI4, MUX16, MUX4, MUX8, NMUX, OAI3, OAI4, ORNOT;
+    // Simples (1-bit)
+    AND    ("$_AND_",   Category.SIMPLE),
+    BUF    ("$_BUF_",   Category.SIMPLE),
+    MUX    ("$_MUX_",   Category.SIMPLE),
+    NAND   ("$_NAND_",  Category.SIMPLE),
+    NOR    ("$_NOR_",   Category.SIMPLE),
+    NOT    ("$_NOT_",   Category.SIMPLE),
+    OR     ("$_OR_",    Category.SIMPLE),
+    XNOR   ("$_XNOR_",  Category.SIMPLE),
+    XOR    ("$_XOR_",   Category.SIMPLE),
+
+    // Combinados
+    ANDNOT ("$_ANDNOT_",Category.COMBINED),
+    ORNOT  ("$_ORNOT_", Category.COMBINED),
+    AOI3   ("$_AOI3_",  Category.COMBINED),
+    AOI4   ("$_AOI4_",  Category.COMBINED),
+    OAI3   ("$_OAI3_",  Category.COMBINED),
+    OAI4   ("$_OAI4_",  Category.COMBINED),
+
+    // Multiplexores anchos / variantes
+    NMUX   ("$_NMUX_",  Category.MUX_FAMILY),
+    MUX4   ("$_MUX4_",  Category.MUX_FAMILY),
+    MUX8   ("$_MUX8_",  Category.MUX_FAMILY),
+    MUX16  ("$_MUX16_", Category.MUX_FAMILY);
+
+    public enum Category { SIMPLE, COMBINED, MUX_FAMILY }
+
+    private final String yosysId;
+    private final Category category;
+
+    GateOp(String yosysId, Category category) {
+        this.yosysId = yosysId;
+        this.category = category;
+    }
+
+    public String yosysId() { return yosysId; }
+    public Category category() { return category; }
+
+    public boolean isSimple()    { return category == Category.SIMPLE; }
+    public boolean isCombined()  { return category == Category.COMBINED; }
+    public boolean isMuxFamily() { return category == Category.MUX_FAMILY; }
+
+    // ------- Índice estático -------
+    private static final Map<String, GateOp> INDEX;
+    static {
+        Map<String, GateOp> m = new HashMap<>();
+        for (GateOp op : values()) m.put(op.yosysId, op);
+        INDEX = Collections.unmodifiableMap(m);
+    }
+
+    public static boolean isGateTypeId(String typeId) {
+        return INDEX.containsKey(typeId);
+    }
 
     public static GateOp fromYosys(String typeId) {
-        if (typeId == null) throw new IllegalArgumentException("typeId null");
+        GateOp op = INDEX.get(typeId);
+        if (op == null) throw new IllegalArgumentException("Unknown gate op: " + typeId);
+        return op;
+    }
 
-        return switch (typeId) {
-            // Simple
-            case "$_AND_"  -> AND;
-            case "$_BUF_"  -> BUF;
-            case "$_MUX_"  -> MUX;
-            case "$_NAND_" -> NAND;
-            case "$_NOR_"  -> NOR;
-            case "$_NOT_"  -> NOT;
-            case "$_OR_"   -> OR;
-            case "$_XNOR_" -> XNOR;
-            case "$_XOR_"  -> XOR;
-            // Combined
-            case "$_ANDNOT_" -> ANDNOT;
-            case "$_AOI3_"   -> AOI3;
-            case "$_AOI4_"   -> AOI4;
-            case "$_MUX16_"  -> MUX16;
-            case "$_MUX4_"   -> MUX4;
-            case "$_MUX8_"   -> MUX8;
-            case "$_NMUX_"   -> NMUX;
-            case "$_OAI3_"   -> OAI3;
-            case "$_OAI4_"   -> OAI4;
-            case "$_ORNOT_"  -> ORNOT;
-            default -> throw new IllegalArgumentException("Unknown gate op: " + typeId);
-        };
+    public static Optional<GateOp> tryFromYosys(String typeId) {
+        return Optional.ofNullable(INDEX.get(typeId));
     }
 }
+
 

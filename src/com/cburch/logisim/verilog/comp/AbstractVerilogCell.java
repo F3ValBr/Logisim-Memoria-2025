@@ -17,6 +17,13 @@ public abstract class AbstractVerilogCell implements VerilogCell {
     protected CellAttribs attribs;
     protected List<PortEndpoint> endpoints = new ArrayList<>();
 
+    protected AbstractVerilogCell(String name, CellType type, CellParams params, CellAttribs attribs) {
+        this.name = name;
+        this.cellType = type;
+        this.params = params;
+        this.attribs = attribs;
+    }
+
     @Override
     public String name() {
         return name;
@@ -67,5 +74,20 @@ public abstract class AbstractVerilogCell implements VerilogCell {
             throw new IllegalArgumentException("PortEndpoint cannot be null");
         }
         endpoints.add(endpoint);
+    }
+
+    @Override
+    public String typeId() {
+        return cellType != null ? cellType.typeId() : null;
+    }
+
+    @Override
+    public String kind() {
+        return cellType != null ? cellType.kind().toString() : null;
+    }
+
+    @Override
+    public String level() {
+        return cellType != null ? cellType.level().toString() : null;
     }
 }

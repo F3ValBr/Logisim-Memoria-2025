@@ -17,4 +17,7 @@ public interface VerilogCell {
     int portWidth(String portName);
     List<String> getPortNames();
     void addPortEndpoint(PortEndpoint endpoint);
+    String typeId();
+    String kind();
+    String level();
 }

@@ -20,6 +20,7 @@ public final class BinaryOpParams extends GenericCellParams {
         validate();
     }
 
+    // --- Getters ---
     public BinaryOp op() { return op; }
     public int aWidth() { return aWidth; }
     public int bWidth() { return bWidth; }
@@ -27,20 +28,23 @@ public final class BinaryOpParams extends GenericCellParams {
     public boolean aSigned() { return aSigned; }
     public boolean bSigned() { return bSigned; }
 
+    /** Validations:
+     * - Logic ops: Y_WIDTH == 1
+     * - Shift ops: Y_WIDTH == A_WIDTH
+     * - Bitwise ops: Y_WIDTH == max(A_WIDTH, B_WIDTH)
+     * - Arith ops: Y_WIDTH >= max(A_WIDTH, B_WIDTH)
+     */
     private void validate() {
         if (op.isLogic()) {
             if (yWidth != 1) throw new IllegalArgumentException(op + ": Y_WIDTH debe ser 1");
         } else if (op.isShift()) {
             if (yWidth != aWidth) throw new IllegalArgumentException(op + ": Y_WIDTH debe == A_WIDTH");
-            // B es amount; no fuerzas bWidth aquí (puede ser >= log2(A))
         } else if (op.isBitwise()) {
             if (yWidth != Math.max(aWidth, bWidth))
                 throw new IllegalArgumentException(op + ": Y_WIDTH debe == max(A_WIDTH, B_WIDTH)");
         } else if (op.isArith()) {
-            // Política simple; ajusta según reglas que definas
             if (yWidth < Math.max(aWidth, bWidth))
                 throw new IllegalArgumentException(op + ": Y_WIDTH debe >= max(A_WIDTH, B_WIDTH)");
         }
     }
 }
-

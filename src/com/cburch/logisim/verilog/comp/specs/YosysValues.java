@@ -10,15 +10,9 @@ public final class YosysValues {
 
         String s = v.toString().trim();
         switch (s) {
-            case "" -> {
-                return s;
-            }
-            case "0" -> {
-                return 0;
-            }
-            case "1" -> {
-                return 1;
-            }
+            case "" -> { return s; }
+            case "0" -> { return 0; }
+            case "1" -> { return 1; }
         }
 
         // binarios largos ("000000...00100000") -> int/long si entran
@@ -40,7 +34,6 @@ public final class YosysValues {
             }
         }
 
-        // de lo contrario, lo dejamos como string
         return s;
     }
 
@@ -74,7 +67,7 @@ public final class YosysValues {
     }
 
     private static boolean isBinaryString(String s) {
-        // acepta cadenas de 0/1 largas (lo típico en Yosys)
+        // acepta cadenas de 0/1 largas
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if (c != '0' && c != '1') return false;

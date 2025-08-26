@@ -18,11 +18,16 @@ public final class UnaryOpParams extends GenericCellParams {
         validate();
     }
 
+    // --- Getters ---
     public UnaryOp op() { return op; }
     public int aWidth() { return aWidth; }
     public int yWidth() { return yWidth; }
     public boolean aSigned() { return aSigned; }
 
+    /** Validations:
+     * - Logic ops: Y_WIDTH == 1
+     * - Reduce ops: Y_WIDTH == 1
+     */
     private void validate() {
         if (op.isLogic() || op.isReduce()) {
             if (yWidth != 1) throw new IllegalArgumentException(op + ": Y_WIDTH debe ser 1");

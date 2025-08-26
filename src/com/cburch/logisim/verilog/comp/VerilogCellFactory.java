@@ -20,9 +20,9 @@ public interface VerilogCellFactory {
     VerilogCell create(
         String name,
         String type,
+        Map<String, String> params,
+        Map<String, Object> attribs,
         Map<String, String> ports,
-        Map<String, Object> params,
-        Map<String, String> attribs,
         Map<String, List<Object>> connections
     );
 }

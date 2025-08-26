@@ -8,8 +8,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.swing.*;
 
@@ -28,6 +28,15 @@ import com.cburch.logisim.tools.AddTool;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.util.StringUtil;
 
+import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
+import com.cburch.logisim.verilog.comp.VerilogCell;
+import com.cburch.logisim.verilog.comp.auxiliary.CellType;
+import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
+import com.cburch.logisim.verilog.comp.specs.CellAttribs;
+import com.cburch.logisim.verilog.comp.specs.CellParams;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOpParams;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.muxparams.*;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ProjectCircuitActions {
@@ -48,16 +57,275 @@ public class ProjectCircuitActions {
 	 *
 	 * @param proj the project to which the circuit will be imported
 	 */
-	public static void doImportJsonVerilog(Project proj) {
-		System.out.println("Importing JSON Verilog...");
-		JsonNode jsonFile = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());
-		if (jsonFile == null) {
-			System.out.println("Import cancelled.");
-			return;
-		}
-		// TODO: Implement the actual import logic here
-		System.out.println("Importing from file: " + jsonFile);
-	}
+    public static void doImportJsonVerilog(Project proj) {
+        System.out.println("Importing JSON Verilog...");
+        JsonNode root = proj.getLogisimFile().getLoader().JSONImportChooser(proj.getFrame());
+        if (root == null) {
+            System.out.println("Import cancelled.");
+            return;
+        }
+
+        // 1) Validar estructura esperada
+        JsonNode modules = root.path("modules");
+        if (modules.isMissingNode() || !modules.isObject()) {
+            System.out.println("El JSON no contiene 'modules' válido. Nodo raíz:\n" + root);
+            return;
+        }
+
+        // 2) Preparar el registry de factories
+        CellFactoryRegistry registry = new CellFactoryRegistry();
+        // (opcional) aquí podrías registrar factories especializadas:
+        // registry.register("$dff", new RegisterCellFactory());
+
+        // 3) Recorrer módulos y celdas
+        int totalCells = 0;
+        Iterator<Map.Entry<String, JsonNode>> modIter = modules.fields();
+        while (modIter.hasNext()) {
+            Map.Entry<String, JsonNode> modEntry = modIter.next();
+            String moduleName = modEntry.getKey();
+            JsonNode modNode = modEntry.getValue();
+
+            JsonNode cellsNode = modNode.path("cells");
+            if (cellsNode.isMissingNode() || !cellsNode.isObject()) {
+                System.out.println("[Modulo " + moduleName + "] sin 'cells'.");
+                continue;
+            }
+
+            System.out.println("== Módulo: " + moduleName + " ==");
+
+            Iterator<Map.Entry<String, JsonNode>> cellIter = cellsNode.fields();
+            while (cellIter.hasNext()) {
+                Map.Entry<String, JsonNode> cellEntry = cellIter.next();
+                String cellName = cellEntry.getKey();
+                JsonNode cellNode = cellEntry.getValue();
+
+                String typeId = optText(cellNode, "type", "<unknown>");
+
+                Map<String, String> parameters = readStringMap(cellNode.path("parameters"));
+                Map<String, Object> attributes = readObjectMap(cellNode.path("attributes"));
+                Map<String, String> portDirections = readStringMap(cellNode.path("port_directions"));
+                Map<String, List<Object>> connections = readConnections(cellNode.path("connections"));
+
+                // 4) Crear VerilogCell vía registry/factories
+                VerilogCell cell = registry.createCell(
+                        cellName, typeId, parameters, attributes, portDirections, connections
+                );
+                totalCells++;
+
+                // 5) Imprimir resumen de la celda
+                printCellSummary(cell);
+            }
+            System.out.println();
+        }
+        System.out.println("Total de celdas procesadas: " + totalCells);
+    }
+
+/* =========================
+   Helpers de parseo JSON
+   ========================= */
+
+    private static String optText(JsonNode n, String field, String def) {
+        JsonNode x = n.get(field);
+        return (x != null && x.isTextual()) ? x.asText() : def;
+    }
+
+    private static Map<String, String> readStringMap(JsonNode obj) {
+        if (obj == null || obj.isMissingNode() || !obj.isObject()) return Map.of();
+        Map<String, String> out = new LinkedHashMap<>();
+        Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+        while (it.hasNext()) {
+            var e = it.next();
+            out.put(e.getKey(), e.getValue().asText());
+        }
+        return out;
+    }
+
+    private static Map<String, Object> readObjectMap(JsonNode obj) {
+        if (obj == null || obj.isMissingNode() || !obj.isObject()) return Map.of();
+        Map<String, Object> out = new LinkedHashMap<>();
+        Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+        while (it.hasNext()) {
+            var e = it.next();
+            JsonNode v = e.getValue();
+            Object val;
+            if (v.isNumber())      val = v.numberValue();
+            else if (v.isBoolean())val = v.booleanValue();
+            else                   val = v.asText(); // por defecto texto (Yosys usa strings bin/hex)
+            out.put(e.getKey(), val);
+        }
+        return out;
+    }
+
+    /** connections: cada valor es lista de enteros (nets) o strings "0"/"1" */
+    private static Map<String, List<Object>> readConnections(JsonNode obj) {
+        if (obj == null || obj.isMissingNode() || !obj.isObject()) return Map.of();
+        Map<String, List<Object>> out = new LinkedHashMap<>();
+        Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+        while (it.hasNext()) {
+            var e = it.next();
+            String port = e.getKey();
+            JsonNode arr = e.getValue();
+            if (arr.isArray()) {
+                List<Object> bits = new ArrayList<>(arr.size());
+                for (JsonNode el : arr) {
+                    if (el.isInt() || el.isLong()) bits.add(el.asInt()); // ids de net
+                    else bits.add(el.asText());                           // "0"/"1"
+                }
+                out.put(port, bits);
+            } else {
+                out.put(port, List.of()); // puerto sin bits conectados
+            }
+        }
+        return out;
+    }
+
+    /* =========================
+   Helper de impresión
+   ========================= */
+
+    private static void printCellSummary(VerilogCell cell) {
+        CellType ct = cell.type();
+
+        String ports = cell.getPortNames().stream()
+                .sorted()
+                .map(p -> p + "[" + cell.portWidth(p) + "]")
+                .collect(Collectors.joining(", "));
+
+        // Línea principal
+        System.out.println(" - Cell: " + cell.name()
+                + " | typeId=" + ct.typeId()
+                + " | level=" + ct.level()
+                + " | kind=" + ct.kind()
+                + " | ports={" + ports + "}"
+        );
+
+        // Parameters (genérico)
+        String paramsStr = formatParams(cell.params());
+        if (!paramsStr.isEmpty()) {
+            System.out.println("   · params: " + paramsStr);
+        }
+
+        // Attributes (genérico)
+        String attribsStr = formatAttribs(cell.attribs());
+        if (!attribsStr.isEmpty()) {
+            System.out.println("   · attribs: " + attribsStr);
+        }
+
+        // (Opcional) Resumen semántico por familia conocida
+        printSemanticHint(cell);
+    }
+
+    /** Devuelve los parámetros ordenados por clave: key=value, key2=value2… */
+    private static String formatParams(CellParams params) {
+        if (params == null) return "";
+        Map<String, Object> map = params.asMap();
+        if (map == null || map.isEmpty()) return "";
+        return map.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getKey() + "=" + stringifyParamValue(e.getValue()))
+                .collect(Collectors.joining(", "));
+    }
+
+    /** Devuelve los atributos ordenados por clave. */
+    private static String formatAttribs(CellAttribs attribs) {
+        if (attribs == null) return "";
+        Map<String, Object> map = attribs.asMap();
+        if (map == null || map.isEmpty()) return "";
+        return map.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getKey() + "=" + stringifyParamValue(e.getValue()))
+                .collect(Collectors.joining(", "));
+    }
+
+    /** Convierte un valor a string, tratando números/booleanos y dejando otros tal cual. */
+    private static String stringifyParamValue(Object v) {
+        if (v == null) return "null";
+        if (v instanceof Number || v instanceof Boolean) return String.valueOf(v);
+        String s = String.valueOf(v).trim();
+        // Acorta binarios larguísimos
+        if (s.length() > 64 && isBinaryString(s)) {
+            return s.substring(0, 32) + "…(" + s.length() + "b)…" + s.substring(s.length()-8);
+        }
+        return s;
+    }
+
+    private static boolean isBinaryString(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c != '0' && c != '1') return false;
+        }
+        return true;
+    }
+
+/* =========================
+   (Opcional) pista semántica
+   ========================= */
+
+    private static void printSemanticHint(VerilogCell cell) {
+        CellType ct = cell.type();
+
+        // Si tienes clases de params especializadas, puedes reconocerlas:
+        if (cell.params() instanceof UnaryOpParams p) {
+            System.out.println("   · unary: A_WIDTH=" + p.aWidth()
+                    + ", Y_WIDTH=" + p.yWidth()
+                    + ", A_SIGNED=" + p.aSigned());
+            return;
+        }
+        if (cell.params() instanceof BinaryOpParams p) {
+            System.out.println("   · binary: A_WIDTH=" + p.aWidth()
+                    + ", B_WIDTH=" + p.bWidth()
+                    + ", Y_WIDTH=" + p.yWidth()
+                    + ", A_SIGNED=" + p.aSigned()
+                    + ", B_SIGNED=" + p.bSigned());
+            return;
+        }
+        if (cell.params() instanceof MuxParams p) {
+            System.out.println("   · mux: WIDTH=" + p.width() + ", S=1bit");
+            return;
+        }
+        if (cell.params() instanceof PMuxParams p) {
+            System.out.println("   · pmux: WIDTH=" + p.width()
+                    + ", S_WIDTH=" + p.sWidth()
+                    + ", |B|=" + p.bTotalWidth());
+            return;
+        }
+        if (cell.params() instanceof TribufParams p) {
+            System.out.println("   · tribuf: WIDTH=" + p.width() + ", EN=1bit");
+            return;
+        }
+        if (cell.params() instanceof BMuxParams p) {
+            System.out.println("   · bmux: WIDTH=" + p.width()
+                    + ", S_WIDTH=" + p.sWidth()
+                    + ", |A|=" + p.aTotalWidth());
+            return;
+        }
+        if (cell.params() instanceof BWMuxParams p) {
+            System.out.println("   · bwmux: WIDTH=" + p.width()
+                    + ", S_WIDTH=" + p.sWidth());
+            return;
+        }
+        if (cell.params() instanceof DemuxParams p) {
+            System.out.println("   · demux: WIDTH=" + p.width()
+                    + ", S_WIDTH=" + p.sWidth()
+                    + ", |Y|=" + p.yTotalWidth());
+            return;
+        }
+
+        // Si no hay clases especializadas, puedes usar el Kind del CellType:
+        switch (ct.kind()) {
+            case UNARY    -> System.out.println("   · unary op");
+            case BINARY   -> System.out.println("   · binary op");
+            case MULTIPLEXER -> System.out.println("   · mux family");
+            case REGISTER -> System.out.println("   · register");
+            case MEMORY   -> System.out.println("   · memory");
+            case SIMPLE_GATE -> System.out.println("   · simple gate");
+            case COMPLEX_GATE -> System.out.println("   · complex gate");
+            case FLIP_FLOP -> System.out.println("   · flip-flop gate");
+            default -> { /* nada */ }
+        }
+    }
+
+
 
 	private static String promptForCircuitName(JFrame frame,
 			Library lib, String initialValue) {

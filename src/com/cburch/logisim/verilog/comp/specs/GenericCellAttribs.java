@@ -29,4 +29,3 @@ public class GenericCellAttribs implements CellAttribs {
         return new GenericCellAttribs(yosysAttribs);
     }
 }
-
