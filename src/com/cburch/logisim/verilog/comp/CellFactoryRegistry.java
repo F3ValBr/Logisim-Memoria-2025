@@ -3,9 +3,11 @@ package com.cburch.logisim.verilog.comp;
 import com.cburch.logisim.verilog.comp.factories.ModuleInstanceFactory;
 import com.cburch.logisim.verilog.comp.factories.wordlvl.BinaryOpFactory;
 import com.cburch.logisim.verilog.comp.factories.wordlvl.MuxOpFactory;
+import com.cburch.logisim.verilog.comp.factories.wordlvl.RegisterOpFactory;
 import com.cburch.logisim.verilog.comp.factories.wordlvl.UnaryOpFactory;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.MuxOp;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.RegisterOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOp;
 
 import java.util.*;
@@ -16,6 +18,7 @@ public class CellFactoryRegistry {
     private final VerilogCellFactory unaryFactory  = new UnaryOpFactory();
     private final VerilogCellFactory binaryFactory = new BinaryOpFactory();
     private final VerilogCellFactory muxFactory    = new MuxOpFactory();
+    private final VerilogCellFactory registerFactory = new RegisterOpFactory();
     //private final VerilogCellFactory gateFactory   = new GateOpFactory();
     private final VerilogCellFactory moduleFactory = new ModuleInstanceFactory();
 
@@ -65,6 +68,9 @@ public class CellFactoryRegistry {
             }
             if (MuxOp.isMuxTypeId(typeId)) {
                 return muxFactory.create(name, typeId, parameters, attributes, portDirections, connections);
+            }
+            if (RegisterOp.isRegisterTypeId(typeId)) {
+                return registerFactory.create(name, typeId, parameters, attributes, portDirections, connections);
             }
             // word-level desconocido → MÓDULO
             return moduleFactory.create(name, typeId, parameters, attributes, portDirections, connections);

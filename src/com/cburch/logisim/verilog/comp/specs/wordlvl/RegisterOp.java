@@ -32,7 +32,14 @@ public enum RegisterOp {
         for (var op : values()) m.put(op.yosysId, op);
         INDEX = Collections.unmodifiableMap(m);
     }
-    public static boolean isTypeId(String typeId) { return INDEX.containsKey(typeId); }
+    public static boolean isRegisterTypeId(String typeId) { return INDEX.containsKey(typeId); }
+
+    public static RegisterOp fromYosys(String typeId) {
+        var op = INDEX.get(typeId);
+        if (op == null) throw new IllegalArgumentException("Unknown RegisterOp typeId: " + typeId);
+        return op;
+    }
+
     public static Optional<RegisterOp> tryFromYosys(String typeId) {
         return Optional.ofNullable(INDEX.get(typeId));
     }

@@ -97,7 +97,7 @@ public final class CellType {
             if (MuxOp.isMuxTypeId(typeId)) {
                 return new CellType(typeId, Level.WORD, Kind.MULTIPLEXER);
             }
-            if (RegisterOp.isTypeId(typeId)) {
+            if (RegisterOp.isRegisterTypeId(typeId)) {
                 return new CellType(typeId, Level.WORD, Kind.REGISTER);
             }
             if (MemoryOp.isTypeId(typeId)) {

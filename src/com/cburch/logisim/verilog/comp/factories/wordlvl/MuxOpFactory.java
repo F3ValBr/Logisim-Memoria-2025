@@ -27,6 +27,29 @@ public class MuxOpFactory extends AbstractVerilogCellFactory implements VerilogC
         var cell = new WordLvlCellImpl(name, CellType.fromYosys(type), parameters, attributes);
         buildEndpoints(cell, ports, connections);
 
+        int w = parameters.width();
+        switch (type) {
+            case "$mux" -> {
+                // A,B,Y deben tener w bits; S 1 bit
+                requirePortWidth(cell, "A", w);
+                requirePortWidth(cell, "B", w);
+                requirePortWidth(cell, "Y", w);
+                requirePortWidth(cell, "S", 1);
+            }
+            case "$pmux" -> {
+                PMuxParams p = (PMuxParams) parameters;
+                requirePortWidth(cell, "A", w);
+                requirePortWidth(cell, "Y", w);
+                requirePortWidth(cell, "S", p.sWidth());
+                requirePortWidth(cell, "B", p.bTotalWidth());
+            }
+            case "$tribuf" -> {
+                requirePortWidth(cell, "A", w);
+                requirePortWidth(cell, "Y", w);
+                requirePortWidth(cell, "EN", 1);
+            }
+        }
+
         return cell;
     }
 
