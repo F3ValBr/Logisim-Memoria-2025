@@ -13,7 +13,7 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.registerparams.dffeparams.*
 
 import java.util.*;
 
-public final class RegisterOpFactory extends AbstractVerilogCellFactory implements VerilogCellFactory {
+public class RegisterOpFactory extends AbstractVerilogCellFactory implements VerilogCellFactory {
     @Override
     public VerilogCell create(String name, String typeId,
                               Map<String,String> parameters,
@@ -68,7 +68,6 @@ public final class RegisterOpFactory extends AbstractVerilogCellFactory implemen
         }
 
         if (op == RegisterOp.SDFFCE) {
-            // Clock-enable típico se llama "CE"; algunas toolflows lo dejan como EN
             if (hasPort(cell, "CE"))      requirePortWidth(cell, "CE", 1);
             else if (hasPort(cell, "EN")) requirePortWidth(cell, "EN", 1);
             else throw new IllegalStateException(cell.name()+": SDFFCE requiere puerto CE (o EN) de 1 bit");

@@ -37,6 +37,9 @@ import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOpParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.muxparams.*;
+import com.cburch.logisim.verilog.file.jsonhdlr.YosysCellDTO;
+import com.cburch.logisim.verilog.file.jsonhdlr.YosysJsonNetlist;
+import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ProjectCircuitActions {
@@ -65,122 +68,31 @@ public class ProjectCircuitActions {
             return;
         }
 
-        // 1) Validar estructura esperada
-        JsonNode modules = root.path("modules");
-        if (modules.isMissingNode() || !modules.isObject()) {
-            System.out.println("El JSON no contiene 'modules' válido. Nodo raíz:\n" + root);
-            return;
-        }
-
-        // 2) Preparar el registry de factories
+        YosysJsonNetlist netlist = YosysJsonNetlist.from(root);
         CellFactoryRegistry registry = new CellFactoryRegistry();
-        // (opcional) aquí podrías registrar factories especializadas:
-        // registry.register("$dff", new RegisterCellFactory());
 
-        // 3) Recorrer módulos y celdas
-        int totalCells = 0;
-        Iterator<Map.Entry<String, JsonNode>> modIter = modules.fields();
-        while (modIter.hasNext()) {
-            Map.Entry<String, JsonNode> modEntry = modIter.next();
-            String moduleName = modEntry.getKey();
-            JsonNode modNode = modEntry.getValue();
-
-            JsonNode cellsNode = modNode.path("cells");
-            if (cellsNode.isMissingNode() || !cellsNode.isObject()) {
-                System.out.println("[Modulo " + moduleName + "] sin 'cells'.");
-                continue;
-            }
-
-            System.out.println("== Módulo: " + moduleName + " ==");
-
-            Iterator<Map.Entry<String, JsonNode>> cellIter = cellsNode.fields();
-            while (cellIter.hasNext()) {
-                Map.Entry<String, JsonNode> cellEntry = cellIter.next();
-                String cellName = cellEntry.getKey();
-                JsonNode cellNode = cellEntry.getValue();
-
-                String typeId = optText(cellNode, "type", "<unknown>");
-
-                Map<String, String> parameters = readStringMap(cellNode.path("parameters"));
-                Map<String, Object> attributes = readObjectMap(cellNode.path("attributes"));
-                Map<String, String> portDirections = readStringMap(cellNode.path("port_directions"));
-                Map<String, List<Object>> connections = readConnections(cellNode.path("connections"));
-
-                // 4) Crear VerilogCell vía registry/factories
+        int total = 0;
+        for (YosysModuleDTO mod : (Iterable<YosysModuleDTO>) netlist.modules()::iterator) {
+            System.out.println("== Módulo: " + mod.name() + " ==");
+            for (YosysCellDTO c : (Iterable<YosysCellDTO>) mod.cells()::iterator) {
                 VerilogCell cell = registry.createCell(
-                        cellName, typeId, parameters, attributes, portDirections, connections
+                        c.name(),
+                        c.typeId(),
+                        c.parameters(),
+                        c.attributes(),
+                        c.portDirections(),
+                        c.connections()
                 );
-                totalCells++;
-
-                // 5) Imprimir resumen de la celda
                 printCellSummary(cell);
+                total++;
             }
             System.out.println();
         }
-        System.out.println("Total de celdas procesadas: " + totalCells);
-    }
-
-/* =========================
-   Helpers de parseo JSON
-   ========================= */
-
-    private static String optText(JsonNode n, String field, String def) {
-        JsonNode x = n.get(field);
-        return (x != null && x.isTextual()) ? x.asText() : def;
-    }
-
-    private static Map<String, String> readStringMap(JsonNode obj) {
-        if (obj == null || obj.isMissingNode() || !obj.isObject()) return Map.of();
-        Map<String, String> out = new LinkedHashMap<>();
-        Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
-        while (it.hasNext()) {
-            var e = it.next();
-            out.put(e.getKey(), e.getValue().asText());
-        }
-        return out;
-    }
-
-    private static Map<String, Object> readObjectMap(JsonNode obj) {
-        if (obj == null || obj.isMissingNode() || !obj.isObject()) return Map.of();
-        Map<String, Object> out = new LinkedHashMap<>();
-        Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
-        while (it.hasNext()) {
-            var e = it.next();
-            JsonNode v = e.getValue();
-            Object val;
-            if (v.isNumber())      val = v.numberValue();
-            else if (v.isBoolean())val = v.booleanValue();
-            else                   val = v.asText(); // por defecto texto (Yosys usa strings bin/hex)
-            out.put(e.getKey(), val);
-        }
-        return out;
-    }
-
-    /** connections: cada valor es lista de enteros (nets) o strings "0"/"1" */
-    private static Map<String, List<Object>> readConnections(JsonNode obj) {
-        if (obj == null || obj.isMissingNode() || !obj.isObject()) return Map.of();
-        Map<String, List<Object>> out = new LinkedHashMap<>();
-        Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
-        while (it.hasNext()) {
-            var e = it.next();
-            String port = e.getKey();
-            JsonNode arr = e.getValue();
-            if (arr.isArray()) {
-                List<Object> bits = new ArrayList<>(arr.size());
-                for (JsonNode el : arr) {
-                    if (el.isInt() || el.isLong()) bits.add(el.asInt()); // ids de net
-                    else bits.add(el.asText());                           // "0"/"1"
-                }
-                out.put(port, bits);
-            } else {
-                out.put(port, List.of()); // puerto sin bits conectados
-            }
-        }
-        return out;
+        System.out.println("Total de celdas procesadas: " + total);
     }
 
     /* =========================
-   Helper de impresión
+        Helper de impresión
    ========================= */
 
     private static void printCellSummary(VerilogCell cell) {

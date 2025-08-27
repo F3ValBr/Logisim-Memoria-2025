@@ -100,7 +100,7 @@ public final class CellType {
             if (RegisterOp.isRegisterTypeId(typeId)) {
                 return new CellType(typeId, Level.WORD, Kind.REGISTER);
             }
-            if (MemoryOp.isTypeId(typeId)) {
+            if (MemoryOp.isMemoryTypeId(typeId)) {
                 return new CellType(typeId, Level.WORD, Kind.MEMORY);
             }
             // Word-level desconocido
