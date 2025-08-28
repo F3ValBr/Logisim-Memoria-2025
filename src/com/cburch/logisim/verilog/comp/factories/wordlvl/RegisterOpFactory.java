@@ -5,7 +5,6 @@ import com.cburch.logisim.verilog.comp.VerilogCell;
 import com.cburch.logisim.verilog.comp.VerilogCellFactory;
 import com.cburch.logisim.verilog.comp.WordLvlCellImpl;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.specs.GenericCellAttribs;
 import com.cburch.logisim.verilog.comp.specs.RegisterAttribs;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.RegisterOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.RegisterOpParams;
@@ -26,21 +25,21 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
 
         RegisterOpParams params = switch (op) {
             // base
-            case DFF    -> params = new DFFParams(parameters);
-            case ADFF   -> params = new ADFFParams(parameters);
-            case ALDFF  -> params = new AlDFFParams(parameters);
-            case DFFSR  -> params = new DFFSRParams(parameters);
-            case SDFF   -> params = new SDFFParams(parameters);
+            case DFF    -> new DFFParams(parameters);
+            case ADFF   -> new ADFFParams(parameters);
+            case ALDFF  -> new AlDFFParams(parameters);
+            case DFFSR  -> new DFFSRParams(parameters);
+            case SDFF   -> new SDFFParams(parameters);
 
             // + enable
-            case DFFE   -> params = new DFFEParams(parameters);
-            case ADFFE  -> params = new ADFFEParams(parameters);
-            case ALDFFE -> params = new AlDFFEParams(parameters);
-            case DFFSRE -> params = new DFFSREParams(parameters);
-            case SDFFE  -> params = new SDFFEParams(parameters);
-            case SDFFCE -> params = new SDFFCEParams(parameters);
+            case DFFE   -> new DFFEParams(parameters);
+            case ADFFE  -> new ADFFEParams(parameters);
+            case ALDFFE -> new AlDFFEParams(parameters);
+            case DFFSRE -> new DFFSREParams(parameters);
+            case SDFFE  -> new SDFFEParams(parameters);
+            case SDFFCE -> new SDFFCEParams(parameters);
 
-            default     -> new GenericRegisterParams(parameters); // si usas un comodín
+            default     -> new GenericRegisterParams(parameters); // comodin
         };
 
         var attribs = new RegisterAttribs(attributes);

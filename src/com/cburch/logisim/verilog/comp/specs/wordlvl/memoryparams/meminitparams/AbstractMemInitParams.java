@@ -10,9 +10,6 @@ public abstract class AbstractMemInitParams extends MemoryOpParams {
     }
 
     // ---- escalares base ----
-    public String memId() { return getString("MEMID", ""); }  // identificador de memoria
-    public int    abits() { return getInt("ABITS", 0); }      // bits de dirección
-    public int    width() { return getInt("WIDTH", 0); }      // bits por palabra
     public int    words() { return getInt("WORDS", 0); }      // # de palabras
     public int priority() { return getInt("PRIORITY", 0); } // prioridad de la inicialización (mayor = más prioridad)
 

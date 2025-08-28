@@ -7,9 +7,11 @@ import com.cburch.logisim.verilog.comp.WordLvlCellImpl;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.specs.GenericCellAttribs;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.MemoryOp;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.MemoryOpParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memarrayparams.MemParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memarrayparams.MemV2Params;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.meminitparams.MemInitParams;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.meminitparams.MemInitV2Params;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memreadparams.MemRDParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memreadparams.MemRDV2Params;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memwriteparams.MemWRParams;
@@ -28,120 +30,97 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
                               Map<String, String> portDirections,
                               Map<String, List<Object>> connections) {
 
-        CellType ct = CellType.fromYosys(typeId);
-        GenericCellAttribs attribs = new GenericCellAttribs(attributes);
+        final MemoryOp op = MemoryOp.fromYosys(typeId);
+        final CellType ct = CellType.fromYosys(typeId);
+        final GenericCellAttribs attribs = new GenericCellAttribs(attributes);
 
-        switch (typeId) {
-            /* ======================
-               Arreglo de memoria
-               ====================== */
-            case "$mem" -> {
-                MemParams p = new MemParams(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
+        // 1) Params específicos por tipo
+        final MemoryOpParams params = newParams(op, parameters);
 
-                // Validaciones típicas para aplanado por puertos (ajusta a tu dump si usa *_0, *_1, ...)
-                requirePortWidthOptional(cell, "RD_ADDR", p.abits() * p.rdPorts());
-                requirePortWidthOptional(cell, "RD_DATA", p.width() * p.rdPorts());
-                requirePortWidthOptional(cell, "WR_ADDR", p.abits() * p.wrPorts());
-                requirePortWidthOptional(cell, "WR_DATA", p.width() * p.wrPorts());
-                // EN por-bit o por-puerto: asume por-bit (WIDTH*WR_PORTS). Cambia a p.wrPorts() si tu dump usa 1 por puerto.
-                if (hasPort(cell, "WR_EN")) {
-                    requirePortWidth(cell, "WR_EN", p.width() * p.wrPorts());
-                }
-                return cell;
-            }
+        // 2) Crear celda
+        final VerilogCell cell = newCell(name, ct, params, attribs);
 
-            case "$mem_v2" -> {
-                MemV2Params p = new MemV2Params(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
+        // 3) Endpoints
+        buildEndpoints(cell, portDirections, connections);
 
-                // En v2, muchos campos vienen por-puerto y el wiring puede estar aplanado.
-                requirePortWidthOptional(cell, "RD_ADDR", p.abits() * p.rdPorts());
-                requirePortWidthOptional(cell, "RD_DATA", p.width() * p.rdPorts());
-                requirePortWidthOptional(cell, "WR_ADDR", p.abits() * p.wrPorts());
-                requirePortWidthOptional(cell, "WR_DATA", p.width() * p.wrPorts());
-                if (hasPort(cell, "WR_EN")) {
-                    requirePortWidth(cell, "WR_EN", p.width() * p.wrPorts());
-                }
-                return cell;
-            }
+        // 4) Validaciones según tipo
+        validatePorts(cell, op, params);
 
-            /* ======================
-               Puertos de lectura
-               ====================== */
-            case "$memrd" -> {
-                MemRDParams p = new MemRDParams(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
+        return cell;
+    }
 
-                requirePortWidth(cell, "ADDR", p.abits());
-                requirePortWidth(cell, "DATA", p.width());
-                // EN/CLK pueden venir como "x" si no se usan:
-                if (hasPort(cell, "EN"))  requirePortWidth(cell, "EN", 1);
-                if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
-                // ARST/SRST normalmente no existen en v1 de memrd; omite validación aquí.
-                return cell;
-            }
+    /* ============================
+       Helpers de construcción
+       ============================ */
 
-            case "$memrd_v2" -> {
-                MemRDV2Params p = new MemRDV2Params(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
+    private MemoryOpParams newParams(MemoryOp op, Map<String, String> parameters) {
+        return switch (op) {
+            case MEM        -> new MemParams(parameters);      // $mem (v1)
+            case MEM_V2     -> new MemV2Params(parameters);    // $mem_v2
+            case MEMINIT    -> new MemInitParams(parameters);
+            case MEMINIT_V2 -> new MemInitV2Params(parameters);
+            case MEMRD      -> new MemRDParams(parameters);
+            case MEMRD_V2   -> new MemRDV2Params(parameters);
+            case MEMWR      -> new MemWRParams(parameters);
+            case MEMWR_V2   -> new MemWRV2Params(parameters);
+        };
+    }
 
-                requirePortWidth(cell, "ADDR", p.abits());
-                requirePortWidth(cell, "DATA", p.width());
-                if (hasPort(cell, "EN"))  requirePortWidth(cell, "EN", 1);
-                if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
-                // ARST/SRST son entradas 1-bit si están presentes
-                if (hasPort(cell, "ARST")) requirePortWidth(cell, "ARST", 1);
-                if (hasPort(cell, "SRST")) requirePortWidth(cell, "SRST", 1);
-                return cell;
-            }
+    /** Cambia WordLvlCellImpl por tu impl concreta si la tienes (MemArrayCell, etc.). */
+    private VerilogCell newCell(String name, CellType ct, MemoryOpParams params, GenericCellAttribs attribs) {
+        return new WordLvlCellImpl(name, ct, params, attribs);
+    }
 
-            /* ======================
-               Puertos de escritura
-               ====================== */
-            case "$memwr" -> {
-                MemWRParams p = new MemWRParams(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
+    /* ============================
+       Validaciones por tipo
+       ============================ */
 
-                requirePortWidth(cell, "ADDR", p.abits());
-                requirePortWidth(cell, "DATA", p.width());
-                // EN por-bit → mismo ancho que DATA
-                if (hasPort(cell, "EN")) requirePortWidth(cell, "EN", p.width());
-                if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
-                return cell;
-            }
-
-            case "$memwr_v2" -> {
-                MemWRV2Params p = new MemWRV2Params(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
-
-                requirePortWidth(cell, "ADDR", p.abits());
-                requirePortWidth(cell, "DATA", p.width());
-                if (hasPort(cell, "EN")) requirePortWidth(cell, "EN", p.width()); // enable por-bit
-                if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
-                return cell;
-            }
-
-            /* ======================
-               Inicialización
-               ====================== */
-            case "$meminit", "$meminit_v2" -> {
-                MemInitParams p = new MemInitParams(parameters);
-                VerilogCell cell = new WordLvlCellImpl(name, ct, p, attribs);
-                buildEndpoints(cell, portDirections, connections);
-                // Normalmente no tiene puertos, solo parámetros INIT/...; sin validaciones de wiring aquí.
-                return cell;
-            }
-
-            default -> throw new IllegalArgumentException("MemoryOpFactory: tipo no soportado: " + typeId);
+    private void validatePorts(VerilogCell cell, MemoryOp op, MemoryOpParams p) {
+        switch (op) {
+            case MEM, MEM_V2 -> validateMemArray(cell, p);
+            case MEMRD       -> validateMemRd(cell, p, false);
+            case MEMRD_V2    -> validateMemRd(cell, p, true);
+            case MEMWR, MEMWR_V2 -> validateMemWr(cell, p);
+            case MEMINIT, MEMINIT_V2 -> { /* solo params; sin wiring */ }
+            default -> throw new IllegalArgumentException("MemoryOpFactory: tipo no soportado: " + op);
         }
     }
+
+    private void validateMemArray(VerilogCell cell, MemoryOpParams p) {
+        // Asumimos buses aplanados por puerto; ajusta si usas sufijos _0, _1, ...
+        requirePortWidthOptional(cell, "RD_ADDR", p.abits() * p.rdPorts());
+        requirePortWidthOptional(cell, "RD_DATA", p.width()  * p.rdPorts());
+        requirePortWidthOptional(cell, "WR_ADDR", p.abits() * p.wrPorts());
+        requirePortWidthOptional(cell, "WR_DATA", p.width()  * p.wrPorts());
+        // EN por-bit (WIDTH * WR_PORTS). Si en tu flujo es 1 por puerto, cambia a wrPorts().
+        if (hasPort(cell, "WR_EN")) {
+            requirePortWidth(cell, "WR_EN", p.width() * p.wrPorts());
+        }
+    }
+
+    private void validateMemRd(VerilogCell cell, MemoryOpParams p, boolean v2) {
+        requirePortWidth(cell, "ADDR", p.abits());
+        requirePortWidth(cell, "DATA", p.width());
+        if (hasPort(cell, "EN"))  requirePortWidth(cell, "EN", 1);
+        if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
+        if (v2) { // solo v2 expone ARST/SRST
+            if (hasPort(cell, "ARST")) requirePortWidth(cell, "ARST", 1);
+            if (hasPort(cell, "SRST")) requirePortWidth(cell, "SRST", 1);
+        }
+    }
+
+    private void validateMemWr(VerilogCell cell, MemoryOpParams p) {
+        requirePortWidth(cell, "ADDR", p.abits());
+        requirePortWidth(cell, "DATA", p.width());
+        // EN por-bit → mismo ancho que DATA
+        if (hasPort(cell, "EN")) requirePortWidth(cell, "EN", p.width());
+        if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
+    }
+
+    /* ============================
+       Pequeños helpers de puertos
+       (mueve a AbstractVerilogCellFactory si ya los tienes allí)
+       ============================ */
 
     private static void requirePortWidth(VerilogCell cell, String port, int expected) {
         int got = cell.portWidth(port);
@@ -159,3 +138,4 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
         return cell.getPortNames().contains(port);
     }
 }
+

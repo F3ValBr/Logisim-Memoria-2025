@@ -9,12 +9,8 @@ public abstract class AbstractMemWRParams extends MemoryOpParams {
         super(raw);
     }
 
-    // ===== Escalares obligatorios =====
-    public String memId() { return getString("MEMID", ""); }
-    public int abits() { return getInt("ABITS", 0); }
-    public int width() { return getInt("WIDTH", 0); }
-
     // ===== Sincronismo / reloj =====
+    @Override
     public boolean clkEnable() { return getBool("CLK_ENABLE", true); }
     public boolean clkPolarity() { return getBool("CLK_POLARITY", true); }
 }

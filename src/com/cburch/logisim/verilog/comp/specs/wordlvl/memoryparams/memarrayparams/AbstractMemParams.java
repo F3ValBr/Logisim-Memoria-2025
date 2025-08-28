@@ -11,11 +11,8 @@ public abstract class AbstractMemParams extends MemoryOpParams {
     public AbstractMemParams(Map<String, ?> raw) { super(raw); }
 
     // ---- escalares base ----
-    public String memId() { return getString("MEMID", ""); }
     public int    size()  { return getInt("SIZE",  0); }      // # de palabras
     public int    offset(){ return getInt("OFFSET",0); }      // desplazamiento inicial (si aplica)
-    public int    abits() { return getInt("ABITS", 0); }      // bits de dirección
-    public int    width() { return getInt("WIDTH", 0); }      // bits por palabra
 
     /** Devuelve el INIT crudo tal como viene del JSON. */
     public String initRaw() { return getString("INIT", ""); }
@@ -39,8 +36,8 @@ public abstract class AbstractMemParams extends MemoryOpParams {
     }
 
     // ==== número de puertos ====
-    public int rdPorts()  { return getInt("RD_PORTS", 0); }
-    public int wrPorts()  { return getInt("WR_PORTS", 0); }
+    @Override public int rdPorts()  { return getInt("RD_PORTS", 0); }
+    @Override public int wrPorts()  { return getInt("WR_PORTS", 0); }
 
     // ---- helpers internos ----
     protected BitSet parseBits(String s, int expectedMaxBits) {

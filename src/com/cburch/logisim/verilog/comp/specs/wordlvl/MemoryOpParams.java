@@ -9,6 +9,13 @@ import java.util.Map;
 public abstract class MemoryOpParams extends GenericCellParams {
     protected MemoryOpParams(Map<String, ?> raw){ super(raw); }
 
+    public String memId() { return getString("MEMID", ""); }  // identificador de memoria
+    public int    abits() { return getInt("ABITS", 0); }      // bits de dirección
+    public int    width() { return getInt("WIDTH", 0); }
+    public int  rdPorts() { return 0; }
+    public int  wrPorts() { return 0; }
+    public boolean clkEnable() { return false; }// bits por palabra
+
     protected void require(boolean cond, String msg){
         if(!cond) throw new IllegalArgumentException(getClass().getSimpleName()+": "+msg);
     }
