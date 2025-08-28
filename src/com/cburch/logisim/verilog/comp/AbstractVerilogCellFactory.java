@@ -33,8 +33,13 @@ public abstract class AbstractVerilogCellFactory implements VerilogCellFactory {
     protected BitRef toBitRef(Object raw) {
         if (raw instanceof Integer i) return new NetBit(i);
         if (raw instanceof String s) {
-            if ("0".equals(s)) return Const0.getInstance();
-            if ("1".equals(s)) return Const1.getInstance();
+            return switch (s) {
+                case "0" -> Const0.getInstance();
+                case "1" -> Const1.getInstance();
+                case "x" -> ConstX.getInstance();
+                case "z" -> ConstZ.getInstance();
+                default -> throw new IllegalArgumentException("Bit desconocido: " + raw);
+            };
         }
         throw new IllegalArgumentException("Bit no soportado: " + raw);
     }

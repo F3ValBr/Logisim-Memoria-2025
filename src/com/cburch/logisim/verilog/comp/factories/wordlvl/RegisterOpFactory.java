@@ -6,6 +6,7 @@ import com.cburch.logisim.verilog.comp.VerilogCellFactory;
 import com.cburch.logisim.verilog.comp.WordLvlCellImpl;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.specs.GenericCellAttribs;
+import com.cburch.logisim.verilog.comp.specs.RegisterAttribs;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.RegisterOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.RegisterOpParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.registerparams.*;
@@ -42,7 +43,7 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
             default     -> new GenericRegisterParams(parameters); // si usas un comodín
         };
 
-        var attribs = new GenericCellAttribs(attributes);
+        var attribs = new RegisterAttribs(attributes);
         VerilogCell cell = new WordLvlCellImpl(name, CellType.fromYosys(typeId), params, attribs);
 
         buildEndpoints(cell, portDirections, connections);
