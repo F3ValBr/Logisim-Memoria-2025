@@ -20,6 +20,10 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memwriteparams
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Factory for creating memory operation Verilog cells.
+ * Supports various memory operations like $mem, $mem_v2, $meminit, $memrd, $memwr, etc.
+ */
 public class MemoryOpFactory extends AbstractVerilogCellFactory implements VerilogCellFactory {
 
     @Override
@@ -34,23 +38,23 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
         final CellType ct = CellType.fromYosys(typeId);
         final GenericCellAttribs attribs = new GenericCellAttribs(attributes);
 
-        // 1) Params específicos por tipo
+        // 1) Specific params by type
         final MemoryOpParams params = newParams(op, parameters);
 
-        // 2) Crear celda
+        // 2) Cell creation
         final VerilogCell cell = newCell(name, ct, params, attribs);
 
         // 3) Endpoints
         buildEndpoints(cell, portDirections, connections);
 
-        // 4) Validaciones según tipo
+        // 4) Validations
         validatePorts(cell, op, params);
 
         return cell;
     }
 
     /* ============================
-       Helpers de construcción
+       Build helpers
        ============================ */
 
     private MemoryOpParams newParams(MemoryOp op, Map<String, String> parameters) {
@@ -66,13 +70,20 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
         };
     }
 
-    /** Cambia WordLvlCellImpl por tu impl concreta si la tienes (MemArrayCell, etc.). */
+    /** Creates a new WordLvlCellImpl with the given parameters.
+     *
+     * @param name Name of the cell
+     * @param ct CellType of the cell
+     * @param params Specific parameters for the memory operation
+     * @param attribs Generic attributes for the cell
+     * @return A new VerilogCell instance with the specified configuration
+     */
     private VerilogCell newCell(String name, CellType ct, MemoryOpParams params, GenericCellAttribs attribs) {
         return new WordLvlCellImpl(name, ct, params, attribs);
     }
 
     /* ============================
-       Validaciones por tipo
+       Validations by type
        ============================ */
 
     private void validatePorts(VerilogCell cell, MemoryOp op, MemoryOpParams p) {
@@ -81,21 +92,21 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
             case MEMRD       -> validateMemRd(cell, p, false);
             case MEMRD_V2    -> validateMemRd(cell, p, true);
             case MEMWR, MEMWR_V2 -> validateMemWr(cell, p);
-            case MEMINIT, MEMINIT_V2 -> { /* solo params; sin wiring */ }
-            default -> throw new IllegalArgumentException("MemoryOpFactory: tipo no soportado: " + op);
+            case MEMINIT, MEMINIT_V2 -> { /* Only params, no wiring */ }
+            default -> throw new IllegalArgumentException("MemoryOpFactory: unsupported type: " + op);
         }
     }
 
     private void validateMemArray(VerilogCell cell, MemoryOpParams p) {
-        // Asumimos buses aplanados por puerto; ajusta si usas sufijos _0, _1, ...
         requirePortWidthOptional(cell, "RD_ADDR", p.abits() * p.rdPorts());
         requirePortWidthOptional(cell, "RD_DATA", p.width()  * p.rdPorts());
         requirePortWidthOptional(cell, "WR_ADDR", p.abits() * p.wrPorts());
         requirePortWidthOptional(cell, "WR_DATA", p.width()  * p.wrPorts());
-        // EN por-bit (WIDTH * WR_PORTS). Si en tu flujo es 1 por puerto, cambia a wrPorts().
+        // EN por-bit (WIDTH * WR_PORTS).
         if (hasPort(cell, "WR_EN")) {
             requirePortWidth(cell, "WR_EN", p.width() * p.wrPorts());
         }
+        // TODO: check buses organization (contiguous, same order)
     }
 
     private void validateMemRd(VerilogCell cell, MemoryOpParams p, boolean v2) {
@@ -103,7 +114,7 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
         requirePortWidth(cell, "DATA", p.width());
         if (hasPort(cell, "EN"))  requirePortWidth(cell, "EN", 1);
         if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
-        if (v2) { // solo v2 expone ARST/SRST
+        if (v2) { // only v2 exposes ARST/SRST
             if (hasPort(cell, "ARST")) requirePortWidth(cell, "ARST", 1);
             if (hasPort(cell, "SRST")) requirePortWidth(cell, "SRST", 1);
         }
@@ -112,14 +123,13 @@ public class MemoryOpFactory extends AbstractVerilogCellFactory implements Veril
     private void validateMemWr(VerilogCell cell, MemoryOpParams p) {
         requirePortWidth(cell, "ADDR", p.abits());
         requirePortWidth(cell, "DATA", p.width());
-        // EN por-bit → mismo ancho que DATA
+        // EN each bit (WIDTH).
         if (hasPort(cell, "EN")) requirePortWidth(cell, "EN", p.width());
         if (p.clkEnable() && hasPort(cell, "CLK")) requirePortWidth(cell, "CLK", 1);
     }
 
     /* ============================
-       Pequeños helpers de puertos
-       (mueve a AbstractVerilogCellFactory si ya los tienes allí)
+       Port helpers
        ============================ */
 
     private static void requirePortWidth(VerilogCell cell, String port, int expected) {

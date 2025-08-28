@@ -10,6 +10,11 @@ import com.cburch.logisim.verilog.comp.specs.ModuleAttribs;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Factory class for creating module instance Verilog cells.
+ * This factory handles the creation of generic module instances
+ * with specified parameters, attributes, ports, and connections.
+ */
 public class ModuleInstanceFactory extends AbstractVerilogCellFactory {
     @Override
     public VerilogCell create(

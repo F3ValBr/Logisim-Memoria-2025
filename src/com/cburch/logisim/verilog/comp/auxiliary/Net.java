@@ -8,6 +8,9 @@ public class Net {
     private final List<PortEndpoint> endpoints;
     private final Map<String, Object> attributes;
 
+    /** Constructs a Net with the given ID and name.
+     * Initializes empty lists for endpoints and attributes.
+     */
     public Net(int id, String name) {
         this.id = id;
         this.name = name;

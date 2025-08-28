@@ -5,11 +5,22 @@ import com.cburch.logisim.verilog.comp.auxiliary.netconn.Direction;
 
 import java.util.Objects;
 
+/**
+ * Represents the signature of a port in a Verilog cell, including the cell it belongs to,
+ * the port name, and its direction (INPUT, OUTPUT, INOUT).
+ */
 public final class PortSignature {
     private final VerilogCell cell;     // Celda a la que pertenece el puerto
     private final String portName;      // Nombre del puerto en la celda
     private final Direction direction;  // INPUT, OUTPUT, INOUT
 
+    /**
+     * Constructor for PortSignature
+     *
+     * @param cell      The VerilogCell to which the port belongs
+     * @param portName  The name of the port within the cell
+     * @param direction The direction of the port (INPUT, OUTPUT, INOUT)
+     */
     public PortSignature(VerilogCell cell, String portName, Direction direction) {
         this.cell = cell;
         this.portName = portName;

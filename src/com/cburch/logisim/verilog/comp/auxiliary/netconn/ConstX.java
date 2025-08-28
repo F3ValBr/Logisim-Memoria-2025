@@ -1,5 +1,9 @@
 package com.cburch.logisim.verilog.comp.auxiliary.netconn;
 
+/**
+ * A singleton class representing a constant unknown (X) logic bit.
+ * Implements the BitRef interface.
+ */
 public final class ConstX implements BitRef {
     private static final ConstX INSTANCE = new ConstX();
 

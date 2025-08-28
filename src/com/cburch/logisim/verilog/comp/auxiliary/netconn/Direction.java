@@ -1,5 +1,10 @@
 package com.cburch.logisim.verilog.comp.auxiliary.netconn;
 
+/**
+ * Enum representing the direction of a pin or connection.
+ * Possible values are INPUT, OUTPUT, INOUT, and UNKNOWN.
+ * Provides methods for JSON serialization and deserialization.
+ */
 public enum Direction {
     INPUT("input"),
     OUTPUT("output"),

@@ -7,11 +7,22 @@ import com.cburch.logisim.verilog.comp.auxiliary.netconn.NetBit;
 
 import java.util.Objects;
 
+/**
+ * Represents an endpoint of a port connection in a Verilog cell.
+ * Contains information about the port signature, bit index, and bit reference.
+ */
 public final class PortEndpoint {
     private final PortSignature sig;    // Firma del puerto
     private final int bitIndex;         // Posición dentro del bus
     private final BitRef bitRef;        // Referencia al bit específico
 
+    /**
+     * Endpoint constructor
+     *
+     * @param sig PortSignature of the port
+     * @param bitIndex Index of the bit within the port
+     * @param bitRef Reference to the specific bit
+     */
     public PortEndpoint(PortSignature sig, int bitIndex, BitRef bitRef) {
         this.sig = sig;
         this.bitIndex = bitIndex;

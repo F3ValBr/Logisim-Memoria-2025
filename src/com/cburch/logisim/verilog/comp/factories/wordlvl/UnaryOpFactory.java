@@ -11,6 +11,10 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOpParams;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Factory class for creating unary operation Verilog cells.
+ * Supports operations like NOT, NEG, etc.
+ */
 public class UnaryOpFactory extends AbstractVerilogCellFactory {
     @Override
     public VerilogCell create(

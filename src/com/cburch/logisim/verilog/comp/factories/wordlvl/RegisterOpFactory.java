@@ -13,6 +13,10 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.registerparams.dffeparams.*
 
 import java.util.*;
 
+/**
+ * Factory for creating register operation Verilog cells.
+ * Supports various register operations like DFF, DFFE, SDFF, etc.
+ */
 public class RegisterOpFactory extends AbstractVerilogCellFactory implements VerilogCellFactory {
     @Override
     public VerilogCell create(String name, String typeId,
@@ -39,7 +43,7 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
             case SDFFE  -> new SDFFEParams(parameters);
             case SDFFCE -> new SDFFCEParams(parameters);
 
-            default     -> new GenericRegisterParams(parameters); // comodin
+            default     -> new GenericRegisterParams(parameters); // fallback
         };
 
         var attribs = new RegisterAttribs(attributes);
@@ -47,7 +51,7 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
 
         buildEndpoints(cell, portDirections, connections);
 
-        // -------- Validaciones comunes --------
+        // -------- Common validations --------
         int w = params.width();
         switch (op) {
             case SDFF, SDFFE, SDFFCE -> {
@@ -58,19 +62,19 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
             }
         }
 
-        // -------- Validaciones específicas --------
+        // -------- Specific validations --------
         if (op == RegisterOp.SDFFE) {
-            // EN debe existir y ser 1 bit
-            // En algunos dumps podría llamarse "EN", en otros "CE".
+            // EN must exists and be 1 bit.
+            // In some dumps it appears as CE instead of EN.
             if (hasPort(cell, "EN"))      requirePortWidth(cell, "EN", 1);
             else if (hasPort(cell, "CE")) requirePortWidth(cell, "CE", 1);
-            else throw new IllegalStateException(cell.name()+": SDFFE requiere puerto EN (o CE) de 1 bit");
+            else throw new IllegalStateException(cell.name()+": SDFFE requires port EN (or CE) of 1 bit");
         }
 
         if (op == RegisterOp.SDFFCE) {
             if (hasPort(cell, "CE"))      requirePortWidth(cell, "CE", 1);
             else if (hasPort(cell, "EN")) requirePortWidth(cell, "EN", 1);
-            else throw new IllegalStateException(cell.name()+": SDFFCE requiere puerto CE (o EN) de 1 bit");
+            else throw new IllegalStateException(cell.name()+": SDFFCE requires port CE (or EN) of 1 bit");
         }
 
         return cell;

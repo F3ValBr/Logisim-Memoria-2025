@@ -9,6 +9,10 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Factory class for creating binary operation Verilog cells.
+ * Supports operations like AND, OR, XOR, ADD, SUB, etc.
+ */
 public class BinaryOpFactory extends AbstractVerilogCellFactory {
     @Override
     public VerilogCell create(

@@ -5,14 +5,34 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.*;
 
 import java.util.*;
 
+/** CellType: classification of a cell by abstraction level and kind
+ *
+ * Cells are classified into three abstraction levels:
+ *  - Word-level: operations on multi-bit words (e.g. $add, $sub, $and, $mux, $mem)
+ *  - Gate-level: basic logic gates and flip-flops (e.g. $_AND_, $_OR_, $_DFF_)
+ *  - Module instances: any other module instantiation (e.g. user-defined modules, primitives)
+ *
+ * Within each level, cells are further classified by kind:
+ *  - Unary: single-input word-level operations (e.g. $not, $neg)
+ *  - Binary: two-input word-level operations (e.g. $add, $and)
+ *  - Simple Gate: basic gate-level operations (e.g. $_AND_, $_OR_)
+ *  - Complex Gate: combined gate-level operations (e.g. $_AOI21_, $_OAI22_)
+ *  - Flip-Flop: gate-level flip-flops (e.g. $_DFF_, $_DFFE_)
+ *  - Register: word-level registers (e.g. $dff, $dffe)
+ *  - Multiplexer: multiplexers at word or gate level (e.g. $mux, $_MUX4_)
+ *  - Memory: word-level memory blocks (e.g. $mem, $memrd, $memwr)
+ *  - Other: any other type not fitting above categories
+ *
+ * The main method is fromYosys(typeId) which classifies a cell based on its Yosys type ID.
+ */
 public final class CellType {
 
     public enum Level { WORD, GATE, MODULE }
     public enum Kind  { UNARY, BINARY, SIMPLE_GATE, COMPLEX_GATE, FLIP_FLOP, REGISTER, MULTIPLEXER, MEMORY, OTHER }
 
-    private final String typeId;    // ID de Yosys
-    private final Level level;      // Abstraccion
-    private final Kind kind;        // Clasificación
+    private final String typeId;    // Yosys ID for cell
+    private final Level level;      // Abstraction level
+    private final Kind kind;        // Classification within level
 
     private CellType(String typeId, Level level, Kind kind) {
         this.typeId = Objects.requireNonNull(typeId);
@@ -42,6 +62,7 @@ public final class CellType {
     public boolean isComplexGate() { return kind  == Kind.COMPLEX_GATE; }
     public boolean isFlipFlop()    { return kind  == Kind.FLIP_FLOP; }
 
+    // TODO: replace set with GateOp check
     private static final Set<String> GATE_FLIP_FLOP = Set.of(
             "$_ALDFFE_NNN_", "$_ALDFFE_NNP_", "$_ALDFFE_NPN_", "$_ALDFFE_NPP_", "$_ALDFFE_PNN_",
             "$_ALDFFE_PNP_", "$_ALDFFE_PPN_", "$_ALDFFE_PPP_", "$_ALDFF_NN_", "$_ALDFF_NP_", "$_ALDFF_PN_",
@@ -64,15 +85,20 @@ public final class CellType {
             "$_SDFF_NP1_","$_SDFF_PN0_","$_SDFF_PN1_","$_SDFF_PP0_","$_SDFF_PP1_"
     );
 
-    /** Clasificador principal: de typeId (Yosys) a CellType */
+    /** Main classifier from Yosys type ID
+     * Determines the CellType (level and kind) from a Yosys cell type ID.
+     *
+     * @param typeId Yosys cell type ID
+     * @return CellType instance
+     */
     public static CellType fromYosys(String typeId) {
         if (typeId == null || typeId.isEmpty()) {
             return new CellType("<unknown>", Level.MODULE, Kind.OTHER);
         }
 
-        // Gate-level (prefijo $_)
+        // Gate-level ($_)
         if (typeId.startsWith("$_")) {
-            // ¿es un gate simple/combined/mux-family?
+            // Gate kind
             if (GateOp.isGateTypeId(typeId)) {
                 GateOp op = GateOp.fromYosys(typeId);
                 return switch (op.category()) {
@@ -82,11 +108,11 @@ public final class CellType {
                 };
             }
             // ¿flip-flop gate-level?
-            // Por simplicidad: gates desconocidos
+            // TODO: implement FlipFlop logic
             return new CellType(typeId, Level.GATE, Kind.OTHER);
         }
 
-        // Word-level (prefijo $ pero no $_)
+        // Word-level ($)
         if (typeId.startsWith("$")) {
             if (UnaryOp.isUnaryTypeId(typeId)) {
                 return new CellType(typeId, Level.WORD, Kind.UNARY);
@@ -103,11 +129,11 @@ public final class CellType {
             if (MemoryOp.isMemoryTypeId(typeId)) {
                 return new CellType(typeId, Level.WORD, Kind.MEMORY);
             }
-            // Word-level desconocido
+            // Unknown Word-level
             return new CellType(typeId, Level.WORD, Kind.OTHER);
         }
 
-        // Instancia de módulo del usuario (sin '$')
+        // Module instance (anything else)
         return new CellType(typeId, Level.MODULE, Kind.OTHER);
     }
 
