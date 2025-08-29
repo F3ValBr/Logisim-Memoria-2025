@@ -3,6 +3,11 @@ package com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memwriteparam
 import java.util.BitSet;
 import java.util.Map;
 
+/**
+ * Parameters for memory write operations (MEMWR).
+ * <p>
+ * See AbstractMemWRParams for base parameters.
+ */
 public class MemWRParams extends AbstractMemWRParams {
     public MemWRParams(Map<String, ?> raw) { super(raw); validate(); }
 

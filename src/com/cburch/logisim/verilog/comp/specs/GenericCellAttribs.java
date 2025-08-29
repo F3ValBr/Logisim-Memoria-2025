@@ -2,6 +2,10 @@ package com.cburch.logisim.verilog.comp.specs;
 
 import java.util.*;
 
+/**
+ * Generic implementation of CellAttribs using a LinkedHashMap to store key-value pairs.
+ * This class provides methods to get, set, and manipulate cell attributes.
+ */
 public class GenericCellAttribs implements CellAttribs {
     protected final Map<String, Object> map;
 

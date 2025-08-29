@@ -7,39 +7,40 @@ import java.util.BitSet;
 import java.util.Map;
 import java.util.Optional;
 
+/** Base class for memory array parameters (MEM and MEM_V2). */
 public abstract class AbstractMemParams extends MemoryOpParams {
     public AbstractMemParams(Map<String, ?> raw) { super(raw); }
 
-    // ---- escalares base ----
-    public int    size()  { return getInt("SIZE",  0); }      // # de palabras
-    public int    offset(){ return getInt("OFFSET",0); }      // desplazamiento inicial (si aplica)
+    // ---- base params ----
+    public int    size()  { return getInt("SIZE",  0); }      // number of words
+    public int    offset(){ return getInt("OFFSET",0); }      // address offset
 
-    /** Devuelve el INIT crudo tal como viene del JSON. */
+    /** Returns raw INIT string (maybe empty) from JSON file. */
     public String initRaw() { return getString("INIT", ""); }
 
-    /** ¿INIT es indefinido (ej. 1'bx / x)? */
+    /** ¿INIT undefined (ex. 1'bx / x)? */
     public boolean isInitUndef() {
         String s = initRaw().trim();
         return s.equalsIgnoreCase("x") || s.equalsIgnoreCase("1'bx");
     }
 
-    /** Intenta decodificar INIT a bits (LSB-first). Vacío si es indefinido o no está. */
+    /** Decode INIT to bits (LSB-first). Empty if undefined. */
     public Optional<BitSet> initBits() {
         String s = initRaw().trim();
         if (s.isEmpty() || isInitUndef()) return Optional.empty();
         try {
-            BitSet bs = parseBits(s, size() * width()); // tamaño total esperado
+            BitSet bs = parseBits(s, size() * width());
             return Optional.of(bs);
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }
     }
 
-    // ==== número de puertos ====
+    // ==== ports ====
     @Override public int rdPorts()  { return getInt("RD_PORTS", 0); }
     @Override public int wrPorts()  { return getInt("WR_PORTS", 0); }
 
-    // ---- helpers internos ----
+    // ---- helpers ----
     protected BitSet parseBits(String s, int expectedMaxBits) {
         BigInteger bi;
         if (s.matches("[01]+")) {

@@ -1,37 +1,57 @@
 package com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memreadparams;
 
-import java.math.BigInteger;
 import java.util.BitSet;
 import java.util.Map;
 
+/**
+ * Parameters for memory read (MEMRD_V2).
+ * <p>
+ * See AbstractMemRDParams for base parameters.
+ */
 public class MemRDV2Params extends AbstractMemRDParams {
     public MemRDV2Params(Map<String, ?> raw) { super(raw); validate(); }
 
+    /** Returns true if CE (chip enable) has priority over SRST (synchronous reset). */
     public boolean ceOverSrst() { return getBool("CE_OVER_SRST", false); }
 
-    // ===== Máscaras contra puertos de escritura (indexadas por PORTID de write ports) =====
+    // ===== Masks against write ports (indexed by PORTID of write ports) =====
+    /** Returns the transparency mask for write ports. */
     public BitSet transparencyMask() { return getMaskFlexible("TRANSPARENCY_MASK"); }
+    /** Returns the collision mask for write ports. */
     public BitSet collisionXMask() { return getMaskFlexible("COLLISION_X_MASK"); }
 
-    // Helpers para acceder por índice de WR-port si conoces la cantidad total de write ports.
-    // Convención: bit i corresponde al write-port con PORTID=i.
+    // Helpers to access by WR-port index if you know the total number of write ports.
+    // Convention: bit i corresponds to the write-port with PORTID=i.
+    /**
+     * Returns true if the given write port is transparent according to the mask.
+     * @param mask The BitSet mask.
+     * @param wrPortId The write port index.
+     * @param totalWrPorts The total number of write ports.
+     */
     public boolean transparencyWithWr(BitSet mask, int wrPortId, int totalWrPorts) {
-        require(wrPortId >= 0 && wrPortId < totalWrPorts, "wrPortId fuera de rango");
-        return mask.get(wrPortId);
-    }
-    public boolean collisionXWithWr(BitSet mask, int wrPortId, int totalWrPorts) {
-        require(wrPortId >= 0 && wrPortId < totalWrPorts, "wrPortId fuera de rango");
+        require(wrPortId >= 0 && wrPortId < totalWrPorts, "wrPortId out of range");
         return mask.get(wrPortId);
     }
 
-    // ===== Valores de reset/initial del DATA (solo para puertos síncronos) =====
-    /** Valor inicial del DATA (RD_PORTS*WIDTH en $mem_v2 combinado; aquí es WIDTH bits del puerto). */
+    /**
+     * Returns true if the given write port has collision according to the mask.
+     * @param mask The BitSet mask.
+     * @param wrPortId The write port index.
+     * @param totalWrPorts The total number of write ports.
+     */
+    public boolean collisionXWithWr(BitSet mask, int wrPortId, int totalWrPorts) {
+        require(wrPortId >= 0 && wrPortId < totalWrPorts, "wrPortId out of range");
+        return mask.get(wrPortId);
+    }
+
+    // ===== Reset/initial values for DATA (only for synchronous ports) =====
+    /** Initial value for DATA (RD_PORTS*WIDTH in $mem_v2 combined; here is WIDTH bits of the port). */
     public BitSet initValueBits() { return getMaskExactWidth("INIT_VALUE"); }
 
-    /** Valor de reset asíncrono del DATA (solo usado si hay lógica síncrona; WIDTH bits). */
+    /** Asynchronous reset value for DATA (only used if there is synchronous logic; WIDTH bits). */
     public BitSet arstValueBits() { return getMaskExactWidth("ARST_VALUE"); }
 
-    /** Valor de reset síncrono del DATA (WIDTH bits). */
+    /** Synchronous reset value for DATA (WIDTH bits). */
     public BitSet srstValueBits() { return getMaskExactWidth("SRST_VALUE"); }
 
     @Override
@@ -40,24 +60,30 @@ public class MemRDV2Params extends AbstractMemRDParams {
         require(abits() > 0, "ABITS must be > 0");
         require(!memId().isEmpty(), "MEMID must be non-empty");
 
-        // Si es asíncrono, CLK no se usa; si es síncrono, podría venir o no según netlist,
-        // pero aquí solo validamos coherencia de parámetros:
+        // If asynchronous, CLK is not used; if synchronous, it may or may not be present depending on the netlist,
+        // but here we only validate parameter consistency:
         if (!clkEnable()) {
-            // nada adicional; CLK puede venir conectado como "x" en connections y es válido
+            // No additional checks; CLK may be connected as "x" in connections and is valid.
         }
 
-        // Si existen valores de DATA (INIT/ARST/SRST), deben caber en WIDTH bits.
+        // If DATA values (INIT/ARST/SRST) exist, they must fit in WIDTH bits.
         expectMaskLenIfPresent("INIT_VALUE", width());
         expectMaskLenIfPresent("ARST_VALUE", width());
         expectMaskLenIfPresent("SRST_VALUE", width());
     }
 
-    /** Devuelve una máscara (BitSet) de tamaño EXACTO width() si existe; si no existe -> BitSet vacío de width bits. */
+    /**
+     * Returns a mask (BitSet) of EXACT width() size if present; if not present -> empty BitSet of width bits.
+     * @param key The key to look up.
+     */
     private BitSet getMaskExactWidth(String key) {
         return getMask(key, width(), true);
     }
 
-    /** Devuelve una máscara (BitSet) sin chequear longitud exacta (se recorta a expected si lo pasas -1). */
+    /**
+     * Returns a mask (BitSet) without checking the exact length (it is trimmed to expected if you pass -1).
+     * @param key The key to look up.
+     */
     private BitSet getMaskFlexible(String key) {
         return getMask(key, -1, false);
     }

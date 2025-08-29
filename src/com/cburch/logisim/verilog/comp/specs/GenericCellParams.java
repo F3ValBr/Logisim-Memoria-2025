@@ -2,6 +2,10 @@ package com.cburch.logisim.verilog.comp.specs;
 
 import java.util.*;
 
+/**
+ * Generic implementation of CellParams using a LinkedHashMap to store key-value pairs.
+ * Provides methods to get, set, and manipulate parameters with type conversions.
+ */
 public class GenericCellParams implements CellParams {
     protected final Map<String, Object> map;
 
@@ -25,7 +29,7 @@ public class GenericCellParams implements CellParams {
     @Override public void set(String key, Object value){ map.put(key, value); }
     @Override public void setAll(Map<String, ?> values){ values.forEach((k,v) -> map.put(k, YosysValues.normalize(v))); }
 
-    /** Fábrica: parsea el JSON Yosys (Strings bin/hex) normalizando tipos */
+    /** Factory: parses a map of Yosys string parameters into a GenericCellParams instance. */
     public static GenericCellParams fromYosys(Map<String, String> yosysParams) {
         return new GenericCellParams(yosysParams);
     }

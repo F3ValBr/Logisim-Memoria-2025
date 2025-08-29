@@ -119,7 +119,10 @@ public abstract class MemoryOpParams extends GenericCellParams {
         return bl == 0 ? 1 : bl;
     }
 
-    /** Validaciones específicas de cada subtipo. */
+    /**
+     * Validates the parameters for a port.
+     * Its implementation depends on the specific parameters of each port type.
+     */
     protected abstract void validate();
 }
 

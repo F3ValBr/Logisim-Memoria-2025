@@ -3,6 +3,11 @@ package com.cburch.logisim.verilog.comp.specs.wordlvl.memoryparams.memreadparams
 import java.util.BitSet;
 import java.util.Map;
 
+/**
+ * Parameters for memory read (MEMRD).
+ * <p>
+ * See AbstractMemRDParams for base parameters.
+ */
 public class MemRDParams extends AbstractMemRDParams {
     public MemRDParams(Map<String, ?> raw) { super(raw); validate(); }
 
@@ -14,14 +19,14 @@ public class MemRDParams extends AbstractMemRDParams {
         require(abits() > 0, "ABITS must be > 0");
         require(!memId().isEmpty(), "MEMID must be non-empty");
 
-        // Si es asíncrono, CLK no se usa; si es síncrono, podría venir o no según netlist,
-        // pero aquí solo validamos coherencia de parámetros:
+        // If asynchronous, CLK is not used; if synchronous, it may or may not be present depending on the netlist.
+        // Here, we only validate parameter consistency:
         if (!clkEnable()) {
-            // nada adicional; CLK puede venir conectado como "x" en connections y es válido
+            // No additional checks; CLK may be connected as "x" in connections and is valid.
         }
     }
 
-    /** Devuelve una máscara (BitSet) sin chequear longitud exacta (se recorta a expected si lo pasas -1). */
+    /** Returns a mask (BitSet) without checking the exact length (it is trimmed to expected if you pass -1). */
     private BitSet getMaskFlexible(String key) {
         return getMask(key, -1, false);
     }

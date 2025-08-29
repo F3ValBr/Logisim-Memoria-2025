@@ -4,16 +4,19 @@ import com.cburch.logisim.verilog.comp.specs.wordlvl.MemoryOpParams;
 
 import java.util.Map;
 
+/**
+ * Base class for memory initialization parameters (MEM_INIT and MEM_INIT_V2).
+ */
 public abstract class AbstractMemInitParams extends MemoryOpParams {
     public AbstractMemInitParams(Map<String, ?> raw) {
         super(raw);
     }
 
     // ---- escalares base ----
-    public int    words() { return getInt("WORDS", 0); }      // # de palabras
-    public int priority() { return getInt("PRIORITY", 0); } // prioridad de la inicialización (mayor = más prioridad)
+    public int    words() { return getInt("WORDS", 0); }    // number of words
+    public int priority() { return getInt("PRIORITY", 0); } // initialization priority (0=lowest)
 
-    // ==== validación base ====
+    // ==== base validations ====
     @Override
     protected void validate() {
         require(width() > 0, "WIDTH must be > 0");
