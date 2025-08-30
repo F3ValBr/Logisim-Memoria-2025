@@ -44,6 +44,26 @@ public record YosysModuleDTO(String name, JsonNode moduleNode) {
         return out;
     }
 
+    public Map<String, YosysMemoryDTO> memories() {
+        JsonNode m = moduleNode.path("memories");
+        if (!m.isObject()) return Map.of();
+        Map<String, YosysMemoryDTO> out = new LinkedHashMap<>();
+        m.fields().forEachRemaining(e -> {
+            String memId = e.getKey();
+            JsonNode n = e.getValue();
+
+            int width = n.path("width").asInt(0);
+            int size  = n.path("size").asInt(0);
+            int start = n.path("start_offset").asInt(0);
+            Map<String,Object> attrs = new LinkedHashMap<>();
+            JsonNode a = n.path("attributes");
+            if (a.isObject()) a.fields().forEachRemaining(kv -> attrs.put(kv.getKey(), kv.getValue().asText()));
+
+            out.put(memId, new YosysMemoryDTO(memId, width, size, start, attrs));
+        });
+        return out;
+    }
+
     public Map<String,Object> netnames() {
         JsonNode n = moduleNode.path("netnames");
         if (!n.isObject()) return Map.of();

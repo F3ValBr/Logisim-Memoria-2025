@@ -28,13 +28,10 @@ import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.util.StringUtil;
 
 import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
+import com.cburch.logisim.verilog.comp.auxiliary.*;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.impl.VerilogModuleBuilder;
 import com.cburch.logisim.verilog.comp.impl.VerilogModuleImpl;
-import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.EndpointVisitor;
-import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
-import com.cburch.logisim.verilog.comp.auxiliary.NetTraversal;
 import com.cburch.logisim.verilog.comp.specs.CellAttribs;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.GenericCellAttribs;
@@ -42,6 +39,7 @@ import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
 
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysJsonNetlist;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
+import com.cburch.logisim.verilog.layout.MemoryIndex;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -95,6 +93,12 @@ public class ProjectCircuitActions {
             // Nets internos (usando ModuleNetIndex)
             ModuleNetIndex netIndex = builder.buildNetIndex(mod);
             printNets(mod, netIndex);
+
+            MemoryIndex memIndex = new MemoryIndex(
+                    mod.cells(),
+                    dto.memories()
+            );
+            printMemories(mod, memIndex);
 
             System.out.println();
         }
@@ -181,6 +185,99 @@ public class ProjectCircuitActions {
         }
     }
 
+    private static void printMemories(VerilogModuleImpl mod, MemoryIndex memIndex) {
+        var memories = memIndex.memories();
+        if (memories.isEmpty()) {
+            System.out.println("Memorias: (ninguna)");
+            return;
+        }
+        System.out.println("Memorias (" + memories.size() + "):");
+
+        for (LogicalMemory lm : memories) {
+            System.out.println(" - MEMID: " + lm.memId);
+
+            // Metadata desde "memories" (si existe)
+            if (lm.meta != null) {
+                System.out.println("     meta  : width=" + lm.meta.width()
+                        + " size=" + lm.meta.size()
+                        + " start_offset=" + lm.meta.startOffset());
+                if (lm.meta.attributes() != null && !lm.meta.attributes().isEmpty()) {
+                    System.out.println("       attrs: " + lm.meta.attributes());
+                }
+            }
+
+            // ¿hay celda de arreglo ($mem/_v2)?
+            if (lm.arrayCellIdx >= 0) {
+                VerilogCell arr = mod.cells().get(lm.arrayCellIdx);
+                System.out.println("     array : " + arr.name() + " (" + arr.type().typeId() + ")");
+                String paramsStr = paramsToString(arr.params());
+                if (!paramsStr.isEmpty()) System.out.println("       params: " + paramsStr);
+            } else {
+                System.out.println("     array : (no presente en celdas)");
+            }
+
+            // Read ports
+            if (lm.readPortIdxs.isEmpty()) {
+                System.out.println("     read  : 0");
+            } else {
+                System.out.println("     read  : " + lm.readPortIdxs.size());
+                for (int idx : lm.readPortIdxs) {
+                    VerilogCell rp = mod.cells().get(idx);
+                    int abits = safePortWidth(rp, "ADDR");
+                    int width = safePortWidth(rp, "DATA");
+                    boolean hasClk = rp.getPortNames().contains("CLK") && safePortWidth(rp, "CLK") == 1;
+                    boolean hasEn  = rp.getPortNames().contains("EN")  && safePortWidth(rp, "EN")  == 1;
+                    boolean hasArst= rp.getPortNames().contains("ARST");
+                    boolean hasSrst= rp.getPortNames().contains("SRST");
+
+                    System.out.println("       • " + rp.name()
+                            + " (" + rp.type().typeId() + ")"
+                            + " ADDR[" + abits + "] DATA[" + width + "]"
+                            + (hasEn ? " EN[1]" : "")
+                            + (hasClk ? " CLK[1]" : "")
+                            + (hasArst ? " ARST[1]" : "")
+                            + (hasSrst ? " SRST[1]" : "")
+                    );
+                }
+            }
+
+            // Write ports
+            if (lm.writePortIdxs.isEmpty()) {
+                System.out.println("     write : 0");
+            } else {
+                System.out.println("     write : " + lm.writePortIdxs.size());
+                for (int idx : lm.writePortIdxs) {
+                    VerilogCell wp = mod.cells().get(idx);
+                    int abits = safePortWidth(wp, "ADDR");
+                    int width = safePortWidth(wp, "DATA");
+                    boolean hasClk = wp.getPortNames().contains("CLK") && safePortWidth(wp, "CLK") == 1;
+                    boolean hasEn  = wp.getPortNames().contains("EN"); // v2 suele ser por-bit (ancho = width)
+
+                    System.out.println("       • " + wp.name()
+                            + " (" + wp.type().typeId() + ")"
+                            + " ADDR[" + abits + "] DATA[" + width + "]"
+                            + (hasEn ? " EN[" + safePortWidth(wp,"EN") + "]" : "")
+                            + (hasClk ? " CLK[1]" : "")
+                    );
+                }
+            }
+
+            // Inits
+            if (lm.initIdxs.isEmpty()) {
+                System.out.println("     init  : 0");
+            } else {
+                System.out.println("     init  : " + lm.initIdxs.size());
+                for (int idx : lm.initIdxs) {
+                    VerilogCell init = mod.cells().get(idx);
+                    System.out.println("       • " + init.name() + " (" + init.type().typeId() + ")");
+                    String paramsStr = paramsToString(init.params());
+                    if (!paramsStr.isEmpty()) System.out.println("         params: " + paramsStr);
+                }
+            }
+        }
+    }
+
+
 
     /* =========================
        Helpers para mostrar params/attribs
@@ -202,6 +299,14 @@ public class ProjectCircuitActions {
             return g.asMap().toString();
         }
         return a.toString();
+    }
+
+    private static int safePortWidth(VerilogCell cell, String port) {
+        try {
+            return cell.portWidth(port);
+        } catch (Exception e) {
+            return 0;
+        }
     }
     // fin
 

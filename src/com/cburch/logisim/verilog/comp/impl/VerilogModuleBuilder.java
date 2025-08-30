@@ -2,6 +2,7 @@ package com.cburch.logisim.verilog.comp.impl;
 
 import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
+import com.cburch.logisim.verilog.layout.MemoryIndex;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;
 
 import java.util.*;
@@ -54,4 +55,7 @@ public final class VerilogModuleBuilder {
     public ModuleNetIndex buildNetIndex(VerilogModuleImpl mod) {
         return new ModuleNetIndex(mod.cells(), mod.ports());
     }
+
+    /** Índice de memorias LAZY (agrupa por MEMID). */
+    public MemoryIndex buildMemoryIndex(VerilogModuleImpl mod) { return new MemoryIndex(mod.cells()); }
 }
