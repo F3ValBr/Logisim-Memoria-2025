@@ -1,5 +1,8 @@
 package com.cburch.logisim.verilog.file.jsonhdlr;
 
+import com.cburch.logisim.verilog.comp.VerilogModuleImpl;
+import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.Direction;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.*;
@@ -104,5 +107,35 @@ public record YosysModuleDTO(String name, JsonNode moduleNode) {
         });
         return out;
     }
-}
 
+    public static void readModulePorts(JsonNode portsNode, VerilogModuleImpl mod) {
+        if (portsNode == null || !portsNode.isObject()) return;
+
+        Iterator<Map.Entry<String, JsonNode>> it = portsNode.fields();
+        while (it.hasNext()) {
+            var e = it.next();
+            String portName = e.getKey();
+            JsonNode p = e.getValue();
+
+            Direction dir = Direction.fromJson(p.path("direction").asText("unknown"));
+            JsonNode bits = p.path("bits");
+            int[] netIds = new int[bits.size()];
+
+            for (int i = 0; i < bits.size(); i++) {
+                JsonNode b = bits.get(i);
+                if (b.isInt() || b.isLong()) {
+                    netIds[i] = b.asInt();
+                } else {
+                    String s = b.asText();
+                    netIds[i] = switch (s) {
+                        case "0" -> ModulePort.CONST_0;
+                        case "1" -> ModulePort.CONST_1;
+                        case "x", "X" -> ModulePort.CONST_X;
+                        default -> throw new IllegalArgumentException("Unknown top bit token: " + s);
+                    };
+                }
+            }
+            mod.addModulePort(new ModulePort(portName, dir, netIds));
+        }
+    }
+}

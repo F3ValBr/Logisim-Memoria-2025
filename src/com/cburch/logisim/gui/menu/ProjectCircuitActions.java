@@ -30,16 +30,23 @@ import com.cburch.logisim.util.StringUtil;
 
 import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
 import com.cburch.logisim.verilog.comp.VerilogCell;
+import com.cburch.logisim.verilog.comp.VerilogModuleBuilder;
+import com.cburch.logisim.verilog.comp.VerilogModuleImpl;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
+import com.cburch.logisim.verilog.comp.auxiliary.EndpointVisitor;
+import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
+import com.cburch.logisim.verilog.comp.auxiliary.NetTraversal;
 import com.cburch.logisim.verilog.comp.specs.CellAttribs;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
+import com.cburch.logisim.verilog.comp.specs.GenericCellAttribs;
+import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOpParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.muxparams.*;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysCellDTO;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysJsonNetlist;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
+import com.cburch.logisim.verilog.layout.ModuleNetIndex;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class ProjectCircuitActions {
@@ -68,175 +75,139 @@ public class ProjectCircuitActions {
             return;
         }
 
+        // 0) Abrimos el netlist y preparamos factories + builder
         YosysJsonNetlist netlist = YosysJsonNetlist.from(root);
         CellFactoryRegistry registry = new CellFactoryRegistry();
+        VerilogModuleBuilder builder = new VerilogModuleBuilder(registry);
 
-        int total = 0;
-        for (YosysModuleDTO mod : (Iterable<YosysModuleDTO>) netlist.modules()::iterator) {
+        int totalCells = 0;
+
+        // 1) Recorremos módulos
+        for (YosysModuleDTO dto : (Iterable<YosysModuleDTO>) netlist.modules()::iterator) {
+            VerilogModuleImpl mod = builder.buildModule(dto);
             System.out.println("== Módulo: " + mod.name() + " ==");
-            for (YosysCellDTO c : (Iterable<YosysCellDTO>) mod.cells()::iterator) {
-                VerilogCell cell = registry.createCell(
-                        c.name(),
-                        c.typeId(),
-                        c.parameters(),
-                        c.attributes(),
-                        c.portDirections(),
-                        c.connections()
-                );
+
+            // Puertos
+            printModulePorts(mod);
+
+            // Celdas
+            for (VerilogCell cell : mod.cells()) {
                 printCellSummary(cell);
-                total++;
+                totalCells++;
             }
+
+            // Nets internos (usando ModuleNetIndex)
+            ModuleNetIndex netIndex = builder.buildNetIndex(mod);
+            printNets(mod, netIndex);
+
             System.out.println();
         }
-        System.out.println("Total de celdas procesadas: " + total);
+
+        System.out.println("Total de celdas procesadas: " + totalCells);
+    }
+
+
+    /* =========================
+       Impresión de puertos
+       ========================= */
+    private static void printModulePorts(VerilogModuleImpl mod) {
+        if (mod.ports().isEmpty()) {
+            System.out.println("  (sin puertos)");
+            return;
+        }
+        System.out.println("Puertos (" + mod.ports().size() + "):");
+        for (ModulePort p : mod.ports()) {
+            System.out.print("  - " + p.name() + ":" + p.direction() + "[" + p.width() + "]");
+            // imprime breve vista de los primeros bits (netId o constante)
+            int preview = Math.min(8, p.width());
+            System.out.print(" bits[0.." + (preview - 1) + "]={");
+            for (int i = 0; i < preview; i++) {
+                int id = p.netIdAt(i);
+                String tok = (id >= 0) ? String.valueOf(id)
+                        : (id == ModulePort.CONST_0 ? "0"
+                        : (id == ModulePort.CONST_1 ? "1" : "x"));
+                if (i > 0) System.out.print(", ");
+                System.out.print(tok);
+            }
+            if (p.width() > preview) System.out.print(", ...");
+            System.out.println("}");
+        }
     }
 
     /* =========================
-        Helper de impresión
-   ========================= */
-
+       Impresión de celdas
+       ========================= */
     private static void printCellSummary(VerilogCell cell) {
         CellType ct = cell.type();
 
+        // nombres y widths por puerto (derivado de endpoints)
         String ports = cell.getPortNames().stream()
                 .sorted()
                 .map(p -> p + "[" + cell.portWidth(p) + "]")
-                .collect(Collectors.joining(", "));
+                .collect(java.util.stream.Collectors.joining(", "));
 
-        // Línea principal
         System.out.println(" - Cell: " + cell.name()
                 + " | typeId=" + ct.typeId()
                 + " | level=" + ct.level()
                 + " | kind=" + ct.kind()
-                + " | ports={" + ports + "}"
-        );
+                + " | ports={" + ports + "}");
 
-        // Parameters (genérico)
-        String paramsStr = formatParams(cell.params());
+        // parámetros y atributos (si existen)
+        String paramsStr = paramsToString(cell.params());
         if (!paramsStr.isEmpty()) {
-            System.out.println("   · params: " + paramsStr);
+            System.out.println("     params: " + paramsStr);
         }
-
-        // Attributes (genérico)
-        String attribsStr = formatAttribs(cell.attribs());
+        String attribsStr = attribsToString(cell.attribs());
         if (!attribsStr.isEmpty()) {
-            System.out.println("   · attribs: " + attribsStr);
-        }
-
-        // (Opcional) Resumen semántico por familia conocida
-        printSemanticHint(cell);
-    }
-
-    /** Devuelve los parámetros ordenados por clave: key=value, key2=value2… */
-    private static String formatParams(CellParams params) {
-        if (params == null) return "";
-        Map<String, Object> map = params.asMap();
-        if (map == null || map.isEmpty()) return "";
-        return map.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + "=" + stringifyParamValue(e.getValue()))
-                .collect(Collectors.joining(", "));
-    }
-
-    /** Devuelve los atributos ordenados por clave. */
-    private static String formatAttribs(CellAttribs attribs) {
-        if (attribs == null) return "";
-        Map<String, Object> map = attribs.asMap();
-        if (map == null || map.isEmpty()) return "";
-        return map.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + "=" + stringifyParamValue(e.getValue()))
-                .collect(Collectors.joining(", "));
-    }
-
-    /** Convierte un valor a string, tratando números/booleanos y dejando otros tal cual. */
-    private static String stringifyParamValue(Object v) {
-        if (v == null) return "null";
-        if (v instanceof Number || v instanceof Boolean) return String.valueOf(v);
-        String s = String.valueOf(v).trim();
-        // Acorta binarios larguísimos
-        if (s.length() > 64 && isBinaryString(s)) {
-            return s.substring(0, 32) + "…(" + s.length() + "b)…" + s.substring(s.length()-8);
-        }
-        return s;
-    }
-
-    private static boolean isBinaryString(String s) {
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c != '0' && c != '1') return false;
-        }
-        return true;
-    }
-
-/* =========================
-   (Opcional) pista semántica
-   ========================= */
-
-    private static void printSemanticHint(VerilogCell cell) {
-        CellType ct = cell.type();
-
-        // Si tienes clases de params especializadas, puedes reconocerlas:
-        if (cell.params() instanceof UnaryOpParams p) {
-            System.out.println("   · unary: A_WIDTH=" + p.aWidth()
-                    + ", Y_WIDTH=" + p.yWidth()
-                    + ", A_SIGNED=" + p.aSigned());
-            return;
-        }
-        if (cell.params() instanceof BinaryOpParams p) {
-            System.out.println("   · binary: A_WIDTH=" + p.aWidth()
-                    + ", B_WIDTH=" + p.bWidth()
-                    + ", Y_WIDTH=" + p.yWidth()
-                    + ", A_SIGNED=" + p.aSigned()
-                    + ", B_SIGNED=" + p.bSigned());
-            return;
-        }
-        if (cell.params() instanceof MuxParams p) {
-            System.out.println("   · mux: WIDTH=" + p.width() + ", S=1bit");
-            return;
-        }
-        if (cell.params() instanceof PMuxParams p) {
-            System.out.println("   · pmux: WIDTH=" + p.width()
-                    + ", S_WIDTH=" + p.sWidth()
-                    + ", |B|=" + p.bTotalWidth());
-            return;
-        }
-        if (cell.params() instanceof TribufParams p) {
-            System.out.println("   · tribuf: WIDTH=" + p.width() + ", EN=1bit");
-            return;
-        }
-        if (cell.params() instanceof BMuxParams p) {
-            System.out.println("   · bmux: WIDTH=" + p.width()
-                    + ", S_WIDTH=" + p.sWidth()
-                    + ", |A|=" + p.aTotalWidth());
-            return;
-        }
-        if (cell.params() instanceof BWMuxParams p) {
-            System.out.println("   · bwmux: WIDTH=" + p.width()
-                    + ", S_WIDTH=" + p.sWidth());
-            return;
-        }
-        if (cell.params() instanceof DemuxParams p) {
-            System.out.println("   · demux: WIDTH=" + p.width()
-                    + ", S_WIDTH=" + p.sWidth()
-                    + ", |Y|=" + p.yTotalWidth());
-            return;
-        }
-
-        // Si no hay clases especializadas, puedes usar el Kind del CellType:
-        switch (ct.kind()) {
-            case UNARY    -> System.out.println("   · unary op");
-            case BINARY   -> System.out.println("   · binary op");
-            case MULTIPLEXER -> System.out.println("   · mux family");
-            case REGISTER -> System.out.println("   · register");
-            case MEMORY   -> System.out.println("   · memory");
-            case SIMPLE_GATE -> System.out.println("   · simple gate");
-            case COMPLEX_GATE -> System.out.println("   · complex gate");
-            case FLIP_FLOP -> System.out.println("   · flip-flop gate");
-            default -> { /* nada */ }
+            System.out.println("     attribs: " + attribsStr);
         }
     }
 
+    private static void printNets(VerilogModuleImpl mod, ModuleNetIndex netIndex) {
+        System.out.println("Nets internos: " + netIndex.netIds().size());
+
+        for (int netId : netIndex.netIds()) {
+            System.out.println(" - Net " + netId + ":");
+
+            NetTraversal.visitNet(netIndex, netId, new EndpointVisitor() {
+                @Override public void topPort(int portIdx, int bitIdx) {
+                    ModulePort p = mod.ports().get(portIdx);
+                    System.out.println("    top: " + p.name() + "[" + bitIdx + "] (" + p.direction() + ")");
+                }
+
+                @Override public void cellBit(int cellIdx, int bitIdx) {
+                    VerilogCell cell = mod.cells().get(cellIdx);
+                    // aquí no tengo portName directo, pero sí puedes encontrarlo via endpoints:
+                    // busca el endpoint con ese bitIdx (puedes mejorar esto luego con un PinLocator)
+                    System.out.println("    cell: " + cell.name() + " bit[" + bitIdx + "] type=" + cell.type().typeId());
+                }
+            });
+        }
+    }
+
+
+    /* =========================
+       Helpers para mostrar params/attribs
+       ========================= */
+    private static String paramsToString(CellParams p) {
+        if (p == null) return "";
+        // Si es genérico, imprime el mapa crudo:
+        if (p instanceof GenericCellParams g) {
+            return g.asMap().toString();
+        }
+        // Si tienes clases específicas, dales un toString útil;
+        // por defecto, usa toString():
+        return p.toString();
+    }
+
+    private static String attribsToString(CellAttribs a) {
+        if (a == null) return "";
+        if (a instanceof GenericCellAttribs g) {
+            return g.asMap().toString();
+        }
+        return a.toString();
+    }
+    // fin
 
 
 	private static String promptForCircuitName(JFrame frame,
