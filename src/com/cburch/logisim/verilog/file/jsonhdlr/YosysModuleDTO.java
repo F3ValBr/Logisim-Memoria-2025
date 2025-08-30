@@ -1,6 +1,6 @@
 package com.cburch.logisim.verilog.file.jsonhdlr;
 
-import com.cburch.logisim.verilog.comp.VerilogModuleImpl;
+import com.cburch.logisim.verilog.comp.impl.VerilogModuleImpl;
 import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
 import com.cburch.logisim.verilog.comp.auxiliary.netconn.Direction;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,8 +1,8 @@
 package com.cburch.logisim.verilog.comp.factories;
 
 import com.cburch.logisim.verilog.comp.AbstractVerilogCellFactory;
-import com.cburch.logisim.verilog.comp.ModuleInstanceCellImpl;
-import com.cburch.logisim.verilog.comp.VerilogCell;
+import com.cburch.logisim.verilog.comp.impl.ModuleInstanceCellImpl;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
 import com.cburch.logisim.verilog.comp.specs.ModuleAttribs;

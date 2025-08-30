@@ -1,5 +1,6 @@
-package com.cburch.logisim.verilog.comp;
+package com.cburch.logisim.verilog.comp.impl;
 
+import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;
 

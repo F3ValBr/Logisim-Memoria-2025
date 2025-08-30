@@ -1,5 +1,7 @@
 package com.cburch.logisim.verilog.comp;
 
+import com.cburch.logisim.verilog.comp.impl.VerilogModuleBuilder;
+import com.cburch.logisim.verilog.comp.impl.VerilogModuleImpl;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysJsonNetlist;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
 

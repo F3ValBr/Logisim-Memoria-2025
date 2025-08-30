@@ -2,6 +2,8 @@ package com.cburch.logisim.verilog.comp.factories.wordlvl;
 
 import com.cburch.logisim.verilog.comp.*;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
+import com.cburch.logisim.verilog.comp.impl.WordLvlCellImpl;
 import com.cburch.logisim.verilog.comp.specs.CommonOpAttribs;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;

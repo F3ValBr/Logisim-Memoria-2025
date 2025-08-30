@@ -9,7 +9,6 @@ import java.awt.GridBagLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import javax.swing.*;
 
@@ -29,9 +28,9 @@ import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.util.StringUtil;
 
 import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
-import com.cburch.logisim.verilog.comp.VerilogCell;
-import com.cburch.logisim.verilog.comp.VerilogModuleBuilder;
-import com.cburch.logisim.verilog.comp.VerilogModuleImpl;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
+import com.cburch.logisim.verilog.comp.impl.VerilogModuleBuilder;
+import com.cburch.logisim.verilog.comp.impl.VerilogModuleImpl;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.auxiliary.EndpointVisitor;
 import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
@@ -40,10 +39,7 @@ import com.cburch.logisim.verilog.comp.specs.CellAttribs;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.GenericCellAttribs;
 import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
-import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
-import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOpParams;
-import com.cburch.logisim.verilog.comp.specs.wordlvl.muxparams.*;
-import com.cburch.logisim.verilog.file.jsonhdlr.YosysCellDTO;
+
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysJsonNetlist;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;

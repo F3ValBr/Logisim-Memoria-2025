@@ -1,6 +1,5 @@
-package com.cburch.logisim.verilog.comp;
+package com.cburch.logisim.verilog.comp.impl;
 
-import com.cburch.logisim.instance.Port;
 import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
 
 import java.util.List;

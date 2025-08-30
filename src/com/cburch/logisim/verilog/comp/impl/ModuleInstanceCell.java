@@ -1,4 +1,4 @@
-package com.cburch.logisim.verilog.comp;
+package com.cburch.logisim.verilog.comp.impl;
 
 public interface ModuleInstanceCell extends VerilogCell {
 }

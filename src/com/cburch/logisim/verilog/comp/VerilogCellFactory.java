@@ -1,5 +1,7 @@
 package com.cburch.logisim.verilog.comp;
 
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
+
 import java.util.List;
 import java.util.Map;
 

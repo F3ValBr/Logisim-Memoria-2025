@@ -1,6 +1,6 @@
 package com.cburch.logisim.verilog.layout;
 
-import com.cburch.logisim.verilog.comp.VerilogCell;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
 import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
 import com.cburch.logisim.verilog.comp.auxiliary.netconn.NetBit;

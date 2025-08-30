@@ -1,6 +1,6 @@
 package com.cburch.logisim.verilog.comp.auxiliary;
 
-import com.cburch.logisim.verilog.comp.VerilogCell;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.auxiliary.netconn.Direction;
 
 import java.util.Objects;

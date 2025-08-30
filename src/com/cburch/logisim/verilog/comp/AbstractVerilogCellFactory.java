@@ -3,6 +3,7 @@ package com.cburch.logisim.verilog.comp;
 import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
 import com.cburch.logisim.verilog.comp.auxiliary.PortSignature;
 import com.cburch.logisim.verilog.comp.auxiliary.netconn.*;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 
 import java.util.LinkedHashSet;
 import java.util.List;

@@ -2,6 +2,7 @@ package com.cburch.logisim.verilog.comp;
 
 import com.cburch.logisim.verilog.comp.factories.ModuleInstanceFactory;
 import com.cburch.logisim.verilog.comp.factories.wordlvl.*;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.*;
 
 import java.util.*;
