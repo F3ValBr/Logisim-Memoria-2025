@@ -43,10 +43,10 @@ public class Ram extends Mem {
             Attributes.forBoolean("clearpin", Strings.getter("ramClearPin"));
 
 	private final static Attribute<?>[] ATTRIBUTES = {
-		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS, CLEAR_PIN, StdAttr.TRIGGER
+		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS, StdAttr.TRIGGER, CLEAR_PIN
 	};
 	private final static Object[] DEFAULTS = {
-		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, Boolean.FALSE, StdAttr.TRIG_RISING
+		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, StdAttr.TRIG_RISING, Boolean.FALSE
 	};
 
     private static final class Idx {
