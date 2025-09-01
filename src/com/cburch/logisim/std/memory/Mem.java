@@ -69,8 +69,10 @@ abstract class Mem extends InstanceFactory {
 	}
 	
 	abstract void configurePorts(Instance instance);
+
 	@Override
 	public abstract AttributeSet createAttributeSet();
+
 	abstract MemState getState(InstanceState state);
 	abstract MemState getState(Instance instance, CircuitState state);
 	abstract HexFrame getHexFrame(Project proj, Instance instance, CircuitState state);
