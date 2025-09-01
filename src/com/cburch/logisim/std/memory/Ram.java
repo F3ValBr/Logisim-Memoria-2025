@@ -43,10 +43,10 @@ public class Ram extends Mem {
             Attributes.forBoolean("clearpin", Strings.getter("ramClearPin"));
 
 	private final static Attribute<?>[] ATTRIBUTES = {
-		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS, CLEAR_PIN
+		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS, CLEAR_PIN, StdAttr.TRIGGER
 	};
 	private final static Object[] DEFAULTS = {
-		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, Boolean.FALSE
+		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, Boolean.FALSE, StdAttr.TRIG_RISING
 	};
 
     private static final class Idx {
@@ -84,7 +84,7 @@ public class Ram extends Mem {
     }
 
 
-    private static Object[][] logOptions = new Object[9][];
+    private final static Object[][] logOptions = new Object[9][];
 
 	public Ram() {
 		super("RAM", Strings.getter("ramComponent"), 3);
@@ -101,9 +101,18 @@ public class Ram extends Mem {
     @Override
     protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
         super.instanceAttributeChanged(instance, attr);
+
+        if (attr == ATTR_BUS) {
+            Object bus = instance.getAttributeValue(ATTR_BUS);
+            if (BUS_ASYNCH.equals(bus)) {
+                instance.getAttributeSet().setValue(StdAttr.TRIGGER, StdAttr.TRIG_RISING);
+            }
+        }
+
         instance.recomputeBounds();
         configurePorts(instance);
     }
+
 
     @Override
     void configurePorts(Instance instance) {
@@ -198,11 +207,13 @@ public class Ram extends Mem {
         boolean separate = BUS_SEPARATE.equals(busVal);
         boolean clear    = Boolean.TRUE.equals(attrs.getValue(CLEAR_PIN));
 
+        Object trigger = attrs.getValue(StdAttr.TRIGGER);
+
         Value addrValue   = state.getPort(ADDR);
         boolean chipSelect   = state.getPort(CS) != Value.FALSE;
         boolean outputEnabled= state.getPort(i.OE) != Value.FALSE;
 
-        boolean triggered = asynch || (i.CLK >= 0 && myState.setClock(state.getPort(i.CLK), StdAttr.TRIG_RISING));
+        boolean triggered = asynch || (i.CLK >= 0 && myState.setClock(state.getPort(i.CLK), trigger));
 
         boolean shouldClear = false;
         if (clear && i.CLR >= 0) {
