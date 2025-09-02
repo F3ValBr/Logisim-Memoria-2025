@@ -46,7 +46,7 @@ public class Ram extends Mem {
 		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS, StdAttr.TRIGGER, CLEAR_PIN
 	};
 	private final static Object[] DEFAULTS = {
-		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, StdAttr.TRIG_RISING, Boolean.FALSE
+		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, StdAttr.TRIG_RISING, Boolean.TRUE
 	};
 
     private static final class Idx {
