@@ -52,6 +52,8 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
             }
 
             Bounds bds = comp.getBounds(g);
+            System.out.println(bds.getX());
+            System.out.println(bds.getY());
             if (bds.getX() < 0 || bds.getY() < 0) {
                 throw new CircuitException(Strings.get("negativeCoordError"));
             }
@@ -64,7 +66,7 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
             // 6) PinLocator simple
             PinLocator pins = (port, bit) -> comp.getLocation();
             return new InstanceHandle(comp, pins);
-        } catch (com.cburch.logisim.circuit.CircuitException e) {
+        } catch (CircuitException e) {
             throw new IllegalStateException("No se pudo añadir subcircuito: " + e.getMessage(), e);
         }
     }
