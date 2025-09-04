@@ -19,6 +19,7 @@ public final class ModulePort {
 
     public String name()          { return name; }
     public Direction direction()  { return dir; }
+    public int[] netIds()        { return netIds; }
     public int width()            { return netIds.length; }
     public int netIdAt(int i)     { return netIds[i]; }
 

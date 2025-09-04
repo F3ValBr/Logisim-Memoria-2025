@@ -55,7 +55,7 @@ abstract class Mem extends InstanceFactory {
 	// other constants
 	static final int DELAY = 10;
 
-	private WeakHashMap<Instance,File> currentInstanceFiles;
+	private final WeakHashMap<Instance,File> currentInstanceFiles;
 
 	Mem(String name, StringGetter desc, int extraPorts) {
 		super(name, desc);
