@@ -10,11 +10,11 @@ import com.cburch.logisim.proj.Project;
 
 class ProcessorContentsListener implements HexModelListener {
 	private static class Change extends Action {
-		private ProcessorContentsListener source;
-		private DataContents contents;
-		private long start;
-		private int[] oldValues;
-		private int[] newValues;
+		private final ProcessorContentsListener source;
+		private final DataContents contents;
+		private final long start;
+		private final int[] oldValues;
+		private final int[] newValues;
 		private boolean completed = true;
 		
 		Change(ProcessorContentsListener source, DataContents contents,
@@ -59,9 +59,8 @@ class ProcessorContentsListener implements HexModelListener {
 		
 		@Override
 		public boolean shouldAppendTo(Action other) {
-			if (other instanceof Change) {
-				Change o = (Change) other;
-				long oEnd = o.start + o.newValues.length;
+			if (other instanceof Change o) {
+                long oEnd = o.start + o.newValues.length;
 				long end = start + newValues.length;
 				if (oEnd >= start && end >= o.start) return true;
 			}
@@ -70,9 +69,8 @@ class ProcessorContentsListener implements HexModelListener {
 		
 		@Override
 		public Action append(Action other) {
-			if (other instanceof Change) {
-				Change o = (Change) other;
-				long oEnd = o.start + o.newValues.length;
+			if (other instanceof Change o) {
+                long oEnd = o.start + o.newValues.length;
 				long end = start + newValues.length;
 				if (oEnd >= start && end >= o.start) {
 					long nStart = Math.min(start, o.start);

@@ -1,5 +1,5 @@
-ÜBERSETZER: Bitte alle HMTL-Dateien in der UTF-8-Kodierung speichern.
+ï¿½BERSETZER: Bitte alle HMTL-Dateien in der UTF-8-Kodierung speichern.
 
-ÜBERSETZER: Wenn Du die SVG-Datei nicht bearbeiten kannst, dann übersetze bitte den folgenden Text, den der Autor dann selbst in die SVG-Datei einfügen kann..
+ï¿½BERSETZER: Wenn Du die SVG-Datei nicht bearbeiten kannst, dann ï¿½bersetze bitte den folgenden Text, den der Autor dann selbst in die SVG-Datei einfï¿½gen kann..
 
 ein grafisches Werkzeug zum Entwurf und zur Simulation digitaler Schaltungen

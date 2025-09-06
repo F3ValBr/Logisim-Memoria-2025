@@ -17,6 +17,7 @@ public class RegisterMem implements InstanceData, Cloneable {
     public void setValue(int index, int value) {
         //can't change register 0
         if(index > 0 && index < Register.length) {
+
             Register[index] = value;
         }
     }
