@@ -1,5 +1,6 @@
 package com.cburch.logisim.verilog.file.importer;
 
+import com.cburch.logisim.data.Location;
 import com.cburch.logisim.gui.main.Canvas;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.verilog.comp.CellFactoryRegistry;
@@ -9,10 +10,14 @@ import com.cburch.logisim.verilog.comp.impl.VerilogModuleBuilder;
 import com.cburch.logisim.verilog.comp.impl.VerilogModuleImpl;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysJsonNetlist;
 import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
+import com.cburch.logisim.verilog.layout.LayoutUtils;
 import com.cburch.logisim.verilog.layout.MemoryIndex;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;
-import com.cburch.logisim.verilog.std.adapters.ModuleBlackBoxAdapter;
+import com.cburch.logisim.verilog.layout.builder.LayoutBuilder;
+import com.cburch.logisim.verilog.layout.builder.LayoutRunner;
+import com.cburch.logisim.verilog.std.ComponentAdapterRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.eclipse.elk.graph.ElkNode;
 
 import java.awt.Graphics;
 import java.util.stream.Collectors;
@@ -21,7 +26,7 @@ public final class VerilogJsonImporter {
 
     private final CellFactoryRegistry registry;
     private final VerilogModuleBuilder builder;
-    private final ModuleBlackBoxAdapter adapter = new ModuleBlackBoxAdapter();
+    private final ComponentAdapterRegistry adapter = new ComponentAdapterRegistry();
 
     public VerilogJsonImporter(CellFactoryRegistry registry) {
         this.registry = registry;
@@ -36,8 +41,8 @@ public final class VerilogJsonImporter {
             return;
         }
 
+        // Registro de netlist y canvas
         YosysJsonNetlist netlist = YosysJsonNetlist.from(root);
-
         Canvas canvas = proj.getFrame().getCanvas();
         Graphics g = canvas.getGraphics(); // si es null, el adapter usa fallback
 
@@ -45,28 +50,38 @@ public final class VerilogJsonImporter {
 
         // Recorremos módulos del netlist
         for (YosysModuleDTO dto : (Iterable<YosysModuleDTO>) netlist.modules()::iterator) {
-            // 1) Construir el módulo (puertos + celdas) con tu builder
+            // Construccion del módulo
             VerilogModuleImpl mod = builder.buildModule(dto);
 
             System.out.println("== Módulo: " + mod.name() + " ==");
-
-            // 2) Imprimir puertos del módulo
             printModulePorts(mod);
 
-            // 3) Instanciar CADA celda como subcircuito (caja negra) en el circuito visible
-            for (VerilogCell cell : mod.cells()) {
-                printCellSummary(cell);
-                adapter.create(canvas, g, cell);  // ← coloca una “caja” con etiqueta = nombre de la cell
-                totalCells++;
-            }
-
-            // 4) Nets internos (opcional: para debug)
+            // Creación de nets y memorias a partir de la info del módulo
             ModuleNetIndex netIndex = builder.buildNetIndex(mod);
             printNets(mod, netIndex);
 
-            // 5) (Opcional) memorias recogidas (vía MemoryIndex)
             MemoryIndex memIndex = builder.buildMemoryIndex(mod);
             printMemories(memIndex);
+
+            // Creación del layout
+            LayoutBuilder.Result elk = LayoutBuilder.build(mod, netIndex);
+            LayoutRunner.run(elk.root);
+
+            // Aplicar el layout al módulo (y clamping a coordenadas positivas)
+            LayoutUtils.applyLayoutAndClamp(elk.root, 50, 50);
+
+            // Por cada celda, obtener su nodo ELK y ubicar la caja en esas coordenadas
+            for (VerilogCell cell : mod.cells()) {
+                printCellSummary(cell);
+                ElkNode n = elk.cellNode.get(cell);
+                int x = snap((int)Math.round(n.getX()));
+                int y = snap((int)Math.round(n.getY()));
+                Location where = Location.create(x, y);
+
+                // Instancia la caja en where y etiqueta con cell.name()
+                adapter.create(canvas, g, cell, where);
+                totalCells++;
+            }
 
             System.out.println();
         }
@@ -78,6 +93,8 @@ public final class VerilogJsonImporter {
     /* =========================
        Helpers de impresión
        ========================= */
+
+    private static int snap(int v){ return (v/10)*10; }
 
     private static void printModulePorts(VerilogModuleImpl mod) {
         if (mod.ports().isEmpty()) {
@@ -114,32 +131,29 @@ public final class VerilogJsonImporter {
     private static void printNets(VerilogModuleImpl mod, ModuleNetIndex idx) {
         System.out.println("  Nets:");
         for (int netId : idx.netIds()) {
+            int[] refs = idx.endpointsOf(netId).stream().mapToInt(i -> i).toArray();
+
+            var topStrs  = new java.util.ArrayList<String>();
+            var cellStrs = new java.util.ArrayList<String>();
+
+            for (int ref : refs) {
+                int bit = ModuleNetIndex.bitIdx(ref);
+                if (ModuleNetIndex.isTop(ref)) {
+                    int portIdx = ModuleNetIndex.ownerIdx(ref);
+                    ModulePort p = mod.ports().get(portIdx);
+                    topStrs.add(p.name() + "[" + bit + "]");
+                } else {
+                    int cellIdx = ModuleNetIndex.ownerIdx(ref);
+                    VerilogCell c = mod.cells().get(cellIdx);
+                    cellStrs.add(c.name() + "[" + bit + "]");
+                }
+            }
+
             StringBuilder sb = new StringBuilder();
             sb.append("    net ").append(netId).append(": ");
-
-            // top ports
-            var tops = new java.util.ArrayList<String>();
-            NetTraversal.visitNet(idx, netId, new EndpointVisitor() {
-                @Override public void topPort(int portIdx, int bitIdx) {
-                    ModulePort p = mod.ports().get(portIdx);
-                    tops.add(p.name() + "[" + bitIdx + "]");
-                }
-                @Override public void cellBit(int cellIdx, int bitIdx) { /* no-op aquí */ }
-            });
-            if (!tops.isEmpty()) sb.append("top=").append(tops).append(" ");
-
-            // cell endpoints
-            var cells = new java.util.ArrayList<String>();
-            NetTraversal.visitNet(idx, netId, new EndpointVisitor() {
-                @Override public void topPort(int portIdx, int bitIdx) { /* ya listado */ }
-                @Override public void cellBit(int cellIdx, int bitIdx) {
-                    VerilogCell c = mod.cells().get(cellIdx);
-                    cells.add(c.name() + "[" + bitIdx + "]");
-                }
-            });
-            if (!cells.isEmpty()) sb.append("cells=").append(cells);
-
-            System.out.println(sb.toString());
+            if (!topStrs.isEmpty())  sb.append("top=").append(topStrs).append(" ");
+            if (!cellStrs.isEmpty()) sb.append("cells=").append(cellStrs);
+            System.out.println(sb);
         }
     }
 

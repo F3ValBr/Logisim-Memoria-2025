@@ -27,7 +27,7 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
     @Override public boolean accepts(CellType t) { return true; } // fallback universal
 
     @Override
-    public InstanceHandle create(Canvas canvas, Graphics g, VerilogCell cell) {
+    public InstanceHandle create(Canvas canvas, Graphics g, VerilogCell cell, Location where) {
         try {
             Project proj = canvas.getProject();
             Circuit newCirc = new Circuit(safeName(cell.name()));
@@ -38,11 +38,8 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
             InstanceFactory f = new SubcircuitFactory(newCirc);
             AttributeSet attrs = f.createAttributeSet();
 
-            attrs.setValue(StdAttr.LABEL, cell.name());
+            attrs.setValue(StdAttr.LABEL, cell.typeId());
             attrs.setValue(CircuitAttributes.LABEL_LOCATION_ATTR, Direction.NORTH);
-
-            // 3) Elegir ubicación (puedes mejorar con layout/ELK)
-            Location where = autoPlace(currentCirc);
 
             // 4) Añadir con acción (undo/redo)
             Component comp = f.createComponent(where, attrs);
@@ -52,8 +49,6 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
             }
 
             Bounds bds = comp.getBounds(g);
-            System.out.println(bds.getX());
-            System.out.println(bds.getY());
             if (bds.getX() < 0 || bds.getY() < 0) {
                 throw new CircuitException(Strings.get("negativeCoordError"));
             }
@@ -73,15 +68,6 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
 
     private static String safeName(String n) {
         return (n == null || n.isBlank()) ? "unnamed" : n;
-    }
-
-    private Location autoPlace(Circuit parent) {
-        // Heurística mínima: deja todo en grilla.
-        int x = 100 + (int)(Math.random() * 400);
-        int y = 100 + (int)(Math.random() * 200);
-        x = (x / 10) * 10;
-        y = (y / 10) * 10;
-        return Location.create(x, y);
     }
 }
 
