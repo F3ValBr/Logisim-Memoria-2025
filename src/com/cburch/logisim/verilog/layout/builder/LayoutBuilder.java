@@ -27,6 +27,7 @@ public final class LayoutBuilder {
         public Result(ElkNode root){ this.root = root; }
     }
 
+    // TODO: modificar esto para adaptar el layout
     public static Result build(VerilogModuleImpl mod, ModuleNetIndex netIdx) {
         ElkNode root = ElkGraphUtil.createGraph();
         // opciones típicas del alg. layered

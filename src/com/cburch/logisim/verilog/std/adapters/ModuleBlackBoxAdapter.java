@@ -8,6 +8,7 @@ import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.Bounds;
 import com.cburch.logisim.data.Direction;
 import com.cburch.logisim.data.Location;
+import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.file.LogisimFileActions;
 import com.cburch.logisim.gui.main.Canvas;
 import com.cburch.logisim.instance.InstanceFactory;
@@ -30,15 +31,20 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
     public InstanceHandle create(Canvas canvas, Graphics g, VerilogCell cell, Location where) {
         try {
             Project proj = canvas.getProject();
-            Circuit newCirc = new Circuit(safeName(cell.name()));
             Circuit currentCirc = canvas.getCircuit();
 
-            proj.doAction(LogisimFileActions.addCircuit(newCirc));
+            String modName = safeName(cell.name());
 
-            InstanceFactory f = new SubcircuitFactory(newCirc);
+            Circuit newCirc = findCircuit(proj.getLogisimFile(), modName);
+            if (newCirc == null) {
+                newCirc = new Circuit(modName);
+                proj.doAction(LogisimFileActions.addCircuit(newCirc));
+            }
+
+            InstanceFactory f = newCirc.getSubcircuitFactory();
             AttributeSet attrs = f.createAttributeSet();
 
-            attrs.setValue(StdAttr.LABEL, cell.typeId());
+            attrs.setValue(StdAttr.LABEL, cell.name());
             attrs.setValue(CircuitAttributes.LABEL_LOCATION_ATTR, Direction.NORTH);
 
             // 4) Añadir con acción (undo/redo)
@@ -68,6 +74,13 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
 
     private static String safeName(String n) {
         return (n == null || n.isBlank()) ? "unnamed" : n;
+    }
+
+    private static Circuit findCircuit(LogisimFile file, String name) {
+        for (Circuit c : file.getCircuits()) {
+            if (c.getName().equals(name)) return c;
+        }
+        return null;
     }
 }
 

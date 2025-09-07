@@ -1,0 +1,148 @@
+package com.cburch.logisim.verilog.std.adapters.wordlvl;
+
+// MuxOpAdapter.java
+
+import com.cburch.logisim.circuit.Circuit;
+import com.cburch.logisim.circuit.CircuitException;
+import com.cburch.logisim.circuit.CircuitMutation;
+import com.cburch.logisim.comp.Component;
+import com.cburch.logisim.comp.ComponentFactory;
+import com.cburch.logisim.data.AttributeSet;
+import com.cburch.logisim.data.BitWidth;
+import com.cburch.logisim.data.Bounds;
+import com.cburch.logisim.data.Location;
+import com.cburch.logisim.gui.main.Canvas;
+import com.cburch.logisim.instance.StdAttr;
+import com.cburch.logisim.proj.Project;
+import com.cburch.logisim.tools.Library;
+import com.cburch.logisim.verilog.comp.auxiliary.CellType;
+import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
+import com.cburch.logisim.verilog.comp.impl.VerilogCell;
+import com.cburch.logisim.verilog.comp.specs.CellParams;
+import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
+import com.cburch.logisim.verilog.comp.specs.wordlvl.MuxOp;
+import com.cburch.logisim.verilog.std.ComponentAdapter;
+import com.cburch.logisim.verilog.std.InstanceHandle;
+import com.cburch.logisim.verilog.std.PinLocator;
+import com.cburch.logisim.verilog.std.Strings;
+import com.cburch.logisim.verilog.std.adapters.ModuleBlackBoxAdapter;
+
+import java.awt.Graphics;
+
+public final class MuxOpAdapter implements ComponentAdapter {
+
+    private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
+
+    @Override
+    public boolean accepts(CellType t) {
+        return t != null && t.isWordLevel() && t.isMultiplexer();
+    }
+
+    @Override
+    public InstanceHandle create(Canvas canvas, Graphics g, VerilogCell cell, Location where) {
+        final MuxOp op;
+        try {
+            op = MuxOp.fromYosys(cell.type().typeId());
+        } catch (Exception e) {
+            // tipo desconocido → fallback
+            return fallback.create(canvas, g, cell, where);
+        }
+
+        ComponentFactory factory = pickFactoryOrNull(canvas.getProject(), op);
+        if (factory == null) {
+            // No hay mapeo nativo → subcircuito
+            return fallback.create(canvas, g, cell, where);
+        }
+
+        int width = guessWidth(cell.params()); // WIDTH de datos (si existe)
+
+        try {
+            Project proj = canvas.getProject();
+            Circuit circ = canvas.getCircuit();
+
+            AttributeSet attrs = factory.createAttributeSet();
+
+            // Intentar fijar ancho de bus (cuando el factory expose StdAttr.WIDTH)
+            try {
+                attrs.setValue(StdAttr.WIDTH, BitWidth.create(width));
+            } catch (Exception ignore) { }
+
+            // Etiqueta visible
+            try {
+                attrs.setValue(StdAttr.LABEL, cell.name());
+            } catch (Exception ignore) { }
+
+            // Nota: Multiplexer/Demultiplexer en Logisim determinan #entradas/salidas con los "Select Bits".
+            // Para $mux/$demux de 2-vías, suele ser el valor por defecto (1). Si quisieras setearlo:
+            // usa el atributo de “Select Bits” si tu build lo expone. Lo omitimos para mantener compatibilidad.
+
+            Component comp = factory.createComponent(where, attrs);
+
+            if (circ.hasConflict(comp)) throw new CircuitException(Strings.get("exclusiveError"));
+            Bounds b = comp.getBounds(g);
+            if (b.getX() < 0 || b.getY() < 0) throw new CircuitException(Strings.get("negativeCoordError"));
+
+            CircuitMutation m = new CircuitMutation(circ);
+            m.add(comp);
+            proj.doAction(m.toAction(Strings.getter("addComponentAction", factory.getDisplayGetter())));
+
+            PinLocator pins = (port, bit) -> comp.getLocation(); // placeholder
+            return new InstanceHandle(comp, pins);
+
+        } catch (CircuitException e) {
+            throw new IllegalStateException("No se pudo añadir " + op + ": " + e.getMessage(), e);
+        }
+    }
+
+    /** Selecciona el ComponentFactory nativo de Logisim para cada op soportada. */
+    private static ComponentFactory pickFactoryOrNull(Project proj, MuxOp op) {
+        switch (op) {
+            case MUX: {
+                Library plex = proj.getLogisimFile().getLibrary("Plexers");
+                return FactoryLookup.findFactory(plex, "Multiplexer");
+            }
+            case DEMUX: {
+                Library plex = proj.getLogisimFile().getLibrary("Plexers");
+                return FactoryLookup.findFactory(plex, "Demultiplexer");
+            }
+            case TRIBUF: {
+                Library wiring = proj.getLogisimFile().getLibrary("Wiring");
+                // El nombre visible suele ser “Tri-State Buffer”
+                ComponentFactory f = FactoryLookup.findFactory(wiring, "Tri-State Buffer");
+                if (f == null) {
+                    // Algunas builds lo muestran como “Tristate Buffer”
+                    f = FactoryLookup.findFactory(wiring, "Tristate Buffer");
+                }
+                return f;
+            }
+            // No hay equivalente directo:
+            case PMUX:
+            case BMUX:
+            case BWMUX:
+            default:
+                return null;
+        }
+    }
+
+    private static int guessWidth(CellParams params) {
+        if (params instanceof GenericCellParams g) {
+            Object w = g.asMap().get("WIDTH");
+            int width = parseIntRelaxed(w, 1);
+            return Math.max(1, width);
+        }
+        return 1;
+    }
+
+    private static int parseIntRelaxed(Object v, int def) {
+        if (v == null) return def;
+        if (v instanceof Number n) return n.intValue();
+        String s = String.valueOf(v).trim();
+        if (s.isEmpty()) return def;
+        if (s.matches("[01xXzZ]+")) {
+            s = s.replaceAll("[xXzZ]", "0");
+            try { return Integer.parseInt(s, 2); } catch (Exception ignore) { return def; }
+        }
+        try { return Integer.parseInt(s); } catch (Exception e) { return def; }
+    }
+}
+

@@ -16,6 +16,9 @@ import com.cburch.logisim.verilog.layout.ModuleNetIndex;
 import com.cburch.logisim.verilog.layout.builder.LayoutBuilder;
 import com.cburch.logisim.verilog.layout.builder.LayoutRunner;
 import com.cburch.logisim.verilog.std.ComponentAdapterRegistry;
+import com.cburch.logisim.verilog.std.adapters.wordlvl.BinaryOpAdapter;
+import com.cburch.logisim.verilog.std.adapters.wordlvl.MuxOpAdapter;
+import com.cburch.logisim.verilog.std.adapters.wordlvl.UnaryOpAdapter;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.elk.graph.ElkNode;
 
@@ -26,7 +29,11 @@ public final class VerilogJsonImporter {
 
     private final CellFactoryRegistry registry;
     private final VerilogModuleBuilder builder;
-    private final ComponentAdapterRegistry adapter = new ComponentAdapterRegistry();
+    private final ComponentAdapterRegistry adapter = new ComponentAdapterRegistry()
+            .register(new UnaryOpAdapter())
+            .register(new BinaryOpAdapter())
+            .register(new MuxOpAdapter())
+            ;
 
     public VerilogJsonImporter(CellFactoryRegistry registry) {
         this.registry = registry;
