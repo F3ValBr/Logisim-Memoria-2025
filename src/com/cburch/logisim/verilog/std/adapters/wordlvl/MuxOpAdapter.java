@@ -4,12 +4,10 @@ package com.cburch.logisim.verilog.std.adapters.wordlvl;
 
 import com.cburch.logisim.circuit.Circuit;
 import com.cburch.logisim.circuit.CircuitException;
-import com.cburch.logisim.circuit.CircuitMutation;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.BitWidth;
-import com.cburch.logisim.data.Bounds;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.gui.main.Canvas;
 import com.cburch.logisim.instance.StdAttr;
@@ -21,15 +19,12 @@ import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.MuxOp;
-import com.cburch.logisim.verilog.std.ComponentAdapter;
-import com.cburch.logisim.verilog.std.InstanceHandle;
-import com.cburch.logisim.verilog.std.PinLocator;
-import com.cburch.logisim.verilog.std.Strings;
+import com.cburch.logisim.verilog.std.*;
 import com.cburch.logisim.verilog.std.adapters.ModuleBlackBoxAdapter;
 
 import java.awt.Graphics;
 
-public final class MuxOpAdapter implements ComponentAdapter {
+public final class MuxOpAdapter extends AbstractComponentAdapter {
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
 
@@ -49,6 +44,7 @@ public final class MuxOpAdapter implements ComponentAdapter {
         }
 
         ComponentFactory factory = pickFactoryOrNull(canvas.getProject(), op);
+
         if (factory == null) {
             // No hay mapeo nativo → subcircuito
             return fallback.create(canvas, g, cell, where);
@@ -76,19 +72,10 @@ public final class MuxOpAdapter implements ComponentAdapter {
             // Para $mux/$demux de 2-vías, suele ser el valor por defecto (1). Si quisieras setearlo:
             // usa el atributo de “Select Bits” si tu build lo expone. Lo omitimos para mantener compatibilidad.
 
-            Component comp = factory.createComponent(where, attrs);
-
-            if (circ.hasConflict(comp)) throw new CircuitException(Strings.get("exclusiveError"));
-            Bounds b = comp.getBounds(g);
-            if (b.getX() < 0 || b.getY() < 0) throw new CircuitException(Strings.get("negativeCoordError"));
-
-            CircuitMutation m = new CircuitMutation(circ);
-            m.add(comp);
-            proj.doAction(m.toAction(Strings.getter("addComponentAction", factory.getDisplayGetter())));
-
+            Component comp = addComponent(proj, circ, g, factory, where, attrs);
             PinLocator pins = (port, bit) -> comp.getLocation(); // placeholder
-            return new InstanceHandle(comp, pins);
 
+            return new InstanceHandle(comp, pins);
         } catch (CircuitException e) {
             throw new IllegalStateException("No se pudo añadir " + op + ": " + e.getMessage(), e);
         }
@@ -131,18 +118,6 @@ public final class MuxOpAdapter implements ComponentAdapter {
             return Math.max(1, width);
         }
         return 1;
-    }
-
-    private static int parseIntRelaxed(Object v, int def) {
-        if (v == null) return def;
-        if (v instanceof Number n) return n.intValue();
-        String s = String.valueOf(v).trim();
-        if (s.isEmpty()) return def;
-        if (s.matches("[01xXzZ]+")) {
-            s = s.replaceAll("[xXzZ]", "0");
-            try { return Integer.parseInt(s, 2); } catch (Exception ignore) { return def; }
-        }
-        try { return Integer.parseInt(s); } catch (Exception e) { return def; }
     }
 }
 

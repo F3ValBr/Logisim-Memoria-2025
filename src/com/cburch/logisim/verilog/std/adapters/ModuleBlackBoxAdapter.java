@@ -5,7 +5,6 @@ import com.cburch.logisim.circuit.*;
 import com.cburch.logisim.comp.Component;
 
 import com.cburch.logisim.data.AttributeSet;
-import com.cburch.logisim.data.Bounds;
 import com.cburch.logisim.data.Direction;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.file.LogisimFile;
@@ -13,27 +12,33 @@ import com.cburch.logisim.file.LogisimFileActions;
 import com.cburch.logisim.gui.main.Canvas;
 import com.cburch.logisim.instance.InstanceFactory;
 import com.cburch.logisim.instance.StdAttr;
+import com.cburch.logisim.proj.Dependencies;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
-import com.cburch.logisim.verilog.std.ComponentAdapter;
-import com.cburch.logisim.verilog.std.InstanceHandle;
-import com.cburch.logisim.verilog.std.PinLocator;
-import com.cburch.logisim.verilog.std.Strings;
+import com.cburch.logisim.verilog.std.*;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
-public final class ModuleBlackBoxAdapter implements ComponentAdapter {
+public final class ModuleBlackBoxAdapter extends AbstractComponentAdapter {
 
     @Override public boolean accepts(CellType t) { return true; } // fallback universal
 
     @Override
-    public InstanceHandle create(Canvas canvas, Graphics g, VerilogCell cell, Location where) {
+    public InstanceHandle create(Canvas canvas, Graphics gMaybeNull, VerilogCell cell, Location where) {
         try {
             Project proj = canvas.getProject();
             Circuit currentCirc = canvas.getCircuit();
 
-            String modName = safeName(cell.name());
+            // Graphics de respaldo si viene null
+            Graphics g = gMaybeNull;
+            if (g == null) {
+                var img = new BufferedImage(1,1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                g = img.getGraphics();
+            }
+
+            String modName = safeName(cell.type().typeId());
 
             Circuit newCirc = findCircuit(proj.getLogisimFile(), modName);
             if (newCirc == null) {
@@ -41,34 +46,33 @@ public final class ModuleBlackBoxAdapter implements ComponentAdapter {
                 proj.doAction(LogisimFileActions.addCircuit(newCirc));
             }
 
-            InstanceFactory f = newCirc.getSubcircuitFactory();
-            AttributeSet attrs = f.createAttributeSet();
+            if (newCirc == currentCirc) {
+                canvas.setErrorMessage(Strings.getter("circularError"));
+                return null;
+            }
+
+            Dependencies depends = proj.getDependencies();
+
+            if (!depends.canAdd(currentCirc, newCirc)) {
+                canvas.setErrorMessage(Strings.getter("circularError"));
+                return null;
+            }
+
+            InstanceFactory factory = newCirc.getSubcircuitFactory();
+            AttributeSet attrs = factory.createAttributeSet();
 
             attrs.setValue(StdAttr.LABEL, cell.name());
             attrs.setValue(CircuitAttributes.LABEL_LOCATION_ATTR, Direction.NORTH);
 
             // 4) Añadir con acción (undo/redo)
-            Component comp = f.createComponent(where, attrs);
-
-            if (currentCirc.hasConflict(comp)) {
-                throw new CircuitException(Strings.get("exclusiveError"));
-            }
-
-            Bounds bds = comp.getBounds(g);
-            if (bds.getX() < 0 || bds.getY() < 0) {
-                throw new CircuitException(Strings.get("negativeCoordError"));
-            }
-
-            // 5) Añadir con acción (undo/redo)
-            CircuitMutation m = new CircuitMutation(currentCirc);
-            m.add(comp);
-            proj.doAction(m.toAction(Strings.getter("addComponentAction", f.getDisplayGetter())));
-
+            Component comp = addComponent(proj, currentCirc, g, factory, where, attrs);
             // 6) PinLocator simple
             PinLocator pins = (port, bit) -> comp.getLocation();
             return new InstanceHandle(comp, pins);
         } catch (CircuitException e) {
             throw new IllegalStateException("No se pudo añadir subcircuito: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("Error inesperado al añadir subcircuito: " + e.getMessage(), e);
         }
     }
 

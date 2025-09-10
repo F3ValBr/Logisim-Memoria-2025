@@ -9,6 +9,7 @@ import com.cburch.logisim.verilog.layout.endpoints.EndpointRef;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;
 import com.cburch.logisim.verilog.layout.endpoints.TopPortRef;
 import org.eclipse.elk.alg.layered.options.LayeredOptions;
+import org.eclipse.elk.core.options.EdgeRouting;
 import org.eclipse.elk.graph.*;
 import org.eclipse.elk.graph.util.ElkGraphUtil;
 import org.eclipse.elk.core.options.CoreOptions;
@@ -23,7 +24,7 @@ public final class LayoutBuilder {
         public final ElkNode root;
         // mapas para volver a ubicar
         public final Map<VerilogCell, ElkNode> cellNode = new HashMap<>();
-        public final Map<ModulePort, ElkNode> topNode   = new HashMap<>();
+        public final Map<ModulePort, ElkNode> portNode   = new HashMap<>();
         public Result(ElkNode root){ this.root = root; }
     }
 
@@ -33,6 +34,8 @@ public final class LayoutBuilder {
         // opciones típicas del alg. layered
         root.setProperty(CoreOptions.ALGORITHM, "org.eclipse.elk.layered");
         root.setProperty(LayeredOptions.SPACING_NODE_NODE, 50.0);
+        root.setProperty(CoreOptions.SPACING_COMPONENT_COMPONENT, 60.0);
+        root.setProperty(LayeredOptions.EDGE_ROUTING, EdgeRouting.POLYLINE);
         root.setProperty(CoreOptions.DIRECTION, org.eclipse.elk.core.options.Direction.RIGHT);
         root.setProperty(LayeredOptions.CONSIDER_MODEL_ORDER_STRATEGY, LayeredOptions.CONSIDER_MODEL_ORDER_STRATEGY.getDefault());
 
@@ -62,7 +65,7 @@ public final class LayoutBuilder {
             lbl.setText(p.name());
             // fija el lado (opcional): entradas a la izquierda, salidas a la derecha
             // no hay API directa para "pin to border" sin comp, pero layered tenderá a ubicarlos en extremos si los conectas bien.
-            r.topNode.put(p, n);
+            r.portNode.put(p, n);
         }
 
         // 3) Aristas: una por net
@@ -75,7 +78,7 @@ public final class LayoutBuilder {
                 if (ep.isTop()) {
                     TopPortRef t = (TopPortRef) ep;
                     ModulePort p = mod.ports().get(t.topPortIdx());
-                    touched.add(r.topNode.get(p));
+                    touched.add(r.portNode.get(p));
                 } else {
                     CellPortRef c = (CellPortRef) ep;
                     VerilogCell vc = mod.cells().get(c.cellIdx());
