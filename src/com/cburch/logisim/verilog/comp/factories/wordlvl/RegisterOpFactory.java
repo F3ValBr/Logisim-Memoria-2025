@@ -27,24 +27,7 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
 
         RegisterOp op = RegisterOp.fromYosys(typeId);
 
-        RegisterOpParams params = switch (op) {
-            // base
-            case DFF    -> new DFFParams(parameters);
-            case ADFF   -> new ADFFParams(parameters);
-            case ALDFF  -> new AlDFFParams(parameters);
-            case DFFSR  -> new DFFSRParams(parameters);
-            case SDFF   -> new SDFFParams(parameters);
-
-            // + enable
-            case DFFE   -> new DFFEParams(parameters);
-            case ADFFE  -> new ADFFEParams(parameters);
-            case ALDFFE -> new AlDFFEParams(parameters);
-            case DFFSRE -> new DFFSREParams(parameters);
-            case SDFFE  -> new SDFFEParams(parameters);
-            case SDFFCE -> new SDFFCEParams(parameters);
-
-            default     -> new GenericRegisterParams(parameters); // fallback
-        };
+        RegisterOpParams params = getRegisterOpParams(op, parameters);
 
         var attribs = new RegisterAttribs(attributes);
         VerilogCell cell = new WordLvlCellImpl(name, CellType.fromYosys(typeId), params, attribs);
@@ -78,6 +61,27 @@ public class RegisterOpFactory extends AbstractVerilogCellFactory implements Ver
         }
 
         return cell;
+    }
+
+    private static RegisterOpParams getRegisterOpParams(RegisterOp op, Map<String,String> parameters) {
+        return switch (op) {
+            // base
+            case DFF    -> new DFFParams(parameters);
+            case ADFF   -> new ADFFParams(parameters);
+            case ALDFF  -> new AlDFFParams(parameters);
+            case DFFSR  -> new DFFSRParams(parameters);
+            case SDFF   -> new SDFFParams(parameters);
+
+            // + enable
+            case DFFE   -> new DFFEParams(parameters);
+            case ADFFE  -> new ADFFEParams(parameters);
+            case ALDFFE -> new AlDFFEParams(parameters);
+            case DFFSRE -> new DFFSREParams(parameters);
+            case SDFFE  -> new SDFFEParams(parameters);
+            case SDFFCE -> new SDFFCEParams(parameters);
+
+            default     -> new GenericRegisterParams(parameters); // fallback
+        };
     }
 
     private static void requirePortWidth(VerilogCell cell, String port, int expected) {

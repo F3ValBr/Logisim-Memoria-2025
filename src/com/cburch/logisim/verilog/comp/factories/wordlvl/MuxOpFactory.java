@@ -35,8 +35,8 @@ public class MuxOpFactory extends AbstractVerilogCellFactory implements VerilogC
         final MuxOpParams parameters = getMuxOpParams(op, params);
 
         // 3) Attribs + cell creation
-        final var attributes = new CommonOpAttribs(attribs); // or GenericCellAttribs
-        final var cell = new WordLvlCellImpl(name, CellType.fromYosys(typeId), parameters, attributes);
+        final CommonOpAttribs attributes = new CommonOpAttribs(attribs); // or GenericCellAttribs
+        final WordLvlCellImpl cell = new WordLvlCellImpl(name, CellType.fromYosys(typeId), parameters, attributes);
 
         // 4) Endpoints
         buildEndpoints(cell, ports, connections);
