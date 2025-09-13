@@ -15,6 +15,7 @@ import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
+import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
@@ -24,7 +25,8 @@ import com.cburch.logisim.verilog.std.adapters.ModuleBlackBoxAdapter;
 
 import java.awt.Graphics;
 
-public final class BinaryOpAdapter extends AbstractComponentAdapter {
+public final class BinaryOpAdapter extends AbstractComponentAdapter
+                                    implements SupportsFactoryLookup {
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
 
@@ -79,6 +81,12 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter {
         } catch (CircuitException e) {
             throw new IllegalStateException("No se pudo añadir " + op + ": " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
+        BinaryOp op = BinaryOp.fromYosys(cell.type().typeId());
+        return pickFactoryOrNull(proj, op);
     }
 
     /** Selecciona el ComponentFactory nativo de Logisim según la operación. */

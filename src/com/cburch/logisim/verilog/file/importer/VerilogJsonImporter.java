@@ -24,6 +24,8 @@ import com.cburch.logisim.verilog.file.jsonhdlr.YosysModuleDTO;
 import com.cburch.logisim.verilog.layout.LayoutUtils;
 import com.cburch.logisim.verilog.layout.MemoryIndex;
 import com.cburch.logisim.verilog.layout.ModuleNetIndex;
+import com.cburch.logisim.verilog.layout.auxiliary.DefaultNodeSizer;
+import com.cburch.logisim.verilog.layout.auxiliary.NodeSizer;
 import com.cburch.logisim.verilog.layout.builder.LayoutBuilder;
 import com.cburch.logisim.verilog.layout.builder.LayoutRunner;
 import com.cburch.logisim.verilog.std.ComponentAdapterRegistry;
@@ -48,6 +50,7 @@ public final class VerilogJsonImporter {
             .register(new MuxOpAdapter())
             .register(new RegisterOpAdapter())
             ;
+    NodeSizer sizer = new DefaultNodeSizer(adapter);
 
     private static final int GRID  = 10;
     private static final int MIN_X = 100;
@@ -89,7 +92,7 @@ public final class VerilogJsonImporter {
             printMemories(memIndex);
 
             // Creación del layout
-            LayoutBuilder.Result elk = LayoutBuilder.build(mod, netIndex);
+            LayoutBuilder.Result elk = LayoutBuilder.build(proj, mod, netIndex, sizer);
             LayoutRunner.run(elk.root);
 
             // Aplicar el layout al módulo (y clamping a coordenadas positivas)

@@ -21,4 +21,5 @@ public final class ComponentAdapterRegistry {
         // fallback universal
         return new ModuleBlackBoxAdapter().create(canvas, g, cell, where);
     }
+    public List<ComponentAdapter> getAdapters(){ return adapters; }
 }

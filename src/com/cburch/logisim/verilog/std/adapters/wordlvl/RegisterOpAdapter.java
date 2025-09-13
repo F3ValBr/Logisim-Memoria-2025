@@ -14,6 +14,7 @@ import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
+import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
@@ -24,7 +25,8 @@ import java.awt.Graphics;
 import java.util.Locale;
 import java.util.Map;
 
-public final class RegisterOpAdapter extends AbstractComponentAdapter {
+public final class RegisterOpAdapter extends AbstractComponentAdapter
+                                     implements SupportsFactoryLookup {
 
     // Names esperados en tu Register (cámbialos si usaste otros):
     private static final String A_REG_HAS_EN       = "regHasEnable";
@@ -111,6 +113,11 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter {
         } catch (CircuitException e) {
             throw new IllegalStateException("No se pudo añadir Register: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
+        return pickRegisterFactory(proj);
     }
 
     /* ================= helpers ================= */
