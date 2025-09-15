@@ -39,7 +39,7 @@ public final class DefaultNodeSizer implements NodeSizer {
         ComponentFactory f = peekFactoryForCell(proj, cell);
         if (f == null) {
             // fallback razonable
-            Dimension d = new Dimension(60, 40);
+            Dimension d = new Dimension(60, 60);
             byTypeCache.put(key, d);
             return d;
         }
@@ -60,8 +60,29 @@ public final class DefaultNodeSizer implements NodeSizer {
 
     @Override
     public Dimension sizeForTopPort(ModulePort port) {
-        // Sencillo: un “pin” compacto
-        return new Dimension(Math.max(20, 8 + port.width()*2), 20);
+        final int bits = Math.max(1, port.width());
+
+        // Reglas: 8 bits por fila (→ 4 casillas de 20 px porque 2 bits/casilla), hasta 4 filas.
+        final int bitsPerRow = 8;
+        final int maxRows = 4;
+
+        // Filas necesarias (cap a 4)
+        int rows = Math.min( (bits + bitsPerRow - 1) / bitsPerRow, maxRows );
+
+        // Bits visibles en la fila más ancha (cap a 8)
+        int rowBits = Math.min(bits, bitsPerRow);
+
+        // Casillas horizontales: 2 bits por casilla → ceil(rowBits / 2)
+        int boxes = (rowBits + 2 - 1) / 2; // ceil
+
+        int w = boxes * 20;   // 1 casilla = 20 px
+        int h = rows  * 20;   // 1 fila    = 20 px
+
+        // Límites: mínimo 20×20, máximo 80×80
+        w = Math.max(20, Math.min(80, w));
+        h = Math.max(20, Math.min(80, h));
+
+        return new Dimension(w, h);
     }
 
     /* ===== helpers ===== */
@@ -78,7 +99,7 @@ public final class DefaultNodeSizer implements NodeSizer {
     }
 
     private ComponentFactory peekFactoryForCell(Project proj, VerilogCell cell) {
-        // Le pedimos al registry que nos diga qué adapter lo aceptaría
+        // Ver con registry qué adapter lo aceptaría
         for (ComponentAdapter a : adapters.getAdapters()) {
             if (a.accepts(cell.type()) && a instanceof SupportsFactoryLookup sfl) {
                 return sfl.peekFactory(proj, cell); // puede devolver null

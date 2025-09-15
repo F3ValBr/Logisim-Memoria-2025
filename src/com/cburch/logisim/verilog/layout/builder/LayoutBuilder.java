@@ -17,9 +17,7 @@ import org.eclipse.elk.graph.*;
 import org.eclipse.elk.graph.util.ElkGraphUtil;
 import org.eclipse.elk.core.options.CoreOptions;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
+import java.util.*;
 
 public final class LayoutBuilder {
     public static class Result {
@@ -44,11 +42,12 @@ public final class LayoutBuilder {
         // Inicio del proceso de layout
         Result r = new Result(root);
 
-        // 1) Celdas
+        // 1) Celdas internas como nodos
         for (VerilogCell cell : mod.cells()) {
             ElkNode n = ElkGraphUtil.createNode(root);
 
-            java.awt.Dimension d = sizer.sizeForCell(proj, cell);
+            // Sizing desde factories reales (siempre con mínimos de seguridad)
+            java.awt.Dimension d = (sizer != null) ? sizer.sizeForCell(proj, cell) : new java.awt.Dimension(60, 40);
             n.setWidth(Math.max(30, d.width));
             n.setHeight(Math.max(20, d.height));
 
@@ -58,12 +57,13 @@ public final class LayoutBuilder {
             r.cellNode.put(cell, n);
         }
 
-        // 2) Nodos para puertos top (opcionales, ayudan a anclar IO en los bordes)
+        // 2) Nodos para puertos del módulo
         for (ModulePort p : mod.ports()) {
             ElkNode n = ElkGraphUtil.createNode(root);
-            java.awt.Dimension d = sizer.sizeForTopPort(p);
-            n.setWidth(d.width);
-            n.setHeight(d.height);
+
+            java.awt.Dimension d = (sizer != null) ? sizer.sizeForTopPort(p) : new java.awt.Dimension(30, 20);
+            n.setWidth(Math.max(20, d.width));
+            n.setHeight(Math.max(20, d.height));
 
             ElkLabel lbl = ElkGraphUtil.createLabel(n);
             lbl.setText(p.name());
