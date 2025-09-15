@@ -118,4 +118,15 @@ public abstract class AbstractComponentAdapter implements ComponentAdapter {
         return setParsedByName(attrs, name, token);
     }
 
+    protected static String cleanCellName(String raw) {
+        if (raw == null) return "";
+
+        String[] parts = raw.split("\\$");
+        if (parts.length < 3) return raw; // fallback
+
+        String middle = parts[1]; // entre los dos primeros $
+        String last   = parts[parts.length - 1]; // después del último $
+
+        return middle + "_" + last;
+    }
 }

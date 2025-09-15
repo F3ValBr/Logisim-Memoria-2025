@@ -6,22 +6,48 @@ import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
 import com.cburch.logisim.verilog.comp.auxiliary.netconn.NetBit;
 
 import java.util.*;
+import java.util.function.Function;
 
 public final class ModuleNetIndex {
     // netId -> lista de refs compactos (int)
     private final Map<Integer, List<Integer>> byNet = new LinkedHashMap<>();
 
-    // Codificación compacta de un “pin ref” en 32 bits:
-    // bit31..30 = kind (0=cell, 1=top), bit29..16 = ownerIdx (hasta 16383), bit15..8 = reservado (0), bit7..0 = bitIndex (0..255)
-    private static int encCell(int cellIdx, int bitIdx) { return (0 << 30) | (cellIdx << 16) | (bitIdx & 0xFF); }
-    private static int encTop (int portIdx, int bitIdx) { return (1 << 30) | (portIdx << 16) | (bitIdx & 0xFF); }
+    // Guardamos referencias al modelo para poder resolver nombres/puertos
+    private final List<VerilogCell> cells;
+    private final List<ModulePort> modulePorts;
 
-    public static boolean isTop(int ref)   { return ((ref >>> 30) & 0b11) == 1; }
-    public static int ownerIdx(int ref)    { return (ref >>> 16) & 0x3FFF; }
-    public static int bitIdx(int ref)      { return ref & 0xFF; }
+    // ---- Codificación del ref (32 bits) ----
+    // bit31..30 = kind (0=cell, 1=top)
+    // bit29..16 = ownerIdx (hasta 16383)
+    // bit15.. 8 = portOrd (sólo para celdas; 0..255) / 0 para top
+    // bit 7.. 0 = bitIdx (0..255)
+    private static int encCell(int cellIdx, int portOrd, int bitIdx) {
+        return (0 << 30) | (cellIdx << 16) | ((portOrd & 0xFF) << 8) | (bitIdx & 0xFF);
+    }
+    private static int encTop (int portIdx, int bitIdx) {
+        return (1 << 30) | (portIdx << 16) | (bitIdx & 0xFF);
+    }
+
+    public static boolean isTop  (int ref){ return ((ref >>> 30) & 0b11) == 1; }
+    public static int ownerIdx   (int ref){ return (ref >>> 16) & 0x3FFF; }
+    public static int portOrd    (int ref){ return (ref >>> 8)  & 0xFF; }   // válido para celdas
+    public static int bitIdx     (int ref){ return ref & 0xFF; }
+
+    // ---- LUTs por celda ----
+    // nombre de puerto -> ordinal (estable por celda)
+    private final List<Map<String,Integer>> cellPortOrd = new ArrayList<>();
+    // ordinal -> nombre de puerto
+    private final List<List<String>> cellOrdToName = new ArrayList<>();
+    // key (ord<<8 | bit) -> PortEndpoint
+    private final List<Map<Integer,PortEndpoint>> cellEpByKey = new ArrayList<>();
+
+    private static int key(int ord, int bit){ return ((ord & 0xFF) << 8) | (bit & 0xFF); }
 
     public ModuleNetIndex(List<VerilogCell> cells, List<ModulePort> modulePorts) {
-        // 1) Puertos del módulo
+        this.cells = Objects.requireNonNull(cells);
+        this.modulePorts = Objects.requireNonNull(modulePorts);
+
+        // 1) Puertos del módulo (top)
         for (int pIdx = 0; pIdx < modulePorts.size(); pIdx++) {
             ModulePort p = modulePorts.get(pIdx);
             for (int i = 0; i < p.width(); i++) {
@@ -29,15 +55,35 @@ public final class ModuleNetIndex {
                 if (net >= 0) add(net, encTop(pIdx, i)); // constantes (<0) no se indexan
             }
         }
-        // 2) Celdas internas
+
+        // 2) Celdas internas: construir LUTs y refs con portOrd embebido
         for (int cIdx = 0; cIdx < cells.size(); cIdx++) {
             VerilogCell c = cells.get(cIdx);
+
+            Map<String,Integer> ordMap = new LinkedHashMap<>();
+            List<String> namesByOrd     = new ArrayList<>();
+            Map<Integer,PortEndpoint> epMap = new HashMap<>();
+
+            // asigna ordinal incremental por nombre de puerto
+            Function<String,Integer> ordOf = name -> ordMap.computeIfAbsent(name, n -> {
+                int ord = namesByOrd.size();
+                namesByOrd.add(n);
+                return ord;
+            });
+
             for (PortEndpoint ep : c.endpoints()) {
                 var br = ep.getBitRef();
                 if (br instanceof NetBit nb) {
-                    add(nb.getNetId(), encCell(cIdx, ep.getBitIndex()));
+                    int ord = ordOf.apply(ep.getPortName());
+                    int b   = ep.getBitIndex();
+                    epMap.put(key(ord, b), ep);
+                    add(nb.getNetId(), encCell(cIdx, ord, b));
                 }
             }
+
+            cellPortOrd.add(ordMap);
+            cellOrdToName.add(namesByOrd);
+            cellEpByKey.add(epMap);
         }
     }
 
@@ -45,9 +91,42 @@ public final class ModuleNetIndex {
         byNet.computeIfAbsent(netId, k -> new ArrayList<>()).add(ref);
     }
 
+    // ---- API pública existente ----
     public Set<Integer> netIds() { return byNet.keySet(); }
     public List<Integer> endpointsOf(int netId) {
         return byNet.getOrDefault(netId, List.of());
     }
+
+    // ---- NUEVO: resoluciones para “bus edges” ----
+
+    /** Devuelve el índice de puerto top directamente del ref. */
+    public int resolveTopPortIdx(int topRef) {
+        if (!isTop(topRef)) throw new IllegalArgumentException("Ref no es top");
+        return ownerIdx(topRef);
+    }
+
+    /** Devuelve el nombre de puerto de celda a partir del ref. */
+    public Optional<String> resolveCellPortName(int cellRef) {
+        if (isTop(cellRef)) return Optional.empty();
+        int cIdx = ownerIdx(cellRef);
+        int ord  = portOrd(cellRef);
+        List<String> names = cellOrdToName.get(cIdx);
+        if (ord < 0 || ord >= names.size()) return Optional.empty();
+        return Optional.ofNullable(names.get(ord));
+    }
+
+    /** Devuelve el PortEndpoint (dirección incluida) para un ref de celda. */
+    public Optional<PortEndpoint> resolveCellEndpoint(int cellRef) {
+        if (isTop(cellRef)) return Optional.empty();
+        int cIdx = ownerIdx(cellRef);
+        int ord  = portOrd(cellRef);
+        int bit  = bitIdx(cellRef);
+        PortEndpoint ep = cellEpByKey.get(cIdx).get(key(ord, bit));
+        return Optional.ofNullable(ep);
+    }
+
+    /** Acceso al modelo (por si lo necesitas para layout/adapters). */
+    public VerilogCell cellAt(int idx){ return cells.get(idx); }
+    public ModulePort topPortAt(int idx){ return modulePorts.get(idx); }
 }
 

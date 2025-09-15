@@ -74,7 +74,7 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
 
             // Etiqueta con el nombre de la celda (visual)
             try {
-                attrs.setValue(StdAttr.LABEL, cell.name());
+                attrs.setValue(StdAttr.LABEL, cleanCellName(cell.name()));
             } catch (Exception ignore) { }
 
             Component comp = addComponent(proj, circ, g, factory, where, attrs);

@@ -81,7 +81,7 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
 
             // Básicos públicos
             safeSet(attrs, StdAttr.WIDTH, BitWidth.create(width));
-            safeSet(attrs, StdAttr.LABEL, cell.name());
+            safeSet(attrs, StdAttr.LABEL, cleanCellName(cell.name()));
             safeSet(attrs, StdAttr.TRIGGER, clkRising ? StdAttr.TRIG_RISING : StdAttr.TRIG_FALLING);
 
             // Enable visible + polaridad (por name)

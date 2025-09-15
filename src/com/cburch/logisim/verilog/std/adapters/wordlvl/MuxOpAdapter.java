@@ -67,7 +67,7 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
 
             // Etiqueta visible
             try {
-                attrs.setValue(StdAttr.LABEL, cell.name());
+                attrs.setValue(StdAttr.LABEL, cleanCellName(cell.name()));
             } catch (Exception ignore) { }
 
             // Nota: Multiplexer/Demultiplexer en Logisim determinan #entradas/salidas con los "Select Bits".

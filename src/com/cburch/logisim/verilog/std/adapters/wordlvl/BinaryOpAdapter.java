@@ -67,7 +67,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
 
             // Etiqueta
             try {
-                attrs.setValue(StdAttr.LABEL, cell.name());
+                attrs.setValue(StdAttr.LABEL, cleanCellName(cell.name()));
             } catch (Exception ignore) { }
 
             // Nota: Para $add/$sub Logisim “Adder/Subtractor” tienen pines Cin/Cout.

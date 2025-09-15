@@ -61,7 +61,7 @@ public final class ModuleBlackBoxAdapter extends AbstractComponentAdapter {
             InstanceFactory factory = newCirc.getSubcircuitFactory();
             AttributeSet attrs = factory.createAttributeSet();
 
-            attrs.setValue(StdAttr.LABEL, cell.name());
+            attrs.setValue(StdAttr.LABEL, cleanCellName(cell.name()));
             attrs.setValue(CircuitAttributes.LABEL_LOCATION_ATTR, Direction.NORTH);
 
             // 4) Añadir con acción (undo/redo)
