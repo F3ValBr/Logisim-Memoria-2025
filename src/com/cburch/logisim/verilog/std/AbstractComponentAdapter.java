@@ -45,7 +45,7 @@ public abstract class AbstractComponentAdapter implements ComponentAdapter {
     }
 
     /** Parser tolerante (número o string decimal/binario). */
-    protected static int parseIntRelaxed(Object v, int def) {
+    public static int parseIntRelaxed(Object v, int def) {
         if (v == null) return def;
         try {
             if (v instanceof Number n) return n.intValue();
@@ -118,7 +118,7 @@ public abstract class AbstractComponentAdapter implements ComponentAdapter {
         return setParsedByName(attrs, name, token);
     }
 
-    protected static String cleanCellName(String raw) {
+    public static String cleanCellName(String raw) {
         if (raw == null) return "";
 
         String[] parts = raw.split("\\$");
