@@ -6,20 +6,20 @@ import java.util.Map;
 import java.util.Optional;
 
 public enum RegisterOp {
-    ADFF    ("$adff"),
-    ADFFE   ("$adffe"),
-    ADLATCH ("$adlatch"),
-    ALDFF   ("$aldff"),
-    ALDFFE  ("$aldffe"),
     DFF     ("$dff"),
     DFFE    ("$dffe"),
     DFFSR   ("$dffsr"),
     DFFSRE  ("$dffsre"),
-    DLATCH  ("$dlatch"),
-    DLATCHSR("$dlatchsr"),
     SDFF    ("$sdff"),
     SDFFCE  ("$sdffce"),
     SDFFE   ("$sdffe"),
+    ADFF    ("$adff"),
+    ADFFE   ("$adffe"),
+    ALDFF   ("$aldff"),
+    ALDFFE  ("$aldffe"),
+    ADLATCH ("$adlatch"),
+    DLATCH  ("$dlatch"),
+    DLATCHSR("$dlatchsr"),
     SR      ("$sr");
 
     private final String yosysId;

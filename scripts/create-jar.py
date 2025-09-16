@@ -22,7 +22,7 @@ bin_dir = None
 dest_dir = os.getcwd()
 temp_dir = None
 keep_temp = False
-jdk_dir = None
+jdk_dir = "C:\\Program Files\\Java\\jdk-22\\bin"
 
 # see if we're on Carl Burch's platform, and if so reconfigure defaults
 if '\\home\\burch\\' in get_svn_dir():
@@ -113,7 +113,7 @@ if bin_dir is None:
 if temp_dir is None:
 	current = os.listdir(dest_dir)
 	for i in range(1, 11):
-		name = 'files' if i is 1 else 'files' + str(i)
+		name = 'files' if i == 1 else 'files' + str(i)
 		if name not in current:
 			temp_dir = os.path.join(dest_dir, name)
 			break
@@ -181,7 +181,7 @@ if bin_dir is None:
 					else:
 						file_path = build_path(path, file)
 					java_files.write(uncygwin(file_path) + '\n')
-	javac_args = [javac_exec, '-source', '1.5', '-target', '1.5',
+	javac_args = [javac_exec, '--release', '22', 
 				'-d', uncygwin(temp_dir), '-classpath', classpath,
 				'@' + uncygwin(java_files_path, verbose=True)]
 	before_compile = time.time()

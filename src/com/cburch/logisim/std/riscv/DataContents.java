@@ -176,19 +176,17 @@ class DataContents implements Cloneable, HexModel {
 					}
 				}
 			}
-			if (endOffs >= 0) {
-				ensurePage(pageEnd);
-				vals = new int[endOffs + 1];
-				System.arraycopy(values, offs, vals, 0, endOffs + 1);
-				DataContentsSub.ContentsInterface page = pages[pageEnd];
-				if (!page.matches(vals, startOffs, mask)) {
-					int[] oldValues = page.get(0, endOffs + 1);
-					page.load(0, vals, mask);
-					if (page.isClear()) pages[pageEnd] = null;
-					fireBytesChanged((long) pageEnd << PAGE_SIZE_BITS, endOffs + 1, oldValues);
-				}
-			}
-		}
+            ensurePage(pageEnd);
+            vals = new int[endOffs + 1];
+            System.arraycopy(values, offs, vals, 0, endOffs + 1);
+            DataContentsSub.ContentsInterface page = pages[pageEnd];
+            if (!page.matches(vals, startOffs, mask)) {
+                int[] oldValues = page.get(0, endOffs + 1);
+                page.load(0, vals, mask);
+                if (page.isClear()) pages[pageEnd] = null;
+                fireBytesChanged((long) pageEnd << PAGE_SIZE_BITS, endOffs + 1, oldValues);
+            }
+        }
 	}
 	
 	public void fill(long start, long len, int value) {
@@ -244,21 +242,19 @@ class DataContents implements Cloneable, HexModel {
 					}
 				}
 			}
-			if (endOffs >= 0) {
-				DataContentsSub.ContentsInterface page = pages[pageEnd];
-				if (value != 0 || page != null) {
-					ensurePage(pageEnd);
-					int[] vals = new int[endOffs + 1];
-					Arrays.fill(vals, value);
-					if (!page.matches(vals, 0, mask)) {
-						int[] oldValues = page.get(0, endOffs + 1);
-						page.load(0, vals, mask);
-						if (value == 0 && page.isClear()) pages[pageEnd] = null;
-						fireBytesChanged((long) pageEnd << PAGE_SIZE_BITS, endOffs + 1, oldValues);
-					}
-				}
-			}
-		}
+            DataContentsSub.ContentsInterface page = pages[pageEnd];
+            if (value != 0 || page != null) {
+                ensurePage(pageEnd);
+                int[] vals = new int[endOffs + 1];
+                Arrays.fill(vals, value);
+                if (!page.matches(vals, 0, mask)) {
+                    int[] oldValues = page.get(0, endOffs + 1);
+                    page.load(0, vals, mask);
+                    if (value == 0 && page.isClear()) pages[pageEnd] = null;
+                    fireBytesChanged((long) pageEnd << PAGE_SIZE_BITS, endOffs + 1, oldValues);
+                }
+            }
+        }
 	}
 	
 	public void clear() {
@@ -308,10 +304,7 @@ class DataContents implements Cloneable, HexModel {
 				}
 			}
 		}
-		if (pageCount == 0 && pages[0] == null) {
-			pages[0] = DataContentsSub.createContents(pageLength, width);
-		}
-		fireMetainfoChanged();
+        fireMetainfoChanged();
 	}
 
 	public long getFirstOffset() {

@@ -109,17 +109,32 @@ public class SmallSet<E> extends AbstractSet<E> {
 	public Object[] toArray() {
 		Object vals = values;
 		int sz = size;
+		if(vals==null){
+			return new Object[0];
+		}
 		if (sz == 1) {
 			return new Object[] { vals };
 		} else if (sz <= HASH_POINT) {
-			Object[] ret = new Object[sz];
-			System.arraycopy(vals, 0, ret, 0, sz);
-			return ret;
+			if(vals instanceof Object[] lst) {
+                return lst.clone();
+			}
+			else if(vals instanceof HashSet<?> hash){
+				return hash.toArray();
+			}
+			else{
+				throw new IllegalStateException("Expected list to be a List "+vals.getClass().getName());
+			}
+			//System.arraycopy(vals, 0, ret, 0, sz);
+			//return ret;
 		} else {
-			HashSet<?> hash = (HashSet<?>) vals;
-			return hash.toArray();
+			if (vals instanceof HashSet<?> hash) {
+				HashSet<?> copy = new HashSet<>(hash);
+                return copy.toArray();
+			} else {
+				throw new IllegalStateException("Expected values to be a HashSet");
+			}
 		}
-	}
+    }
 	
 	@Override
 	public void clear() {

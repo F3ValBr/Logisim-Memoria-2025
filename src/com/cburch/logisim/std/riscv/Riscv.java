@@ -1,6 +1,5 @@
 package com.cburch.logisim.std.riscv;
 
-import com.cburch.logisim.std.memory.Memory;
 import com.cburch.logisim.tools.FactoryDescription;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.tools.Tool;
@@ -9,8 +8,10 @@ import java.util.List;
 
 public class Riscv extends Library {
     private static final FactoryDescription[] DESCRIPTIONS = {
-            new FactoryDescription(("processor"),Strings.getter("processorComponent"),
-                    "rom.gif","Processor")
+            new FactoryDescription(("RV32IM"),Strings.getter("processorRV32IM"),
+                    "rom.gif","RV32IM"),
+            new FactoryDescription(("RV32IM_MIcro"),Strings.getter("processorRV32IMMicro"),
+                    "rom.gif","RV32IMMicro")
     };
     private List<Tool> tools = null;
 
