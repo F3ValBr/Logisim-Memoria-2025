@@ -146,9 +146,6 @@ public final class UnaryOpComposer extends BaseComposer {
 
                 Location spLoc32to16 = bitExtLoc;
                 AttributeSet sp3216Attr = splitF.createAttributeSet();
-                // En Logisim 2.7.1 los nombres típicos:
-                //  - "Bit Width In" / "fan out" / "Facing"
-                // usamos setByNameParsed para no acoplar al tipo del atributo
                 setByNameParsed(sp3216Attr, "incoming", "32");
                 setByNameParsed(sp3216Attr, "fanout", "2");
                 setByNameParsed(sp3216Attr, "appear", "center");
@@ -190,6 +187,4 @@ public final class UnaryOpComposer extends BaseComposer {
 
         return sub.ensureAndInstantiate(ctx, name, populate, where, lbl(cell));
     }
-
 }
-
