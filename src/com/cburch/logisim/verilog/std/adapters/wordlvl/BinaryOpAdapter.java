@@ -21,7 +21,10 @@ import com.cburch.logisim.verilog.comp.specs.CellParams;
 import com.cburch.logisim.verilog.comp.specs.GenericCellParams;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOp;
 import com.cburch.logisim.verilog.std.*;
+import com.cburch.logisim.verilog.std.adapters.MacroRegistry;
 import com.cburch.logisim.verilog.std.adapters.ModuleBlackBoxAdapter;
+import com.cburch.logisim.verilog.std.macrocomponents.ComposeCtx;
+import com.cburch.logisim.verilog.std.macrocomponents.Factories;
 
 import java.awt.Graphics;
 
@@ -29,6 +32,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                                     implements SupportsFactoryLookup {
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
+    private final MacroRegistry registry = MacroRegistry.bootBinaryDefaults();
 
     @Override
     public boolean accepts(CellType t) {
@@ -42,6 +46,16 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
             op = BinaryOp.fromYosys(cell.type().typeId());
         } catch (Exception e) {
             return fallback.create(canvas, g, cell, where);
+        }
+
+        MacroRegistry.Recipe recipe = registry.find(cell.type().typeId());
+        if (recipe != null) {
+            var ctx = new ComposeCtx(canvas.getProject(), canvas.getCircuit(), g, Factories.warmup(canvas.getProject()));
+            try {
+                return recipe.build(ctx, cell, where);
+            } catch (CircuitException e) {
+                throw new IllegalStateException("No se pudo componer " + op + ": " + e.getMessage(), e);
+            }
         }
 
         // 1) Elegir factory según operación ($and/$or/$xor/$xnor → Gates; $add/$sub/$mul → Arithmetic)

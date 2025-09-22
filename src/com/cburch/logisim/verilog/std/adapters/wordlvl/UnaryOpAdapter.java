@@ -23,8 +23,6 @@ import com.cburch.logisim.verilog.std.adapters.MacroRegistry;
 import com.cburch.logisim.verilog.std.adapters.ModuleBlackBoxAdapter;
 import com.cburch.logisim.verilog.std.macrocomponents.ComposeCtx;
 import com.cburch.logisim.verilog.std.macrocomponents.Factories;
-import com.cburch.logisim.verilog.std.macrocomponents.Macro;
-
 
 import java.awt.Graphics;
 
@@ -56,12 +54,8 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
             // 1) Intenta receta registrada (composición)
             MacroRegistry.Recipe recipe = registry.find(cell.type().typeId());
             if (recipe != null) {
-                var ctx = new ComposeCtx(proj, circ, g,
-                        Factories.warmup(proj));
-                Macro m = recipe.build(ctx, cell, where);
-                // PinLocator usando el pinMap, si quieres enrutar por nombre:
-                PinLocator pins = (port, bit) -> m.pinMap.getOrDefault(port, m.root.getLocation());
-                return new InstanceHandle(m.root, pins);
+                var ctx = new ComposeCtx(proj, circ, g, Factories.warmup(proj));
+                return recipe.build(ctx, cell, where);
             }
 
             // 2) Si no hay receta, se procede con componentes nativos

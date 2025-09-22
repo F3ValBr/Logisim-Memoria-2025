@@ -29,9 +29,9 @@ public final class UnaryOpParams extends GenericCellParams {
      * - Reduce ops: Y_WIDTH == 1
      */
     private void validate() {
-        if (op.isLogic() || op.isReduce()) {
+        /*if (op.isLogic() || op.isReduce()) {
             if (yWidth != 1) throw new IllegalArgumentException(op + ": Y_WIDTH debe ser 1");
-        }
+        }*/
     }
 }
 

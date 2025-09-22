@@ -1,106 +1,195 @@
 package com.cburch.logisim.verilog.std.adapters.wordlvl;
 
+import com.cburch.logisim.circuit.Circuit;
 import com.cburch.logisim.circuit.CircuitException;
+import com.cburch.logisim.circuit.SplitterFactory;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.AttributeSet;
+import com.cburch.logisim.data.Direction;
 import com.cburch.logisim.data.Location;
+import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
+import com.cburch.logisim.verilog.std.InstanceHandle;
 import com.cburch.logisim.verilog.std.adapters.BaseComposer;
 import com.cburch.logisim.verilog.std.macrocomponents.ComposeCtx;
-import com.cburch.logisim.verilog.std.macrocomponents.Macro;
+import com.cburch.logisim.verilog.std.macrocomponents.MacroSubcktKit;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.function.BiConsumer;
 
 import static com.cburch.logisim.verilog.std.adapters.ComponentComposer.*;
 
-/** Compositor de unarias ($logic_not, $reduce_*) */
+/** Compositor de unarias ($logic_not, $reduce_*) generando submódulos compactos */
 public final class UnaryOpComposer extends BaseComposer {
+    private final MacroSubcktKit sub = new MacroSubcktKit();
 
-    /** $logic_not(A) := Comparator(A == 0), usamos salida EQ. */
-    public Macro buildLogicNotEqZero(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
+    /* ==== Public API: devuelve la instancia del submódulo (InstanceHandle) ==== */
+
+    /** $logic_not(A) := (A == 0)  (usamos salida EQ del Comparator). */
+    public InstanceHandle buildLogicNotAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
             throws CircuitException {
-        if (ctx.fx.cmp == null) throw new CircuitException("Comparator not found");
-        List<Component> parts = new ArrayList<>();
-        Map<String,Location> pins = new LinkedHashMap<>();
+        require(ctx.fx.cmp, "Comparator"); require(ctx.fx.pinF, "Pin");
+        final String name = MacroSubcktKit.macroName("logic_not", aWidth);
 
-        AttributeSet ca = attrsWithWidthAndLabel(ctx.fx.cmp, aWidth, lbl(cell));
-        Component cmp = add(ctx, ctx.fx.cmp, where, ca);
-        parts.add(cmp);
-        pins.put("Y", pinComparatorEQ(cmp));
+        BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
+            try {
+                // Comparator A == 0
+                Location cmpLoc = Location.create(200, 120);
 
-        if (ctx.fx.constF != null) {
-            AttributeSet ka = ctx.fx.constF.createAttributeSet();
-            setByNameParsed(ka, "width", Integer.toString(aWidth));
-            setByNameParsed(ka, "value", "0x0");
-            parts.add(add(ctx, ctx.fx.constF, Location.create(where.getX()-40, where.getY()+10), ka));
-        }
-        return new Macro(cmp, parts, pins);
+                // Pins
+                Component pinA = addPin(in, "A", false, aWidth, Location.create(cmpLoc.getX()-80, cmpLoc.getY()-10));
+                Component pinY = addPin(in, "Y", true, 1, Location.create(cmpLoc.getX()+10, cmpLoc.getY()));
+
+                Component cmp = add(in, in.fx.cmp, cmpLoc, attrsWithWidthAndLabel(in.fx.cmp, aWidth, "A==0"));
+                if (in.fx.constF != null) {
+                    AttributeSet k = in.fx.constF.createAttributeSet();
+                    setByNameParsed(k, "width", Integer.toString(aWidth));
+                    setByNameParsed(k, "value", "0x0");
+                    add(in, in.fx.constF, Location.create(cmpLoc.getX()-40, cmpLoc.getY()+10), k);
+                }
+
+                // Wires: A -> cmp, cmp.EQ -> Y
+                addWire(in, pinA.getLocation(), cmp.getLocation().translate(-40, -10));
+                addWire(in, cmp.getLocation(), pinY.getLocation());
+
+            } catch (CircuitException e) { throw new RuntimeException(e); }
+        };
+
+        return sub.ensureAndInstantiate(ctx, name, populate, where, lbl(cell));
     }
 
-    /** $reduce_or / $reduce_bool := NOT( A == 0 ). */
-    public Macro buildReduceOrNeZero(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
+    /** $reduce_or/$reduce_bool(A) := NOT( A == 0 ). */
+    public InstanceHandle buildReduceOrAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
             throws CircuitException {
-        if (ctx.fx.cmp == null || ctx.fx.notF == null) throw new CircuitException("Comparator/NOT not found");
-        List<Component> parts = new ArrayList<>();
-        Map<String,Location> pins = new LinkedHashMap<>();
+        require(ctx.fx.cmp, "Comparator"); require(ctx.fx.notF, "NOT Gate"); require(ctx.fx.pinF, "Pin");
+        final String name = MacroSubcktKit.macroName("reduce_or", aWidth);
 
-        AttributeSet ca = attrsWithWidthAndLabel(ctx.fx.cmp, aWidth, lbl(cell));
-        Component cmp = add(ctx, ctx.fx.cmp, where, ca);
-        parts.add(cmp);
+        BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
+            try {
+                Location cmpLoc = Location.create(200, 120);
 
-        if (ctx.fx.constF != null) {
-            AttributeSet ka = ctx.fx.constF.createAttributeSet();
-            setByNameParsed(ka, "width", Integer.toString(aWidth));
-            setByNameParsed(ka, "value", "0x0");
-            parts.add(add(ctx, ctx.fx.constF, Location.create(where.getX()-40, where.getY()+10), ka));
-        }
+                Component pinA = addPin(in, "A", false, aWidth, Location.create(cmpLoc.getX()-80, cmpLoc.getY()-10));
+                Component pinY = addPin(in, "Y", true, 1, cmpLoc.translate(30,0));
 
-        AttributeSet na = attrsWithWidthAndLabel(ctx.fx.notF, 1, lbl(cell) + "_ne0");
-        Component not = add(ctx, ctx.fx.notF, Location.create(where.getX()+30, where.getY()), na);
-        parts.add(not);
+                Component cmp = add(in, in.fx.cmp, cmpLoc, attrsWithWidthAndLabel(in.fx.cmp, aWidth, "A==0"));
+                if (in.fx.constF != null) {
+                    AttributeSet k = in.fx.constF.createAttributeSet();
+                    setByNameParsed(k, "width", Integer.toString(aWidth));
+                    setByNameParsed(k, "value", "0x0");
+                    add(in, in.fx.constF, Location.create(cmpLoc.getX()-40, cmpLoc.getY()+10), k);
+                }
 
-        // (opcional) cablear internamente EQ → NOT.in con Wire(...) en tu capa de wiring
-        pins.put("Y", pinNotOut(not));
-        return new Macro(not, parts, pins);
+                Location notLoc = cmpLoc.translate(30,0);
+                Component not = add(in, in.fx.notF, notLoc, attrsWithWidthAndLabel(in.fx.notF, 1, "ne0"));
+
+                // A -> cmp
+                addWire(in, pinA.getLocation(), cmp.getLocation().translate(-40, -10));
+
+            } catch (CircuitException e) { throw new RuntimeException(e); }
+        };
+
+        return sub.ensureAndInstantiate(ctx, name, populate, where, lbl(cell));
     }
 
-    /** $reduce_and(A) := (A == 2^N-1). */
-    public Macro buildReduceAndEqAllOnes(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
+    /** $reduce_and(A) := (A == 2^N - 1). */
+    public InstanceHandle buildReduceAndAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
             throws CircuitException {
-        if (ctx.fx.cmp == null) throw new CircuitException("Comparator not found");
-        List<Component> parts = new ArrayList<>();
-        Map<String,Location> pins = new LinkedHashMap<>();
+        require(ctx.fx.cmp, "Comparator"); require(ctx.fx.pinF, "Pin");
+        final String name = MacroSubcktKit.macroName("reduce_and", aWidth);
 
-        AttributeSet ca = attrsWithWidthAndLabel(ctx.fx.cmp, aWidth, lbl(cell));
-        Component cmp = add(ctx, ctx.fx.cmp, where, ca);
-        parts.add(cmp);
-        pins.put("Y", pinComparatorEQ(cmp));
+        BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
+            try {
+                Location cmpLoc = Location.create(200, 120);
 
-        if (ctx.fx.constF != null) {
-            AttributeSet ka = ctx.fx.constF.createAttributeSet();
-            setByNameParsed(ka, "width", Integer.toString(aWidth));
-            setByNameParsed(ka, "value", hexAllOnes(aWidth));
-            parts.add(add(ctx, ctx.fx.constF, Location.create(where.getX()-40, where.getY()+10), ka));
-        }
-        return new Macro(cmp, parts, pins);
+                Component pinA = addPin(in, "A", false, aWidth, cmpLoc.translate(-80,-10));
+                Component pinY = addPin(in, "Y", true, 1, cmpLoc);
+
+                Component cmp = add(in, in.fx.cmp, cmpLoc, attrsWithWidthAndLabel(in.fx.cmp, aWidth, "A==all1"));
+                if (in.fx.constF != null) {
+                    AttributeSet k = in.fx.constF.createAttributeSet();
+                    setByNameParsed(k, "width", Integer.toString(aWidth));
+                    setByNameParsed(k, "value", hexAllOnes(aWidth));
+                    add(in, in.fx.constF, Location.create(cmpLoc.getX()-40, cmpLoc.getY()+10), k);
+                }
+
+                addWire(in, pinA.getLocation(), cmp.getLocation().translate(-40, -10));
+
+            } catch (CircuitException e) { throw new RuntimeException(e); }
+        };
+
+        return sub.ensureAndInstantiate(ctx, name, populate, where, lbl(cell));
     }
 
-    /** $reduce_xor / $reduce_xnor con Parity nativa. */
-    public Macro buildReduceXorParity(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth, boolean odd)
+    /** $reduce_xor/$reduce_xnor con Parity nativa. */
+    public InstanceHandle buildReduceXorAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth, boolean odd)
             throws CircuitException {
         ComponentFactory pf = odd ? ctx.fx.oddParityF : ctx.fx.evenParityF;
-        if (pf == null) throw new CircuitException((odd?"Odd":"Even")+" Parity not found");
-        List<Component> parts = new ArrayList<>();
-        Map<String,Location> pins = new LinkedHashMap<>();
-        AttributeSet pa = attrsWithWidthAndLabel(pf, aWidth, lbl(cell));
-        Component par = add(ctx, pf, where, pa);
-        parts.add(par);
-        pins.put("Y", par.getLocation());
-        return new Macro(par, parts, pins);
+        require(ctx.fx.bitExtendF, "Bit Extender"); require(ctx.fx.pinF, "Pin");
+        require(pf, odd ? "Odd Parity" : "Even Parity");
+        final String name = MacroSubcktKit.macroName(odd ? "reduce_xor" : "reduce_xnor", aWidth);
+
+        BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
+            try {
+                // --- Pins A (N bits) y Y (1 bit) ---
+                Component pinA = addPin(in, "A", false, aWidth, Location.create(120, 220));   // in (EAST)
+
+                Location bitExtLoc = Location.create(pinA.getLocation().getX()+40,  pinA.getLocation().getY());
+                if (in.fx.bitExtendF != null) {
+                    AttributeSet beSet = in.fx.bitExtendF.createAttributeSet();
+                    setByNameParsed(beSet, "in_width", Integer.toString(aWidth));
+                    setByNameParsed(beSet, "out_width", "32");
+                    add(in, in.fx.bitExtendF, bitExtLoc, beSet);
+                }
+
+                // --- Splitter (Wiring → Splitter) ---
+                ComponentFactory splitF = SplitterFactory.instance;
+
+                Location spLoc32to16 = bitExtLoc;
+                AttributeSet sp3216Attr = splitF.createAttributeSet();
+                // En Logisim 2.7.1 los nombres típicos:
+                //  - "Bit Width In" / "fan out" / "Facing"
+                // usamos setByNameParsed para no acoplar al tipo del atributo
+                setByNameParsed(sp3216Attr, "incoming", "32");
+                setByNameParsed(sp3216Attr, "fanout", "2");
+                setByNameParsed(sp3216Attr, "appear", "center");
+                try { sp3216Attr.setValue(StdAttr.FACING, Direction.EAST); } catch (Exception ignore) {}
+                Component splitter1 = add(in, splitF, spLoc32to16, sp3216Attr);
+
+                Location spLoc16to0_15 = spLoc32to16.translate(20, -10);
+                AttributeSet sp160_15Attr = splitF.createAttributeSet();
+                setByNameParsed(sp160_15Attr, "incoming", "16");
+                setByNameParsed(sp160_15Attr, "fanout", "16");
+                try { sp160_15Attr.setValue(StdAttr.FACING, Direction.EAST); } catch (Exception ignore) {}
+                Component splitter2 = add(in, splitF, spLoc16to0_15, sp160_15Attr);
+
+                Location spLoc16to16_31 = spLoc32to16.translate(20, 80);
+                AttributeSet sp1616_31Attr = splitF.createAttributeSet();
+                setByNameParsed(sp1616_31Attr, "incoming", "16");
+                setByNameParsed(sp1616_31Attr, "fanout", "16");
+                setByNameParsed(sp1616_31Attr, "appear", "center");
+                try { sp1616_31Attr.setValue(StdAttr.FACING, Direction.EAST); } catch (Exception ignore) {}
+                Component splitter3 = add(in, splitF, spLoc16to16_31, sp1616_31Attr);
+
+                // Wire Splitter1 → Splitter3
+                addWire(in, splitter1.getLocation().translate(20, 0), splitter3.getLocation());
+
+                Location parLoc = Location.create(splitter1.getLocation().getX()+70,  splitter1.getLocation().getY()-10);
+
+                AttributeSet parAttr = pf.createAttributeSet();
+                setByNameParsed(parAttr, "width", "1");
+                setByNameParsed(parAttr, "inputs", "32");
+                setByNameParsed(parAttr, "label", odd ? "odd" : "even");
+                Component par = add(in, pf, parLoc, parAttr);
+
+                Component pinY = addPin(in, "Y", true, 1, parLoc);  // out (WEST)
+
+            } catch (CircuitException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        return sub.ensureAndInstantiate(ctx, name, populate, where, lbl(cell));
     }
+
 }
 
