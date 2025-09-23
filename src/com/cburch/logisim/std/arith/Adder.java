@@ -170,7 +170,7 @@ public class Adder extends InstanceFactory {
             }
         }
 
-        // Camino bit-a-bit (UNKNOWN/ERROR): conserva tu semántica previa (carry)
+        // Camino bit-a-bit (UNKNOWN/ERROR)
         Value[] bits = new Value[w];
         Value carry = c_in;
         for (int i = 0; i < w; i++) {

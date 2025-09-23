@@ -32,10 +32,22 @@ public class Divider extends InstanceFactory {
             Attributes.forOption("signMode", Strings.getter("arithSignMode"),
                     new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_AUTO });
 
+    // ===== Modo de división: Trunc o Floor =====
+    public static final AttributeOption DIV_TRUNC
+            = new AttributeOption("trunc", "trunc", Strings.getter("truncOption"));
+    public static final AttributeOption DIV_FLOOR
+            = new AttributeOption("floor", "floor", Strings.getter("floorOption"));
+
+    public static final Attribute<AttributeOption> DIV_MODE =
+            Attributes.forOption("divMode", Strings.getter("divMode"),
+                    new AttributeOption[]{ DIV_TRUNC, DIV_FLOOR });
+
+
     public Divider() {
         super("Divider", Strings.getter("dividerComponent"));
-        setAttributes(new Attribute[] { StdAttr.WIDTH, SIGN_MODE },
-                new Object[]   { BitWidth.create(8), MODE_AUTO });
+        setAttributes(
+                new Attribute[] { StdAttr.WIDTH, SIGN_MODE, DIV_MODE },
+                new Object[]   { BitWidth.create(8), MODE_AUTO, DIV_TRUNC });
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
         setOffsetBounds(Bounds.create(-40, -20, 40, 40));
         setIconName("divider.gif");
@@ -61,7 +73,7 @@ public class Divider extends InstanceFactory {
         instance.getAttributeSet().addAttributeListener(new AttributeListener() {
             @Override public void attributeValueChanged(AttributeEvent e) {
                 Attribute<?> a = e.getAttribute();
-                if (a == SIGN_MODE) {
+                if (a == SIGN_MODE || a == DIV_MODE) {
                     instance.fireInvalidated();
                 } else if (a == StdAttr.WIDTH) {
                     instance.recomputeBounds();
@@ -76,14 +88,15 @@ public class Divider extends InstanceFactory {
     public void propagate(InstanceState state) {
         // get attributes
         BitWidth width = state.getAttributeValue(StdAttr.WIDTH);
-        AttributeOption modeOpt = state.getAttributeValue(SIGN_MODE);
+        AttributeOption signOpt = state.getAttributeValue(SIGN_MODE);
+        AttributeOption divOpt  = state.getAttributeValue(DIV_MODE);
 
         // compute outputs
         Value lo    = state.getPort(IN0);
         Value den   = state.getPort(IN1);
         Value upper = state.getPort(UPPER);
 
-        Value[] outs = computeResult(width, lo, den, upper, modeOpt);
+        Value[] outs = computeResult(width, lo, den, upper, signOpt, divOpt);
 
         // propagate them
         int w = width.getWidth();
@@ -125,16 +138,16 @@ public class Divider extends InstanceFactory {
     /* ===================== Núcleo con modo ===================== */
 
     static Value[] computeResult(BitWidth width, Value lo, Value den, Value upper,
-                                 AttributeOption modeOpt) {
+                                 AttributeOption signOpt, AttributeOption divOpt) {
         int w = width.getWidth();
         boolean upperDisconnected = (upper == Value.NIL || upper.isUnknown());
 
-        // Si upper no está conectado, trátalo como 0
+        // Si upper no está conectado, tratar como 0
         if (upperDisconnected) {
             upper = Value.createKnown(width, 0);
         }
 
-        // Valores no definidos → conserva semántica original
+        // Valores no definidos
         if (!(lo.isFullyDefined() && den.isFullyDefined() && upper.isFullyDefined())) {
             if (lo.isErrorValue() || den.isErrorValue() || upper.isErrorValue()) {
                 return new Value[]{ Value.createError(width), Value.createError(width) };
@@ -148,9 +161,9 @@ public class Divider extends InstanceFactory {
         int denI   = den.toIntValue();
 
         boolean signed;
-        if (modeOpt == MODE_SIGNED) {
+        if (signOpt == MODE_SIGNED) {
             signed = true;
-        } else if (modeOpt == MODE_UNSIGNED) {
+        } else if (signOpt == MODE_UNSIGNED) {
             signed = false;
         } else { // AUTO
             if (upperDisconnected) {
@@ -171,23 +184,26 @@ public class Divider extends InstanceFactory {
         if (signed) {
             // Dividendo 2w-bits con signo: (upper sign-extend) << w | (lo unsigned)
             long upS = signExtend(upI, w);
-            num = (upS << w) | loU;
+            num  = (upS << w) | loU;
             denL = signExtend(denI, w);
         } else {
             // Unsigned
-            num = (upU << w) | loU;
+            num  = (upU << w) | loU;
             denL = ((long) denI) & maskW;
         }
 
-        if (denL == 0) denL = 1; // evita división por 0 (comportamiento legado)
+        if (denL == 0) denL = 1; // evita /0
 
+        // División truncada base
         long q0 = num / denL; // trunc hacia 0
         long r0 = num % denL;
 
-        // Ajuste de resto negativo (mantiene tu lógica original)
-        if (r0 < 0) {
-            if (denL >= 0) { r0 += denL; q0--; }
-            else           { r0 -= denL; q0++; }
+        if (divOpt == DIV_FLOOR) {
+            // Ajuste a floor: si resto != 0 y los signos de num y den difieren
+            if (r0 != 0 && ((num ^ denL) < 0)) {
+                r0 += denL; // garantiza 0 <= r < |den|
+                q0--;
+            }
         }
 
         // Salida: bajo w bits
