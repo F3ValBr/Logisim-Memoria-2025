@@ -127,8 +127,8 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                     case ADD -> "Adder";
                     case SUB -> "Subtractor";
                     case MUL -> "Multiplier";
-                    case DIV -> "Divider";
-                    case MOD-> "Divider"; // usar pin 'Remainder'
+                    case DIV, MOD, DIVFLOOR, MODFLOOR -> "Divider";
+                    case POW -> "Exponent";
                     default -> null;
                 };
                 return FactoryLookup.findFactory(arith, name);

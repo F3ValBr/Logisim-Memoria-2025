@@ -19,6 +19,8 @@ public class Arithmetic extends Library {
 				"multiplier.gif", "Multiplier"),
 		new FactoryDescription("Divider", Strings.getter("dividerComponent"),
 				"divider.gif", "Divider"),
+        new FactoryDescription("Exponent", Strings.getter("exponentComponent"),
+                "exponent.gif", "Exponent"),
 		new FactoryDescription("Negator", Strings.getter("negatorComponent"),
 				"negator.gif", "Negator"),
 		new FactoryDescription("Comparator", Strings.getter("comparatorComponent"),
