@@ -51,6 +51,8 @@ public class Plexers extends Library {
 	private static FactoryDescription[] DESCRIPTIONS = {
 		new FactoryDescription("Multiplexer", Strings.getter("multiplexerComponent"),
 				"multiplexer.gif", "Multiplexer"),
+        new FactoryDescription("Bitwise Multiplexer", Strings.getter("bwmuxComponent"),
+                "bwmultiplexer.gif", "BitwiseMultiplexer"),
 		new FactoryDescription("Demultiplexer", Strings.getter("demultiplexerComponent"),
 				"demultiplexer.gif", "Demultiplexer"),
 		new FactoryDescription("Decoder", Strings.getter("decoderComponent"),

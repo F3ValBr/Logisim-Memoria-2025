@@ -46,7 +46,6 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
         }
 
         ComponentFactory factory = pickFactoryOrNull(canvas.getProject(), op);
-
         if (factory == null) {
             // No hay mapeo nativo → subcircuito
             return fallback.create(canvas, g, cell, where);
@@ -91,32 +90,25 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
 
     /** Selecciona el ComponentFactory nativo de Logisim para cada op soportada. */
     private static ComponentFactory pickFactoryOrNull(Project proj, MuxOp op) {
-        switch (op) {
-            case MUX: {
+        return switch (op) {
+            case MUX -> {
                 Library plex = proj.getLogisimFile().getLibrary("Plexers");
-                return FactoryLookup.findFactory(plex, "Multiplexer");
+                yield FactoryLookup.findFactory(plex, "Multiplexer");
             }
-            case DEMUX: {
+            case DEMUX -> {
                 Library plex = proj.getLogisimFile().getLibrary("Plexers");
-                return FactoryLookup.findFactory(plex, "Demultiplexer");
+                yield FactoryLookup.findFactory(plex, "Demultiplexer");
             }
-            case TRIBUF: {
-                Library wiring = proj.getLogisimFile().getLibrary("Wiring");
-                // El nombre visible suele ser “Tri-State Buffer”
-                ComponentFactory f = FactoryLookup.findFactory(wiring, "Tri-State Buffer");
-                if (f == null) {
-                    // Algunas builds lo muestran como “Tristate Buffer”
-                    f = FactoryLookup.findFactory(wiring, "Tristate Buffer");
-                }
-                return f;
+            case TRIBUF -> {
+                Library wiring = proj.getLogisimFile().getLibrary("Gates");
+                yield FactoryLookup.findFactory(wiring, "Controlled Buffer");
             }
-            // No hay equivalente directo:
-            case PMUX:
-            case BMUX:
-            case BWMUX:
-            default:
-                return null;
-        }
+            case BWMUX -> {
+                Library plex = proj.getLogisimFile().getLibrary("Plexers");
+                yield FactoryLookup.findFactory(plex, "Bitwise Multiplexer");
+            }
+            default -> null;
+        };
     }
 
     private static int guessWidth(CellParams params) {
