@@ -107,6 +107,10 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
                 Library plex = proj.getLogisimFile().getLibrary("Plexers");
                 yield FactoryLookup.findFactory(plex, "Bitwise Multiplexer");
             }
+            case PMUX -> {
+                Library plex = proj.getLogisimFile().getLibrary("Plexers");
+                yield FactoryLookup.findFactory(plex, "Priority Multiplexer");
+            }
             default -> null;
         };
     }
