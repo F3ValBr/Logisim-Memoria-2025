@@ -104,11 +104,11 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
                 yield FactoryLookup.findFactory(wiring, "Controlled Buffer");
             }
             case BWMUX -> {
-                Library plex = proj.getLogisimFile().getLibrary("Plexers");
+                Library plex = proj.getLogisimFile().getLibrary("Yosys Components");
                 yield FactoryLookup.findFactory(plex, "Bitwise Multiplexer");
             }
             case PMUX -> {
-                Library plex = proj.getLogisimFile().getLibrary("Plexers");
+                Library plex = proj.getLogisimFile().getLibrary("Yosys Components");
                 yield FactoryLookup.findFactory(plex, "Priority Multiplexer");
             }
             default -> null;

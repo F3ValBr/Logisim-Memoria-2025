@@ -120,6 +120,10 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                 return FactoryLookup.findFactory(gates, gateName);
             }
             case ARITH -> {
+                if (op == BinaryOp.POW) {
+                    Library yosysLib = proj.getLogisimFile().getLibrary("Yosys Components");
+                    return FactoryLookup.findFactory(yosysLib, "Exponent");
+                }
                 // Aritméticos (suma/resta/mult)
                 Library arith = proj.getLogisimFile().getLibrary("Arithmetic");
                 if (arith == null) return null;
@@ -128,7 +132,6 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                     case SUB -> "Subtractor";
                     case MUL -> "Multiplier";
                     case DIV, MOD, DIVFLOOR, MODFLOOR -> "Divider";
-                    case POW -> "Exponent";
                     default -> null;
                 };
                 return FactoryLookup.findFactory(arith, name);
