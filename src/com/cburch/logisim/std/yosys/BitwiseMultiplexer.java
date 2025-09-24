@@ -1,4 +1,4 @@
-package com.cburch.logisim.std.plexers;
+package com.cburch.logisim.std.yosys;
 
 
 import com.cburch.logisim.data.*;
@@ -44,7 +44,7 @@ public class BitwiseMultiplexer extends InstanceFactory {
     @Override
     public void paintGhost(InstancePainter painter) {
         Direction facing = painter.getAttributeValue(StdAttr.FACING);
-        Plexers.drawTrapezoid(painter.getGraphics(), painter.getBounds(), facing,10);
+        YosysComponent.drawTrapezoid(painter.getGraphics(), painter.getBounds(), facing,10);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class BitwiseMultiplexer extends InstanceFactory {
 
         // --- 3) Trapezoide y rótulo centrado ---
         g.setColor(Color.BLACK);
-        Plexers.drawTrapezoid(g, bds, facing, /* garganta */ 10);
+        YosysComponent.drawTrapezoid(g, bds, facing, /* garganta */ 10);
         GraphicsUtil.drawCenteredText(g, "BWMUX",
                 bds.getX() + bds.getWidth() / 2,
                 bds.getY() + bds.getHeight() / 2);
@@ -117,7 +117,7 @@ public class BitwiseMultiplexer extends InstanceFactory {
     @Override
     public boolean contains(Location loc, AttributeSet attrs) {
         Direction facing = attrs.getValue(StdAttr.FACING);
-        return Plexers.contains(loc, getOffsetBounds(attrs), facing);
+        return YosysComponent.contains(loc, getOffsetBounds(attrs), facing);
     }
 
     @Override

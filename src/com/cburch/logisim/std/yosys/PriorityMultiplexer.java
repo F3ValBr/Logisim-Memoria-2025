@@ -1,4 +1,4 @@
-package com.cburch.logisim.std.plexers;
+package com.cburch.logisim.std.yosys;
 
 import com.cburch.logisim.data.*;
 import com.cburch.logisim.instance.*;
@@ -52,7 +52,7 @@ public class PriorityMultiplexer extends InstanceFactory {
     @Override
     public boolean contains(Location loc, AttributeSet attrs) {
         Direction facing = attrs.getValue(StdAttr.FACING);
-        return Plexers.contains(loc, getOffsetBounds(attrs), facing);
+        return YosysComponent.contains(loc, getOffsetBounds(attrs), facing);
     }
 
     @Override
@@ -131,7 +131,7 @@ public class PriorityMultiplexer extends InstanceFactory {
     @Override
     public void paintGhost(InstancePainter painter) {
         Direction facing = painter.getAttributeValue(StdAttr.FACING);
-        Plexers.drawTrapezoid(painter.getGraphics(), painter.getBounds(), facing, 10);
+        YosysComponent.drawTrapezoid(painter.getGraphics(), painter.getBounds(), facing, 10);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class PriorityMultiplexer extends InstanceFactory {
 
         // cuerpo
         g.setColor(Color.BLACK);
-        Plexers.drawTrapezoid(g, bds, facing, 10);
+        YosysComponent.drawTrapezoid(g, bds, facing, 10);
         GraphicsUtil.drawCenteredText(g, "PMUX",
                 bds.getX() + bds.getWidth() / 2,
                 bds.getY() + bds.getHeight() / 2);

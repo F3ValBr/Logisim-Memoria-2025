@@ -1,5 +1,4 @@
-package com.cburch.logisim.std.arith;
-
+package com.cburch.logisim.std.yosys;
 
 import com.cburch.logisim.data.*;
 import com.cburch.logisim.instance.*;
