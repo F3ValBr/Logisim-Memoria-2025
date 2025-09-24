@@ -19,18 +19,21 @@ public class Divider extends InstanceFactory {
     private static final int OUT   = 2; // quotient (low w bits)
     private static final int UPPER = 3; // dividend upper
     private static final int REM   = 4; // remainder (low w bits)
+    private static final int SIGN_SEL = 5; // sign select (only in pin mode)
 
-    // ===== Atributo de modo (Unsigned / Signed / Auto) =====
+    // ===== Atributo de modo (Unsigned / Signed / Pin / Auto) =====
     public static final AttributeOption MODE_UNSIGNED
             = new AttributeOption("unsigned", "unsigned", Strings.getter("unsignedOption"));
     public static final AttributeOption MODE_SIGNED
             = new AttributeOption("signed", "signed",  Strings.getter("signedOption"));
+    public static final AttributeOption MODE_PIN
+            = new AttributeOption("pin", "pin", Strings.getter("pinOption"));
     public static final AttributeOption MODE_AUTO
             = new AttributeOption("auto", "auto", Strings.getter("autoOption"));
 
     public static final Attribute<AttributeOption> SIGN_MODE =
             Attributes.forOption("signMode", Strings.getter("arithSignMode"),
-                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_AUTO });
+                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     // ===== Modo de división: Trunc o Floor =====
     public static final AttributeOption DIV_TRUNC
@@ -42,7 +45,6 @@ public class Divider extends InstanceFactory {
             Attributes.forOption("divMode", Strings.getter("divMode"),
                     new AttributeOption[]{ DIV_TRUNC, DIV_FLOOR });
 
-
     public Divider() {
         super("Divider", Strings.getter("dividerComponent"));
         setAttributes(
@@ -51,37 +53,52 @@ public class Divider extends InstanceFactory {
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
         setOffsetBounds(Bounds.create(-40, -20, 40, 40));
         setIconName("divider.gif");
-
-        Port[] ps = new Port[5];
-        ps[IN0]   = new Port(-40, -10, Port.INPUT,  StdAttr.WIDTH);
-        ps[IN1]   = new Port(-40,  10, Port.INPUT,  StdAttr.WIDTH);
-        ps[OUT]   = new Port(  0,   0, Port.OUTPUT, StdAttr.WIDTH);
-        ps[UPPER] = new Port(-20, -20, Port.INPUT,  StdAttr.WIDTH);
-        ps[REM]   = new Port(-20,  20, Port.OUTPUT, StdAttr.WIDTH);
-        ps[IN0].setToolTip(Strings.getter("dividerDividendLowerTip"));
-        ps[IN1].setToolTip(Strings.getter("dividerDivisorTip"));
-        ps[OUT].setToolTip(Strings.getter("dividerOutputTip"));
-        ps[UPPER].setToolTip(Strings.getter("dividerDividendUpperTip"));
-        ps[REM].setToolTip(Strings.getter("dividerRemainderTip"));
-        setPorts(ps);
     }
 
     @Override
     protected void configureNewInstance(Instance instance) {
-        super.configureNewInstance(instance);
-        // Repropagar cuando cambie el modo o el ancho
-        instance.getAttributeSet().addAttributeListener(new AttributeListener() {
-            @Override public void attributeValueChanged(AttributeEvent e) {
-                Attribute<?> a = e.getAttribute();
-                if (a == SIGN_MODE || a == DIV_MODE) {
-                    instance.fireInvalidated();
-                } else if (a == StdAttr.WIDTH) {
-                    instance.recomputeBounds();
-                    instance.fireInvalidated();
-                }
-            }
-            @Override public void attributeListChanged(AttributeEvent e) { }
-        });
+        instance.addAttributeListener();
+        updatePorts(instance);
+    }
+
+    @Override
+    protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+        if (attr == SIGN_MODE || attr == StdAttr.WIDTH) {
+            updatePorts(instance);
+            instance.recomputeBounds();
+            instance.fireInvalidated();
+        } else if (attr == DIV_MODE) {
+            instance.fireInvalidated();
+        }
+    }
+
+    private static boolean pinModeEnabled(Instance instance) {
+        return instance.getAttributeValue(SIGN_MODE) == MODE_PIN;
+    }
+
+    private void updatePorts(Instance instance) {
+        BitWidth w = instance.getAttributeValue(StdAttr.WIDTH);
+        boolean pinMode = pinModeEnabled(instance);
+
+        Port in0   = new Port(-40, -10, Port.INPUT,  w);
+        Port in1   = new Port(-40,  10, Port.INPUT,  w);
+        Port out   = new Port(  0,   0, Port.OUTPUT, w);
+        Port upper = new Port(-20, -20, Port.INPUT,  w);
+        Port rem   = new Port(-20,  20, Port.OUTPUT, w);
+
+        in0.setToolTip(Strings.getter("dividerDividendLowerTip"));
+        in1.setToolTip(Strings.getter("dividerDivisorTip"));
+        out.setToolTip(Strings.getter("dividerOutputTip"));
+        upper.setToolTip(Strings.getter("dividerDividendUpperTip"));
+        rem.setToolTip(Strings.getter("dividerRemainderTip"));
+
+        if (pinMode) {
+            Port signSel = new Port(-30, 20, Port.INPUT, BitWidth.ONE);
+            signSel.setToolTip(Strings.getter("dividerSignSelTip"));
+            instance.setPorts(new Port[]{ in0, in1, out, upper, rem, signSel });
+        } else {
+            instance.setPorts(new Port[]{ in0, in1, out, upper, rem });
+        }
     }
 
     @Override
@@ -96,7 +113,8 @@ public class Divider extends InstanceFactory {
         Value den   = state.getPort(IN1);
         Value upper = state.getPort(UPPER);
 
-        Value[] outs = computeResult(width, lo, den, upper, signOpt, divOpt);
+        boolean signed = decideSigned(state, signOpt, width, lo, den, upper);
+        Value[] outs = computeResult(width, lo, den, upper, signed, divOpt);
 
         // propagate them
         int w = width.getWidth();
@@ -105,17 +123,49 @@ public class Divider extends InstanceFactory {
         state.setPort(REM, outs[1], delay);
     }
 
-	@Override
-	public void paintInstance(InstancePainter painter) {
-		Graphics g = painter.getGraphics();
-		painter.drawBounds();
+    private static boolean decideSigned(InstanceState st, AttributeOption mode, BitWidth w,
+                                        Value lo, Value den, Value upper) {
+        if (mode == MODE_SIGNED)  return true;
+        if (mode == MODE_UNSIGNED) return false;
 
-		g.setColor(Color.GRAY);
-		painter.drawPort(IN0);
-		painter.drawPort(IN1);
-		painter.drawPort(OUT);
-		painter.drawPort(UPPER, Strings.get("dividerUpperInput"),  Direction.NORTH);
-		painter.drawPort(REM, Strings.get("dividerRemainderOutput"), Direction.SOUTH);
+        if (mode == MODE_PIN) {
+            // Si el pin existe y está a 1 → signed. Si 0/NC/X → unsigned.
+            try {
+                Value sel = st.getPort(SIGN_SEL);
+                return sel == Value.TRUE;
+            } catch (IndexOutOfBoundsException ex) {
+                return false; // por si acaso, si no existe el puerto
+            }
+        }
+
+        // AUTO: heurística por MSB (si upper no conectado → 0)
+        int widthBits = w.getWidth();
+        boolean upperDisconnected = (upper == Value.NIL || upper.isUnknown());
+        int loI  = lo.isFullyDefined()  ? lo.toIntValue()  : 0;
+        int denI = den.isFullyDefined() ? den.toIntValue() : 0;
+        int upI  = upper.isFullyDefined()? upper.toIntValue() : 0;
+
+        if (upperDisconnected) {
+            return msbSet(loI, widthBits) || msbSet(denI, widthBits);
+        } else {
+            return msbSet(upI, widthBits) || msbSet(denI, widthBits);
+        }
+    }
+
+    @Override
+    public void paintInstance(InstancePainter painter) {
+        Graphics g = painter.getGraphics();
+        painter.drawBounds();
+
+        g.setColor(Color.GRAY);
+        painter.drawPort(IN0);
+        painter.drawPort(IN1);
+        painter.drawPort(OUT);
+        painter.drawPort(UPPER, Strings.get("dividerUpperInput"),  Direction.NORTH);
+        painter.drawPort(REM, Strings.get("dividerRemainderOutput"), Direction.SOUTH);
+        if (pinModeEnabled(painter.getInstance())) {
+            painter.drawPort(SIGN_SEL);
+        }
 
         Location loc = painter.getLocation();
         int x = loc.getX(), y = loc.getY();
@@ -126,19 +176,21 @@ public class Divider extends InstanceFactory {
         g.fillOval(x - 12, y + 3, 4, 4);
         GraphicsUtil.switchToWidth(g, 1);
 
-        // Etiqueta de modo (U/S/A)
+        // Etiqueta de modo (U/S/P/A) + (T/F)
         try {
-            AttributeOption mode = painter.getAttributeValue(SIGN_MODE);
-            String tag = (mode == MODE_SIGNED) ? "S" : (mode == MODE_UNSIGNED ? "U" : "A");
+            AttributeOption sm = painter.getAttributeValue(SIGN_MODE);
+            String sTag = (sm == MODE_SIGNED) ? "S"
+                    : (sm == MODE_UNSIGNED ? "U"
+                    : (sm == MODE_PIN ? "P" : "A"));
             g.setColor(Color.DARK_GRAY);
-            g.drawString(tag, x - 30, y + 5);
+            g.drawString(sTag, x - 30, y + 5);
         } catch (Exception ignore) { }
     }
 
     /* ===================== Núcleo con modo ===================== */
 
     static Value[] computeResult(BitWidth width, Value lo, Value den, Value upper,
-                                 AttributeOption signOpt, AttributeOption divOpt) {
+                                 boolean signed, AttributeOption divOpt) {
         int w = width.getWidth();
         boolean upperDisconnected = (upper == Value.NIL || upper.isUnknown());
 
@@ -147,7 +199,7 @@ public class Divider extends InstanceFactory {
             upper = Value.createKnown(width, 0);
         }
 
-        // Valores no definidos
+        // Manejo de indefinidos
         if (!(lo.isFullyDefined() && den.isFullyDefined() && upper.isFullyDefined())) {
             if (lo.isErrorValue() || den.isErrorValue() || upper.isErrorValue()) {
                 return new Value[]{ Value.createError(width), Value.createError(width) };
@@ -159,22 +211,6 @@ public class Divider extends InstanceFactory {
         int loI    = lo.toIntValue();
         int upI    = upper.toIntValue();
         int denI   = den.toIntValue();
-
-        boolean signed;
-        if (signOpt == MODE_SIGNED) {
-            signed = true;
-        } else if (signOpt == MODE_UNSIGNED) {
-            signed = false;
-        } else { // AUTO
-            if (upperDisconnected) {
-                // usar solo LO + DEN para decidir
-                signed = msbSet(loI, w) || msbSet(denI, w);
-            } else {
-                // usar UPPER + DEN
-                signed = msbSet(upI, w) || msbSet(denI, w);
-            }
-
-        }
 
         long maskW = mask(w);
         long loU   = ((long) loI) & maskW;
@@ -201,7 +237,7 @@ public class Divider extends InstanceFactory {
         if (divOpt == DIV_FLOOR) {
             // Ajuste a floor: si resto != 0 y los signos de num y den difieren
             if (r0 != 0 && ((num ^ denL) < 0)) {
-                r0 += denL; // garantiza 0 <= r < |den|
+                r0 += denL;
                 q0--;
             }
         }
@@ -219,7 +255,7 @@ public class Divider extends InstanceFactory {
     /* ===================== helpers numéricos ===================== */
 
     private static long mask(int w) {
-        return (w >= 64) ? -1L : ((1L << w) - 1L);
+        return (w >= 63) ? -1L : ((1L << w) - 1L);
     }
 
     private static boolean msbSet(int val, int w) {

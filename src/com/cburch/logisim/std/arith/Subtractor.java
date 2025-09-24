@@ -17,17 +17,21 @@ public class Subtractor extends InstanceFactory {
     private static final int OUT   = 2; // Y = A - B - B_IN
     private static final int B_IN  = 3; // borrow in
     private static final int B_OUT = 4; // borrow out (unsigned) / overflow (signed)
+    private static final int SIGN_SEL = 5; // dinámico: sólo existe en MODE_PIN
 
     // ===== Modo de signo =====
     public static final AttributeOption MODE_UNSIGNED
             = new AttributeOption("unsigned", "unsigned", Strings.getter("unsignedOption"));
     public static final AttributeOption MODE_SIGNED
             = new AttributeOption("signed", "signed",  Strings.getter("signedOption"));
+    public static final AttributeOption MODE_PIN
+            = new AttributeOption("pin", "pin", Strings.getter("pinOption")); // agrega en Strings
     public static final AttributeOption MODE_AUTO
             = new AttributeOption("auto", "auto", Strings.getter("autoOption"));
+
     public static final Attribute<AttributeOption> SIGN_MODE =
             Attributes.forOption("signMode", Strings.getter("arithSignMode"),
-                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_AUTO });
+                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Subtractor() {
         super("Subtractor", Strings.getter("subtractorComponent"));
@@ -38,36 +42,52 @@ public class Subtractor extends InstanceFactory {
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
         setOffsetBounds(Bounds.create(-40, -20, 40, 40));
         setIconName("subtractor.gif");
-
-        Port[] ps = new Port[5];
-        ps[IN0]   = new Port(-40, -10, Port.INPUT,  StdAttr.WIDTH);
-        ps[IN1]   = new Port(-40,  10, Port.INPUT,  StdAttr.WIDTH);
-        ps[OUT]   = new Port(  0,   0, Port.OUTPUT, StdAttr.WIDTH);
-        ps[B_IN]  = new Port(-20, -20, Port.INPUT,  1);
-        ps[B_OUT] = new Port(-20,  20, Port.OUTPUT, 1);
-        ps[IN0].setToolTip(Strings.getter("subtractorMinuendTip"));
-        ps[IN1].setToolTip(Strings.getter("subtractorSubtrahendTip"));
-        ps[OUT].setToolTip(Strings.getter("subtractorOutputTip"));
-        ps[B_IN].setToolTip(Strings.getter("subtractorBorrowInTip"));
-        ps[B_OUT].setToolTip(Strings.getter("subtractorBorrowOutTip")); // en signed será overflow
-        setPorts(ps);
     }
 
     @Override
     protected void configureNewInstance(Instance instance) {
-        super.configureNewInstance(instance);
-        instance.getAttributeSet().addAttributeListener(new AttributeListener() {
-            @Override public void attributeValueChanged(AttributeEvent e) {
-                Attribute<?> a = e.getAttribute();
-                if (a == SIGN_MODE) {
-                    instance.fireInvalidated();
-                } else if (a == StdAttr.WIDTH) {
-                    instance.recomputeBounds();
-                    instance.fireInvalidated();
-                }
-            }
-            @Override public void attributeListChanged(AttributeEvent e) { }
-        });
+        instance.addAttributeListener();
+        updatePorts(instance);
+    }
+
+    @Override
+    protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+        if (attr == SIGN_MODE || attr == StdAttr.WIDTH) {
+            updatePorts(instance);
+            instance.recomputeBounds();
+            instance.fireInvalidated();
+        }
+    }
+
+    private static boolean pinModeEnabled(Instance instance) {
+        return instance.getAttributeValue(SIGN_MODE) == MODE_PIN;
+    }
+
+    private void updatePorts(Instance instance) {
+        BitWidth w = instance.getAttributeValue(StdAttr.WIDTH);
+        boolean pinMode = pinModeEnabled(instance);
+
+        Port in0   = new Port(-40, -10, Port.INPUT,  w);
+        Port in1   = new Port(-40,  10, Port.INPUT,  w);
+        Port out   = new Port(  0,   0, Port.OUTPUT, w);
+        Port bin   = new Port(-20, -20, Port.INPUT,  1);
+        Port bout  = new Port(-20,  20, Port.OUTPUT, 1);
+
+        in0.setToolTip(Strings.getter("subtractorMinuendTip"));
+        in1.setToolTip(Strings.getter("subtractorSubtrahendTip"));
+        out.setToolTip(Strings.getter("subtractorOutputTip"));
+        bin.setToolTip(Strings.getter("subtractorBorrowInTip"));
+        bout.setToolTip(Strings.getter("subtractorBorrowOutTip")); // en signed será overflow
+
+        if (pinMode) {
+            Port signSel = new Port(-30, 20, Port.INPUT, BitWidth.ONE);
+            signSel.setToolTip(Strings.getter("subtractorSignSelTip")); // añade en Strings
+            instance.setPorts(new Port[]{ in0, in1, out, bin, bout, signSel });
+        } else {
+            instance.setPorts(new Port[]{ in0, in1, out, bin, bout });
+        }
+
+        instance.fireInvalidated();
     }
 
     @Override
@@ -82,8 +102,11 @@ public class Subtractor extends InstanceFactory {
         Value b_in = state.getPort(B_IN);
         if (b_in == Value.UNKNOWN || b_in == Value.NIL) b_in = Value.FALSE;
 
+        // Decide modo con/sin signo (igual criterio que en Adder)
+        boolean signed = decideSigned(state, modeOpt, width, a, b);
+
         // A - B - B_IN  =  A + (~B) + (~B_IN)
-        Value[] sum = Adder.computeSum(width, a, b.not(), b_in.not(), modeOpt);
+        Value[] sum = Adder.computeSum(width, a, b.not(), b_in.not(), signed);
 
         // propagate them
         // OUT siempre es la suma anterior
@@ -92,25 +115,30 @@ public class Subtractor extends InstanceFactory {
 
         // B_OUT depende del modo:
         //  - Unsigned: BorrowOut = NOT(CarryOut)
-        //  - Signed:   Overflow  = Adder.C_OUT (ya es overflow en modo signed)
-        Value bout;
-        boolean signed;
-        if (modeOpt == MODE_SIGNED) {
-            signed = true;
-        } else if (modeOpt == MODE_UNSIGNED) {
-            signed = false;
-        } else {
-            // AUTO: signed si MSB(A) o MSB(B)
-            int w = width.getWidth();
-            signed = msbSet(a.toIntValue(), w) || msbSet(b.toIntValue(), w);
-        }
-        if (signed) {
-            bout = sum[1];           // overflow (tal como entrega Adder en modo signed)
-        } else {
-            bout = sum[1].not();     // borrow = NOT(carry) en resta unsigned por identidad de 2C
+        //  - Signed:   Overflow  = sum[1] (Adder devuelve ovf en modo signed)
+        Value bout = signed ? sum[1] : sum[1].not();
+        state.setPort(B_OUT, bout, delay);
+    }
+
+    private static boolean decideSigned(InstanceState st, AttributeOption modeOpt, BitWidth w,
+                                        Value a, Value b) {
+        if (modeOpt == MODE_SIGNED)  return true;
+        if (modeOpt == MODE_UNSIGNED) return false;
+
+        if (modeOpt == MODE_PIN) {
+            try {
+                Value sel = st.getPort(SIGN_SEL);
+                return sel == Value.TRUE; // 1 => signed; 0/NC/X => unsigned
+            } catch (IndexOutOfBoundsException ex) {
+                return false;
+            }
         }
 
-        state.setPort(B_OUT, bout, delay);
+        // AUTO: signed si MSB(A) o MSB(B)
+        int width = w.getWidth();
+        int ai = a.isFullyDefined() ? a.toIntValue() : 0;
+        int bi = b.isFullyDefined() ? b.toIntValue() : 0;
+        return msbSet(ai, width) || msbSet(bi, width);
     }
 
     @Override
@@ -120,7 +148,6 @@ public class Subtractor extends InstanceFactory {
 
         g.setColor(Color.GRAY);
         painter.drawPort(IN0);
-        g.setColor(Color.GRAY);
         painter.drawPort(IN1);
         painter.drawPort(OUT);
         painter.drawPort(B_IN,  "b in",  Direction.NORTH);
@@ -130,6 +157,10 @@ public class Subtractor extends InstanceFactory {
         String boutLbl = (m == MODE_SIGNED) ? "ovf" : (m == MODE_UNSIGNED ? "b out" : "b/ovf");
         painter.drawPort(B_OUT, boutLbl, Direction.SOUTH);
 
+        if (pinModeEnabled(painter.getInstance())) {
+            painter.drawPort(SIGN_SEL);
+        }
+
         Location loc = painter.getLocation();
         int x = loc.getX();
         int y = loc.getY();
@@ -138,9 +169,9 @@ public class Subtractor extends InstanceFactory {
         g.drawLine(x - 15, y, x - 5, y); // símbolo "−"
         GraphicsUtil.switchToWidth(g, 1);
 
-        // Marca de modo: U/S/A
+        // Marca de modo: U/S/P/A
         try {
-            String tag = (m == MODE_SIGNED) ? "S" : (m == MODE_UNSIGNED ? "U" : "A");
+            String tag = (m == MODE_SIGNED) ? "S" : (m == MODE_UNSIGNED ? "U" : (m == MODE_PIN ? "P" : "A"));
             g.setColor(Color.DARK_GRAY);
             g.drawString(tag, x - 30, y + 5);
         } catch (Exception ignore) {}

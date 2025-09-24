@@ -19,18 +19,21 @@ public class Adder extends InstanceFactory {
     private static final int OUT   = 2;
     private static final int C_IN  = 3;
     private static final int C_OUT = 4;
+    private static final int SIGN_SEL = 5;
 
     // ===== Modo de signo =====
-    // Tres opciones: Unsigned / Signed / Auto
     public static final AttributeOption MODE_UNSIGNED
             = new AttributeOption("unsigned", "unsigned", Strings.getter("unsignedOption"));
     public static final AttributeOption MODE_SIGNED
             = new AttributeOption("signed", "signed",  Strings.getter("signedOption"));
+    public static final AttributeOption MODE_PIN
+            = new AttributeOption("pin", "pin", Strings.getter("pinOption"));
     public static final AttributeOption MODE_AUTO
             = new AttributeOption("auto", "auto", Strings.getter("autoOption"));
+
     public static final Attribute<AttributeOption> SIGN_MODE =
             Attributes.forOption("signMode", Strings.getter("arithSignMode"),
-                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_AUTO });
+                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Adder() {
         super("Adder", Strings.getter("adderComponent"));
@@ -41,36 +44,52 @@ public class Adder extends InstanceFactory {
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
         setOffsetBounds(Bounds.create(-40, -20, 40, 40));
         setIconName("adder.gif");
-
-        Port[] ps = new Port[5];
-        ps[IN0]   = new Port(-40, -10, Port.INPUT,  StdAttr.WIDTH);
-        ps[IN1]   = new Port(-40,  10, Port.INPUT,  StdAttr.WIDTH);
-        ps[OUT]   = new Port(  0,   0, Port.OUTPUT, StdAttr.WIDTH);
-        ps[C_IN]  = new Port(-20, -20, Port.INPUT,  1);
-        ps[C_OUT] = new Port(-20,  20, Port.OUTPUT, 1);
-        ps[IN0].setToolTip(Strings.getter("adderInputTip"));
-        ps[IN1].setToolTip(Strings.getter("adderInputTip"));
-        ps[OUT].setToolTip(Strings.getter("adderOutputTip"));
-        ps[C_IN].setToolTip(Strings.getter("adderCarryInTip"));
-        ps[C_OUT].setToolTip(Strings.getter("adderCarryOutTip"));
-        setPorts(ps);
     }
 
     @Override
     protected void configureNewInstance(Instance instance) {
-        super.configureNewInstance(instance);
-        instance.getAttributeSet().addAttributeListener(new AttributeListener() {
-            @Override public void attributeValueChanged(AttributeEvent e) {
-                Attribute<?> a = e.getAttribute();
-                if (a == SIGN_MODE) {
-                    instance.fireInvalidated();
-                } else if (a == StdAttr.WIDTH) {
-                    instance.recomputeBounds();
-                    instance.fireInvalidated();
-                }
-            }
-            @Override public void attributeListChanged(AttributeEvent e) { }
-        });
+        instance.addAttributeListener();
+        updatePorts(instance);
+    }
+
+    @Override
+    protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+        if (attr == SIGN_MODE || attr == StdAttr.WIDTH) {
+            updatePorts(instance);         // añade/quita SIGN_SEL según modo
+            instance.recomputeBounds();
+            instance.fireInvalidated();    // limpia halos/zonas de conexión
+        }
+    }
+
+    private static boolean pinModeEnabled(Instance instance) {
+        return instance.getAttributeValue(SIGN_MODE) == MODE_PIN;
+    }
+
+    private void updatePorts(Instance instance) {
+        BitWidth w = instance.getAttributeValue(StdAttr.WIDTH);
+        boolean pinMode = pinModeEnabled(instance);
+
+        Port in0   = new Port(-40, -10, Port.INPUT,  w);
+        Port in1   = new Port(-40,  10, Port.INPUT,  w);
+        Port out   = new Port(  0,   0, Port.OUTPUT, w);
+        Port cin   = new Port(-20, -20, Port.INPUT,  1);
+        Port cout  = new Port(-20,  20, Port.OUTPUT, 1);
+
+        in0.setToolTip(Strings.getter("adderInputTip"));
+        in1.setToolTip(Strings.getter("adderInputTip"));
+        out.setToolTip(Strings.getter("adderOutputTip"));
+        cin.setToolTip(Strings.getter("adderCarryInTip"));
+        cout.setToolTip(Strings.getter("adderCarryOutTip"));
+
+        if (pinMode) {
+            Port signSel = new Port(-30, 20, Port.INPUT, BitWidth.ONE);
+            signSel.setToolTip(Strings.getter("adderSignSelTip")); // añade en Strings
+            instance.setPorts(new Port[]{ in0, in1, out, cin, cout, signSel });
+        } else {
+            instance.setPorts(new Port[]{ in0, in1, out, cin, cout });
+        }
+
+        instance.fireInvalidated();
     }
 
     @Override
@@ -84,12 +103,34 @@ public class Adder extends InstanceFactory {
         Value b    = state.getPort(IN1);
         Value c_in = state.getPort(C_IN);
 
-        Value[] outs = computeSum(width, a, b, c_in, modeOpt);
+        boolean signed = decideSigned(state, modeOpt, width, a, b);
+        Value[] outs = computeSum(width, a, b, c_in, signed);
 
         // propagate them
         int delay = (width.getWidth() + 2) * PER_DELAY;
         state.setPort(OUT,   outs[0], delay);
         state.setPort(C_OUT, outs[1], delay);
+    }
+
+    private static boolean decideSigned(InstanceState st, AttributeOption modeOpt, BitWidth w,
+                                        Value a, Value b) {
+        if (modeOpt == MODE_SIGNED)  return true;
+        if (modeOpt == MODE_UNSIGNED) return false;
+
+        if (modeOpt == MODE_PIN) {
+            try {
+                Value sel = st.getPort(SIGN_SEL);
+                return sel == Value.TRUE;  // 1 => signed; 0/NC/X => unsigned
+            } catch (IndexOutOfBoundsException ex) {
+                return false;
+            }
+        }
+
+        // AUTO: heurística por MSB(A) o MSB(B)
+        int width = w.getWidth();
+        int ai = a.isFullyDefined() ? a.toIntValue() : 0;
+        int bi = b.isFullyDefined() ? b.toIntValue() : 0;
+        return msbSet(ai, width) || msbSet(bi, width);
     }
 
     @Override
@@ -102,9 +143,14 @@ public class Adder extends InstanceFactory {
         painter.drawPort(IN1);
         painter.drawPort(OUT);
         painter.drawPort(C_IN,  "c in",  Direction.NORTH);
+
         AttributeOption m = painter.getAttributeValue(SIGN_MODE);
         String coutLbl = (m == MODE_SIGNED) ? "ovf" : (m == MODE_UNSIGNED ? "c out" : "c/ovf");
-        painter.drawPort(C_OUT, coutLbl, Direction.SOUTH); // carry u overflow
+        painter.drawPort(C_OUT, coutLbl, Direction.SOUTH);
+
+        if (pinModeEnabled(painter.getInstance())) {
+            painter.drawPort(SIGN_SEL);
+        }
 
         Location loc = painter.getLocation();
         int x = loc.getX();
@@ -115,17 +161,15 @@ public class Adder extends InstanceFactory {
         g.drawLine(x - 10, y - 5, x - 10, y + 5);
         GraphicsUtil.switchToWidth(g, 1);
 
-        // Marca de modo: U/S/A
         try {
-            String tag = (m == MODE_SIGNED) ? "S" : (m == MODE_UNSIGNED ? "U" : "A");
+            String tag = (m == MODE_SIGNED) ? "S" : (m == MODE_UNSIGNED ? "U" : (m == MODE_PIN ? "P" : "A"));
             g.setColor(Color.DARK_GRAY);
             g.drawString(tag, x - 30, y + 5);
         } catch (Exception ignore) {}
     }
 
     /* ====================== Núcleo ====================== */
-    static Value[] computeSum(BitWidth width, Value a, Value b, Value c_in,
-                              AttributeOption modeOpt) {
+    static Value[] computeSum(BitWidth width, Value a, Value b, Value c_in, boolean signed) {
         int w = width.getWidth();
         if (c_in == Value.UNKNOWN || c_in == Value.NIL) c_in = Value.FALSE;
 
@@ -134,15 +178,6 @@ public class Adder extends InstanceFactory {
             int ai = a.toIntValue();
             int bi = b.toIntValue();
             int ci = c_in.toIntValue() & 1;
-
-            boolean signed;
-            if (modeOpt == MODE_SIGNED) {
-                signed = true;
-            } else if (modeOpt == MODE_UNSIGNED) {
-                signed = false;
-            } else { // AUTO: signed si MSB(A) o MSB(B)
-                signed = msbSet(ai, w) || msbSet(bi, w);
-            }
 
             long mask = (w >= 64) ? -1L : ((1L << w) - 1L);
 
@@ -170,7 +205,7 @@ public class Adder extends InstanceFactory {
             }
         }
 
-        // Camino bit-a-bit (UNKNOWN/ERROR)
+        // Camino bit-a-bit (UNKNOWN/ERROR) — carry clásico
         Value[] bits = new Value[w];
         Value carry = c_in;
         for (int i = 0; i < w; i++) {
@@ -211,4 +246,3 @@ public class Adder extends InstanceFactory {
         return (u ^ sign) - sign;
     }
 }
-

@@ -238,7 +238,7 @@ public class PriorityMultiplexer extends InstanceFactory {
         Value bx = extra ? state.getPort(idxBX(true)) : Value.createKnown(BitWidth.create(0), 0);
         Value s  = state.getPort(idxS(extra));
 
-        Value out = computeYWithSplitBWrap(w, sw, a, b0, bMainLen, bx, bExtraLen, s);
+        Value out = computeY(w, sw, a, b0, bMainLen, bx, bExtraLen, s);
         state.setPort(idxY(extra), out, Math.max(1, w.getWidth()));
     }
 
@@ -247,11 +247,11 @@ public class PriorityMultiplexer extends InstanceFactory {
      *  - B dividido en dos puertos, cap a 64 bits
      *  - wrap por slice si k excede slices físicos disponibles (64/W).
      */
-    static Value computeYWithSplitBWrap(BitWidth width, BitWidth swidth,
-                                        Value a,
-                                        Value bMain, int bMainLen,
-                                        Value bExtra, int bExtraLen,
-                                        Value s) {
+    static Value computeY(BitWidth width, BitWidth swidth,
+                            Value a,
+                            Value bMain, int bMainLen,
+                            Value bExtra, int bExtraLen,
+                            Value s) {
         int W  = width.getWidth();
 
         // capacidad física
