@@ -53,6 +53,8 @@ public class Plexers extends Library {
 				"multiplexer.gif", "Multiplexer"),
         new FactoryDescription("Bitwise Multiplexer", Strings.getter("bwmuxComponent"),
                 "bwmultiplexer.gif", "BitwiseMultiplexer"),
+        new FactoryDescription("Priority Multiplexer", Strings.getter("pmuxComponent"),
+                "pmultiplexer.gif", "PriorityMultiplexer"),
 		new FactoryDescription("Demultiplexer", Strings.getter("demultiplexerComponent"),
 				"demultiplexer.gif", "Demultiplexer"),
 		new FactoryDescription("Decoder", Strings.getter("decoderComponent"),

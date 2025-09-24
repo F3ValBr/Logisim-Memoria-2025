@@ -78,6 +78,31 @@ public class BitwiseMultiplexer extends InstanceFactory {
 
         // --- 4) Puertos (Logisim se encarga de dibujar sus "dots" y labels si hay) ---
         painter.drawPorts();
+
+        int xA;
+        int yA;
+        int halign;
+
+        if (facing == Direction.WEST) {
+            xA = bds.getX() + bds.getWidth() - 3;
+            yA = bds.getY() + 15;
+            halign = GraphicsUtil.H_RIGHT;
+        } else if (facing == Direction.NORTH) {
+            xA = bds.getX() + 10;
+            yA = bds.getY() + bds.getHeight() - 2;
+            halign = GraphicsUtil.H_CENTER;
+        } else if (facing == Direction.SOUTH) {
+            xA = bds.getX() + 10;
+            yA = bds.getY() + 12;
+            halign = GraphicsUtil.H_CENTER;
+        } else { // EAST
+            xA = bds.getX() + 3;
+            yA = bds.getY() + 15;
+            halign = GraphicsUtil.H_LEFT;
+        }
+
+        g.setColor(Color.GRAY);
+        GraphicsUtil.drawText(g, "A", xA, yA, halign, GraphicsUtil.V_BASELINE);
     }
 
     @Override
