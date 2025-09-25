@@ -19,6 +19,8 @@ public class YosysComponent extends Library {
                     "bwmultiplexer.gif", "BitwiseMultiplexer"),
             new FactoryDescription("Priority Multiplexer", Strings.getter("pmuxComponent"),
                     "pmultiplexer.gif", "PriorityMultiplexer"),
+            new FactoryDescription("Binary Multiplexer", Strings.getter("bmuxComponent"),
+                    "bmultiplexer.gif", "BinaryMultiplexer"),
     };
 
     private List<Tool> tools = null;

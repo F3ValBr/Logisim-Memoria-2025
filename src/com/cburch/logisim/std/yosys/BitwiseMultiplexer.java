@@ -108,7 +108,7 @@ public class BitwiseMultiplexer extends InstanceFactory {
     @Override
     public Bounds getOffsetBounds(AttributeSet attrs) {
         // Caja base estilo MUX (dos datos + 1 select + 1 salida)
-        Bounds base = Bounds.create(-50, -20, 60, 40);
+        Bounds base = Bounds.create(-60, -20, 60, 40);
         Direction dir = attrs.getValue(StdAttr.FACING);
         // Rota igual que el Multiplexer
         return base.rotate(EAST, dir, 0, 0);
@@ -145,27 +145,27 @@ public class BitwiseMultiplexer extends InstanceFactory {
 
         if (dir == Direction.WEST) {
             // salida a la izquierda, entradas a la derecha
-            a = Location.create( 50, -10);
-            b = Location.create( 50,  10);
-            s = Location.create( 30,  20);
-            y = Location.create(-10,   0);
+            a = Location.create( 60, -10);
+            b = Location.create( 60,  10);
+            s = Location.create( 40,  20);
+            y = Location.create(  0,   0);
         } else if (dir == Direction.NORTH) {
             // salida arriba, entradas abajo
-            a = Location.create(-10,  50);
-            b = Location.create( 10,  50);
-            s = Location.create(-20,  30);
-            y = Location.create(  0, -10);
+            a = Location.create(-10,  60);
+            b = Location.create( 10,  60);
+            s = Location.create(-20,  40);
+            y = Location.create(  0,   0);
         } else if (dir == Direction.SOUTH) {
             // salida abajo, entradas arriba
-            a = Location.create(-10, -50);
-            b = Location.create( 10, -50);
-            s = Location.create(-20, -30);
-            y = Location.create(  0,  10);
+            a = Location.create(-10, -60);
+            b = Location.create( 10, -60);
+            s = Location.create(-20, -40);
+            y = Location.create(  0,   0);
         } else { // EAST (por defecto)
-            a = Location.create(-50, -10);
-            b = Location.create(-50,  10);
-            s = Location.create(-30,  20);
-            y = Location.create( 10,   0);
+            a = Location.create(-60, -10);
+            b = Location.create(-60,  10);
+            s = Location.create(-40,  20);
+            y = Location.create(  0,   0);
         }
 
         ps[A] = new Port(a.getX(), a.getY(), Port.INPUT,  w);
@@ -256,5 +256,4 @@ public class BitwiseMultiplexer extends InstanceFactory {
         g.setColor(Color.LIGHT_GRAY);
         g.fillOval(cx - 3, cy - 3, 6, 6);
     }
-
 }
