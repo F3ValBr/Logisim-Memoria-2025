@@ -19,7 +19,7 @@ public class RV32IM extends Processor{
             = Attributes.forOption("displayRegister",Strings.getter("processorDisplayRegister"),
             new AttributeOption[] { SHOW_REGISTER,HIDE_REGISTER});
     public RV32IM() {
-        super("RV32IM","processorRV32IM","Rom.gif");
+        super("RV32IM","processorRV32IM","riscvproc.gif");
         setOffsetBounds(Bounds.create(-SIZE, -SIZE, 2*SIZE, 2*SIZE));
     }
     @Override

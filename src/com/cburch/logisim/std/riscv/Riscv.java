@@ -9,9 +9,9 @@ import java.util.List;
 public class Riscv extends Library {
     private static final FactoryDescription[] DESCRIPTIONS = {
             new FactoryDescription(("RV32IM"),Strings.getter("processorRV32IM"),
-                    "rom.gif","RV32IM"),
+                    "riscvproc.gif","RV32IM"),
             new FactoryDescription(("RV32IM_MIcro"),Strings.getter("processorRV32IMMicro"),
-                    "rom.gif","RV32IMMicro")
+                    "riscvprocmicro.gif","RV32IMMicro")
     };
     private List<Tool> tools = null;
 

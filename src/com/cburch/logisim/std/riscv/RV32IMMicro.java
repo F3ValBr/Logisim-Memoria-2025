@@ -12,7 +12,7 @@ import java.awt.*;
 
 public class RV32IMMicro extends Processor{
     public RV32IMMicro(){
-        super("RV32IM_Micro","processorRV32IMMicro","Rom.gif");
+        super("RV32IM_Micro","processorRV32IMMicro","riscvprocmicro.gif");
         setOffsetBounds(Bounds.create(-40, -40, 80, 80));
     }
 
