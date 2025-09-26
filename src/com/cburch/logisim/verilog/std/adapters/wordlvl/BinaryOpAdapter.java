@@ -32,7 +32,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                                     implements SupportsFactoryLookup {
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
-    private final MacroRegistry registry = MacroRegistry.bootBinaryDefaults();
+    // private final MacroRegistry registry = MacroRegistry.bootBinaryDefaults();
 
     @Override
     public boolean accepts(CellType t) {
@@ -48,6 +48,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
             return fallback.create(canvas, g, cell, where);
         }
 
+        /*
         MacroRegistry.Recipe recipe = registry.find(cell.type().typeId());
         if (recipe != null) {
             var ctx = new ComposeCtx(canvas.getProject(), canvas.getCircuit(), g, Factories.warmup(canvas.getProject()));
@@ -56,7 +57,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
             } catch (CircuitException e) {
                 throw new IllegalStateException("No se pudo componer " + op + ": " + e.getMessage(), e);
             }
-        }
+        }*/
 
         // 1) Elegir factory según operación ($and/$or/$xor/$xnor → Gates; $add/$sub/$mul → Arithmetic)
         ComponentFactory factory = pickFactoryOrNull(canvas.getProject(), op);
@@ -119,6 +120,16 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                 };
                 return FactoryLookup.findFactory(gates, gateName);
             }
+            case LOGIC ->{
+                Library gates = proj.getLogisimFile().getLibrary("Yosys Components");
+                if (gates == null) return null;
+                String gateName = switch (op) {
+                    case LOGIC_AND -> "Logical AND Gate";
+                    case LOGIC_OR -> "Logical OR Gate";
+                    default -> null;
+                };
+                return FactoryLookup.findFactory(gates, gateName);
+            }
             case ARITH -> {
                 if (op == BinaryOp.POW) {
                     Library yosysLib = proj.getLogisimFile().getLibrary("Yosys Components");
@@ -136,7 +147,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                 };
                 return FactoryLookup.findFactory(arith, name);
             }
-            case COMPARE -> {
+            case COMPARE, MISC -> {
                 // Comparadores → usar Comparator (con pin de salida 'eq', 'lt', 'gt')
                 Library arith = proj.getLogisimFile().getLibrary("Arithmetic");
                 if (arith == null) return null;

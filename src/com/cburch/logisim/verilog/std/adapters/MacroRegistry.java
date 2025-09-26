@@ -33,10 +33,6 @@ public final class MacroRegistry {
         MacroRegistry reg = new MacroRegistry();
         UnaryOpComposer u = new UnaryOpComposer();
 
-        reg.register("$logic_not", (ctx, cell, where) -> {
-            int w = guessUnaryWidth(cell.params());
-            return u.buildLogicNotAsSubckt(ctx, cell, where, w);
-        });
         reg.register("$reduce_or", (ctx, cell, where) -> {
             int w = guessUnaryWidth(cell.params());
             return u.buildReduceOrAsSubckt(ctx, cell, where, w);
@@ -64,6 +60,7 @@ public final class MacroRegistry {
         MacroRegistry reg = new MacroRegistry();
         BinaryOpComposer b = new BinaryOpComposer();
 
+        /*
         reg.register("$logic_and", (ctx, cell, where) -> {
             int aw = guessWidth(cell.params(), "A_WIDTH", 1);
             int bw = guessWidth(cell.params(), "B_WIDTH", 1);
@@ -75,6 +72,7 @@ public final class MacroRegistry {
             int bw = guessWidth(cell.params(), "B_WIDTH", 1);
             return b.buildLogicOrAsSubckt(ctx, cell, where, aw, bw);
         });
+        */
 
         return reg;
     }

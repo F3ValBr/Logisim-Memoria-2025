@@ -95,6 +95,12 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
                 };
                 return FactoryLookup.findFactory(gates, gateName);
             }
+            case LOGIC -> {
+                Library gates = proj.getLogisimFile().getLibrary("Yosys Components");
+                if (gates == null) return null;
+                String gateName = op == UnaryOp.LOGIC_NOT ? "Logical NOT Gate" : null;
+                return FactoryLookup.findFactory(gates, gateName);
+            }
             case ARITH -> {
                 Library arith = proj.getLogisimFile().getLibrary("Arithmetic");
                 if (arith == null) return null;

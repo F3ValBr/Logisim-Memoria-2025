@@ -13,6 +13,12 @@ import java.util.List;
 
 public class YosysComponent extends Library {
     private static final FactoryDescription[] DESCRIPTIONS ={
+            new FactoryDescription("Logical NOT Gate", Strings.getter("logicNotGateComponent"),
+                    "logicnot.gif", "LogicalNotGate"),
+            new FactoryDescription("Logical AND Gate", Strings.getter("logicAndGateComponent"),
+                    "logicand.gif", "LogicalAndGate"),
+            new FactoryDescription("Logical OR Gate", Strings.getter("logicOrGateComponent"),
+                    "logicor.gif", "LogicalOrGate"),
             new FactoryDescription("Exponent", Strings.getter("exponentComponent"),
                     "exponent.gif", "Exponent"),
             new FactoryDescription("Bitwise Multiplexer", Strings.getter("bwmuxComponent"),

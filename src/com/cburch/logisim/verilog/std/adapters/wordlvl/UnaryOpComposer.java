@@ -25,39 +25,6 @@ public final class UnaryOpComposer extends BaseComposer {
 
     /* ==== Public API: devuelve la instancia del submódulo (InstanceHandle) ==== */
 
-    /** $logic_not(A) := (A == 0)  (usamos salida EQ del Comparator). */
-    public InstanceHandle buildLogicNotAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
-            throws CircuitException {
-        require(ctx.fx.cmp, "Comparator"); require(ctx.fx.pinF, "Pin");
-        final String name = MacroSubcktKit.macroName("logic_not", aWidth);
-
-        BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
-            try {
-                // Comparator A == 0
-                Location cmpLoc = Location.create(200, 120);
-
-                // Pins
-                Component pinA = addPin(in, "A", false, aWidth, Location.create(cmpLoc.getX()-80, cmpLoc.getY()-10));
-                Component pinY = addPin(in, "Y", true, 1, Location.create(cmpLoc.getX()+10, cmpLoc.getY()));
-
-                Component cmp = add(in, in.fx.cmp, cmpLoc, attrsWithWidthAndLabel(in.fx.cmp, aWidth, "A==0"));
-                if (in.fx.constF != null) {
-                    AttributeSet k = in.fx.constF.createAttributeSet();
-                    setByNameParsed(k, "width", Integer.toString(aWidth));
-                    setByNameParsed(k, "value", "0x0");
-                    add(in, in.fx.constF, Location.create(cmpLoc.getX()-40, cmpLoc.getY()+10), k);
-                }
-
-                // Wires: A -> cmp, cmp.EQ -> Y
-                addWire(in, pinA.getLocation(), cmp.getLocation().translate(-40, -10));
-                addWire(in, cmp.getLocation(), pinY.getLocation());
-
-            } catch (CircuitException e) { throw new RuntimeException(e); }
-        };
-
-        return sub.ensureAndInstantiate(ctx, name, populate, where, lbl(cell));
-    }
-
     /** $reduce_or/$reduce_bool(A) := NOT( A == 0 ). */
     public InstanceHandle buildReduceOrAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
             throws CircuitException {
