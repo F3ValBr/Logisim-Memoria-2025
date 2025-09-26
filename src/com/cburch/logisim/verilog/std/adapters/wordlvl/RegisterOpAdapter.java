@@ -59,19 +59,29 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
             return fallback.create(canvas, g, cell, where);
         }
 
-        // ====== Params/puertos Yosys ======
         final CellParams params = cell.params();
         final String typeId = cell.type().typeId().toLowerCase(Locale.ROOT);
 
         final int width = Math.max(1, guessWidth(params));
-        final boolean hasEnPort = hasPort(cell, "EN")
-                || typeId.contains("dffe") || typeId.contains("sdffe")
-                || typeId.contains("aldffe") || typeId.contains("adffe")
-                || typeId.contains("dffsre") || typeId.contains("sdffce");
 
-        final Boolean enActiveHigh = readBitDefault(params, "EN_POLARITY", true);
-        final boolean clkRising    = readBitDefault(params, "CLK_POLARITY", true);
+        // ¿Es latch?
+        final boolean isLatch =
+                typeId.contains("dlatch") ||     // $dlatch, $adlatch, $dlatchsr, etc.
+                        typeId.startsWith("$dlatch");
 
+        // Enable (Yosys usa EN/EN_POLARITY en varios tipos)
+        final boolean hasEnPort =
+                isLatch || hasPort(cell, "EN") ||
+                        typeId.contains("dffe") || typeId.contains("sdffe") ||
+                        typeId.contains("aldffe") || typeId.contains("adffe") ||
+                        typeId.contains("dffsre") || typeId.contains("sdffce");
+
+        final boolean enActiveHigh = readBitDefault(params, "EN_POLARITY", true);
+
+        // Para flip-flops: CLK_POLARITY
+        final boolean clkRising = readBitDefault(params, "CLK_POLARITY", true);
+
+        // Reset (heurística común)
         final ResetInfo rst = detectReset(cell);
 
         try {
@@ -79,19 +89,27 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
             Circuit circ = canvas.getCircuit();
             AttributeSet attrs = factory.createAttributeSet();
 
-            // Básicos públicos
+            // Básicos
             safeSet(attrs, StdAttr.WIDTH, BitWidth.create(width));
             safeSet(attrs, StdAttr.LABEL, cleanCellName(cell.name()));
-            safeSet(attrs, StdAttr.TRIGGER, clkRising ? StdAttr.TRIG_RISING : StdAttr.TRIG_FALLING);
 
-            // Enable visible + polaridad (por name)
-            setBooleanByName(attrs, A_REG_HAS_EN, hasEnPort);
-            if (hasEnPort) {
-                setOptionByName(attrs, A_EN_POLARITY,
-                        (enActiveHigh != null && enActiveHigh) ? OPT_EN_ACTIVE_HIGH : OPT_EN_ACTIVE_LOW);
+            // Trigger:
+            //  - Latch: TRIG_HIGH / TRIG_LOW según EN_POLARITY
+            //  - FF:    TRIG_RISING / TRIG_FALLING según CLK_POLARITY
+            if (isLatch) {
+                safeSet(attrs, StdAttr.TRIGGER, enActiveHigh ? StdAttr.TRIG_HIGH : StdAttr.TRIG_LOW);
+            } else {
+                safeSet(attrs, StdAttr.TRIGGER, clkRising ? StdAttr.TRIG_RISING : StdAttr.TRIG_FALLING);
             }
 
-            // Reset (por name)
+            // Enable visible + polaridad
+            setBooleanByName(attrs, A_REG_HAS_EN, hasEnPort || isLatch);
+            if (hasEnPort || isLatch) {
+                setOptionByName(attrs, A_EN_POLARITY,
+                        enActiveHigh ? OPT_EN_ACTIVE_HIGH : OPT_EN_ACTIVE_LOW);
+            }
+
+            // Reset por tipo detectado
             switch (rst.kind) {
                 case NONE -> setOptionByName(attrs, A_RESET_TYPE, OPT_RST_NONE);
                 case ASYNC -> {
@@ -106,12 +124,21 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
                 }
             }
 
+            // Nota sobre variantes:
+            // - $adlatch → normalmente caerá en ASYNC vía detectReset (ARST_*).
+            // - $dlatchsr → si Yosys expone SRST/ARST lo tomará; si no, queda NO_RESET.
+            // - $sr (latch SR puro): te sugiero fallback por ahora (no tiene clock/enable estándar).
+            if (typeId.equals("$sr")) {
+                // TODO: mapear $sr a Register más adelante, cambiar esto.
+                return fallback.create(canvas, g, cell, where);
+            }
+
             Component comp = addComponent(proj, circ, g, factory, where, attrs);
             PinLocator pins = (port, bit) -> comp.getLocation(); // placeholder
             return new InstanceHandle(comp, pins);
 
         } catch (CircuitException e) {
-            throw new IllegalStateException("No se pudo añadir Register: " + e.getMessage(), e);
+            throw new IllegalStateException("No se pudo añadir Register/Latch: " + e.getMessage(), e);
         }
     }
 

@@ -342,5 +342,4 @@ public class Register extends InstanceFactory {
                     GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
         }
     }
-
 }
