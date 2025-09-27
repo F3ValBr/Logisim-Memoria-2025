@@ -101,4 +101,3 @@ public enum BinaryOp {
         return Optional.ofNullable(INDEX.get(typeId));
     }
 }
-

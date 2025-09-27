@@ -32,15 +32,14 @@ public final class LayoutBuilder {
     /** Identifica un “extremo lógico” por (nodo, nombre-de-puerto) para no mezclar buses distintos por el mismo par de nodos. */
     private static final class EpKey {
         final ElkNode node;
-        final String portName; // puede ser null
+        final String portName;
         EpKey(ElkNode node, String portName) {
             this.node = node;
             this.portName = portName;
         }
         @Override public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof EpKey)) return false;
-            EpKey k = (EpKey) o;
+            if (!(o instanceof EpKey k)) return false;
             return node == k.node && Objects.equals(portName, k.portName);
         }
         @Override public int hashCode() {
@@ -50,22 +49,29 @@ public final class LayoutBuilder {
 
     /** Par dirigido (src,dst) + baseLabel (nombre lógico del bus para la etiqueta). */
     private static final class PairKey {
-        final EpKey src;
-        final EpKey dst;
-        final String baseLabel; // p.ej. "data", "A→Y", "n123"
+        final EpKey src, dst;
+        final String baseLabel;
         PairKey(EpKey src, EpKey dst, String baseLabel) {
             this.src = src; this.dst = dst; this.baseLabel = baseLabel;
         }
         @Override public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof PairKey)) return false;
-            PairKey k = (PairKey) o;
+            if (!(o instanceof PairKey k)) return false;
             return Objects.equals(src, k.src) &&
                     Objects.equals(dst, k.dst) &&
                     Objects.equals(baseLabel, k.baseLabel);
         }
         @Override public int hashCode() {
             return (31 * src.hashCode() + dst.hashCode()) * 31 + Objects.hashCode(baseLabel);
+        }
+    }
+
+    private static final class RefInfo {
+        final ElkNode node;
+        final String portName;
+        final int bitIndex;
+        RefInfo(ElkNode node, String portName, int bitIndex){
+            this.node=node; this.portName=portName; this.bitIndex=bitIndex;
         }
     }
 
@@ -97,21 +103,20 @@ public final class LayoutBuilder {
         return "n" + netId;
     }
 
-    private static final class RefInfo {
-        final ElkNode node;
-        final String portName; // puede ser null
-        final int bitIndex;
-        RefInfo(ElkNode node, String portName, int bitIndex) {
-            this.node = node; this.portName = portName; this.bitIndex = bitIndex;
-        }
-    }
-
-    // -------------------------------------------------------------------------
-
+    // ================= Overload para compatibilidad =================
     public static Result build(Project proj,
                                VerilogModuleImpl mod,
                                ModuleNetIndex netIdx,
                                NodeSizer sizer) {
+        return build(proj, mod, netIdx, sizer, Collections.emptyMap());
+    }
+
+    // ================= Versión con alias de celdas =================
+    public static Result build(Project proj,
+                               VerilogModuleImpl mod,
+                               ModuleNetIndex netIdx,
+                               NodeSizer sizer,
+                               Map<VerilogCell, VerilogCell> cellAlias) {
         // --- Grafo raíz y opciones ELK ---
         ElkNode root = ElkGraphUtil.createGraph();
         root.setProperty(CoreOptions.ALGORITHM, "org.eclipse.elk.layered");
@@ -125,6 +130,9 @@ public final class LayoutBuilder {
 
         // --- 1) Celdas internas como nodos ---
         for (VerilogCell cell : mod.cells()) {
+            // si es alias, NO creamos nodo; su representante tendrá el nodo
+            if (cellAlias.containsKey(cell)) continue;
+
             ElkNode n = ElkGraphUtil.createNode(root);
 
             Dimension d = (sizer != null)
@@ -157,9 +165,7 @@ public final class LayoutBuilder {
             r.portNode.put(p, n);
         }
 
-        // --- 3) Aristas: agrupar bits por (src,dst,baseLabel) para crear UNA arista por bus ---
-
-        // (src,dst,baseLabel) -> conjunto de índices de bit
+        // --- 3) Aristas agrupadas por bus (src,dst,baseLabel) ---
         Map<PairKey, SortedSet<Integer>> busGroups = new HashMap<>();
 
         for (int netId : netIdx.netIds()) {
@@ -179,8 +185,22 @@ public final class LayoutBuilder {
                     infos.add(new RefInfo(node, pname, bit));
                 } else {
                     int cIdx = ModuleNetIndex.ownerIdx(ref);
-                    VerilogCell vc = mod.cells().get(cIdx);
-                    ElkNode node = r.cellNode.get(vc);
+                    VerilogCell owner = mod.cells().get(cIdx);
+                    // Remapear al representante si es alias
+                    VerilogCell repr = cellAlias.getOrDefault(owner, owner);
+
+                    ElkNode node = r.cellNode.get(repr);
+                    // Si por alguna razón el repr aún no está en el mapa, créalo on-demand.
+                    if (node == null) {
+                        node = ElkGraphUtil.createNode(root);
+                        Dimension d = (sizer != null) ? sizer.sizeForCell(proj, repr) : new Dimension(60, 60);
+                        node.setWidth(Math.max(30, d.width));
+                        node.setHeight(Math.max(20, d.height));
+                        ElkLabel lbl = ElkGraphUtil.createLabel(node);
+                        lbl.setText(repr.name());
+                        r.cellNode.put(repr, node);
+                    }
+
                     String pname = netIdx.resolveCellPortName(ref).orElse(null);
                     infos.add(new RefInfo(node, pname, bit));
                 }
@@ -200,16 +220,6 @@ public final class LayoutBuilder {
                 set.add(src.bitIndex);
                 set.add(dst.bitIndex);
             }
-
-            /*
-             * ——— Si más adelante quieres orientación DRIVER→SINK ———
-             * Puedes reemplazar el bloque anterior por:
-             * - Detectar roles de PortEndpoint / ModulePort (IN/OUT/INOUT)
-             * - Conectar DRIVER -> (SINK ∪ INOUT)
-             * - Fallback a estrella si no hay drivers claros
-             * Mantuve esta versión “agnóstica de dirección” para que compile
-             * en tu Logisim sin depender de tipos concretos.
-             */
         }
 
         // Crear UNA arista por grupo y etiquetar con rangos de bits
@@ -224,10 +234,6 @@ public final class LayoutBuilder {
 
             ElkLabel el = ElkGraphUtil.createLabel(edge);
             el.setText(label);
-
-            // (Opcional) Guardar ancho para trazo más grueso en tu renderer:
-            // int width = e.getValue().size();
-            // edge.setProperty(CoreOptions.COMMENT, "busWidth=" + width);
         }
 
         return r;
