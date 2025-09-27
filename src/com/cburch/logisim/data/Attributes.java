@@ -111,6 +111,10 @@ public class Attributes {
 			int start, int end) {
 		return new IntegerRangeAttribute(name, disp, start, end);
 	}
+	public static Attribute<Integer> forIntegerMultiplierRange(String name, StringGetter disp,
+													 int start, int end) {
+		return new IntegerMultiplierRangeAttribute(name, disp, start, end);
+	}
 
 	public static Attribute<Double> forDouble(String name, StringGetter disp) {
 		return new DoubleAttribute(name, disp);
@@ -318,6 +322,42 @@ public class Attributes {
 					options = new Integer[end - start + 1];
 					for (int i = start; i <= end; i++) {
 						options[i - start] = Integer.valueOf(i);
+					}
+				}
+				JComboBox combo = new JComboBox(options);
+				if (value == null) combo.setSelectedIndex(-1);
+				else combo.setSelectedItem(value);
+				return combo;
+			}
+		}
+	}
+
+	private static class IntegerMultiplierRangeAttribute extends Attribute<Integer> {
+		Integer[] options = null;
+		int start;
+		int end;
+		private IntegerMultiplierRangeAttribute(String name, StringGetter disp, int start, int end) {
+			super(name, disp);
+			this.start = start;
+			this.end = end;
+		}
+
+		@Override
+		public Integer parse(String value) {
+			int v = (int) Long.parseLong(value);
+			if (v < 1<<start) throw new NumberFormatException("integer too small");
+			if (v > 1<<end) throw new NumberFormatException("integer too large");
+			return Integer.valueOf(v);
+		}
+		@Override
+		public java.awt.Component getCellEditor(Integer value) {
+			if (end - start + 1 > 32) {
+				return super.getCellEditor(value);
+			} else {
+				if (options == null) {
+					options = new Integer[end - start + 1];
+					for (int i = start; i <= end; i++) {
+						options[i - start] = Integer.valueOf(1<<i);
 					}
 				}
 				JComboBox combo = new JComboBox(options);

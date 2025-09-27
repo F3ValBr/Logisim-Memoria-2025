@@ -26,9 +26,12 @@ public class BinaryOpFactory extends AbstractVerilogCellFactory {
             Map<String, List<Object>> connections
     ) {
         BinaryOp op = BinaryOp.fromYosys(type);
-        var parameters = new BinaryOpParams(op, params);
-        var attributes = new CommonOpAttribs(attribs);
-        var cell = new WordLvlCellImpl(name, CellType.fromYosys(type), parameters, attributes);
+        if (op == null) {
+            throw new IllegalArgumentException("Unknown binary operation type: " + type);
+        }
+        BinaryOpParams parameters = new BinaryOpParams(op, params);
+        CommonOpAttribs attributes = new CommonOpAttribs(attribs);
+        WordLvlCellImpl cell = new WordLvlCellImpl(name, CellType.fromYosys(type), parameters, attributes);
         buildEndpoints(cell, ports, connections);
         return cell;
     }

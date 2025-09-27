@@ -3,7 +3,6 @@
 
 package com.cburch.logisim.std.memory;
 
-import java.awt.Color;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -40,21 +39,52 @@ public class Ram extends Mem {
 	static final Attribute<AttributeOption> ATTR_BUS = Attributes.forOption("bus",
 			Strings.getter("ramBusAttr"),
 			new AttributeOption[] { BUS_COMBINED, BUS_ASYNCH, BUS_SEPARATE });
+    static final Attribute<Boolean> CLEAR_PIN =
+            Attributes.forBoolean("clearpin", Strings.getter("ramClearPin"));
 
-	private static Attribute<?>[] ATTRIBUTES = {
-		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS
+	private final static Attribute<?>[] ATTRIBUTES = {
+		Mem.ADDR_ATTR, Mem.DATA_ATTR, ATTR_BUS, StdAttr.TRIGGER, CLEAR_PIN
 	};
-	private static Object[] DEFAULTS = {
-		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED
+	private final static Object[] DEFAULTS = {
+		BitWidth.create(8), BitWidth.create(8), BUS_COMBINED, StdAttr.TRIG_RISING, Boolean.TRUE
 	};
-	
-	private static final int OE  = MEM_INPUTS + 0;
-	private static final int CLR = MEM_INPUTS + 1;
-	private static final int CLK = MEM_INPUTS + 2;
-	private static final int WE  = MEM_INPUTS + 3;
-	private static final int DIN = MEM_INPUTS + 4;
 
-	private static Object[][] logOptions = new Object[9][];
+    private static final class Idx {
+        int count;  // tamaño total del arreglo ps
+        int OE  = -1;
+        int CLR = -1;
+        int CLK = -1;
+        int WE  = -1;
+        int DIN = -1;
+    }
+
+    private static Idx computeIdx(AttributeSet attrs) {
+        Idx i = new Idx();
+        int idx = MEM_INPUTS; // los primeros MEM_INPUTS los pone configureStandardPorts
+
+        Object bus = attrs.getValue(ATTR_BUS);
+        boolean asynch   = BUS_ASYNCH.equals(bus);
+        boolean separate = BUS_SEPARATE.equals(bus);
+        boolean clear    = Boolean.TRUE.equals(attrs.getValue(CLEAR_PIN));
+
+        // Orden canónico:
+        // OE (siempre) -> CLR (opcional) -> CLK (si no es asíncrona) -> WE/DIN (si separado)
+        i.OE = idx++;                 // siempre
+        if (clear) i.CLR = idx++;     // opcional
+
+        if (!asynch) i.CLK = idx++;   // sin reloj si es asíncrona
+
+        if (separate) {               // entradas separadas
+            i.WE  = idx++;
+            i.DIN = idx++;
+        }
+
+        i.count = idx;
+        return i;
+    }
+
+
+    private final static Object[][] logOptions = new Object[9][];
 
 	public Ram() {
 		super("RAM", Strings.getter("ramComponent"), 3);
@@ -67,47 +97,59 @@ public class Ram extends Mem {
 		super.configureNewInstance(instance);
 		instance.addAttributeListener();
 	}
-	
-	@Override
-	protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
-		super.instanceAttributeChanged(instance, attr);
-		configurePorts(instance);
-	}
-	
-	@Override
-	void configurePorts(Instance instance) {
-		Object bus = instance.getAttributeValue(ATTR_BUS);
-		if (bus == null) bus = BUS_COMBINED;
-		boolean asynch = bus == null ? false : bus.equals(BUS_ASYNCH);
-		boolean separate = bus == null ? false : bus.equals(BUS_SEPARATE);
 
-		int portCount = MEM_INPUTS;
-		if (asynch) portCount += 2;
-		else if (separate) portCount += 5;
-		else portCount += 3;
-		Port[] ps = new Port[portCount];
+    @Override
+    protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+        super.instanceAttributeChanged(instance, attr);
 
-		configureStandardPorts(instance, ps);
-		ps[OE]  = new Port(-50, 40, Port.INPUT, 1);
-		ps[OE].setToolTip(Strings.getter("ramOETip"));
-		ps[CLR] = new Port(-30, 40, Port.INPUT, 1);
-		ps[CLR].setToolTip(Strings.getter("ramClrTip"));
-		if (!asynch) {
-			ps[CLK] = new Port(-70, 40, Port.INPUT, 1);
-			ps[CLK].setToolTip(Strings.getter("ramClkTip"));
-		}
-		if (separate) {
-			ps[WE] = new Port(-110, 40, Port.INPUT, 1);
-			ps[WE].setToolTip(Strings.getter("ramWETip"));
-			ps[DIN] = new Port(-140, 20, Port.INPUT, DATA_ATTR);
-			ps[DIN].setToolTip(Strings.getter("ramInTip"));
-		} else {
-			ps[DATA].setToolTip(Strings.getter("ramBusTip"));
-		}
-		instance.setPorts(ps);
-	}
+        if (attr == ATTR_BUS) {
+            Object bus = instance.getAttributeValue(ATTR_BUS);
+            if (BUS_ASYNCH.equals(bus)) {
+                instance.getAttributeSet().setValue(StdAttr.TRIGGER, StdAttr.TRIG_RISING);
+            }
+        }
 
-	@Override
+        instance.recomputeBounds();
+        configurePorts(instance);
+    }
+
+
+    @Override
+    void configurePorts(Instance instance) {
+        AttributeSet attrs = instance.getAttributeSet();
+        Idx i = computeIdx(attrs);
+
+        Port[] ps = new Port[i.count];
+        configureStandardPorts(instance, ps); // coloca ADDR/DATA/CS/etc. en [0..MEM_INPUTS-1]
+
+        // Siempre OE
+        ps[i.OE] = new Port(-50, 40, Port.INPUT, 1);
+        ps[i.OE].setToolTip(Strings.getter("ramOETip"));
+
+        // CLR si existe
+        if (i.CLR >= 0) {
+            ps[i.CLR] = new Port(-30, 40, Port.INPUT, 1);
+            ps[i.CLR].setToolTip(Strings.getter("ramClrTip"));
+        }
+
+        // CLK si existe
+        if (i.CLK >= 0) {
+            ps[i.CLK] = new Port(-70, 40, Port.INPUT, 1);
+            ps[i.CLK].setToolTip(Strings.getter("ramClkTip"));
+        }
+
+        // WE/DIN si separado
+        if (i.WE  >= 0) { ps[i.WE]  = new Port(-110, 40, Port.INPUT, 1); ps[i.WE].setToolTip(Strings.getter("ramWETip")); }
+        if (i.DIN >= 0) { ps[i.DIN] = new Port(-140, 20, Port.INPUT, DATA_ATTR); ps[i.DIN].setToolTip(Strings.getter("ramInTip")); }
+        else {
+            // bus combinado: etiqueta en DATA
+            ps[DATA].setToolTip(Strings.getter("ramBusTip"));
+        }
+
+        instance.setPorts(ps);
+    }
+
+    @Override
 	public AttributeSet createAttributeSet() {
 		return AttributeSets.fixedSet(ATTRIBUTES, DEFAULTS);
 	}
@@ -151,78 +193,98 @@ public class Ram extends Mem {
 		return state.getHexFrame(proj);
 	}
 
-	@Override
-	public void propagate(InstanceState state) {
-		RamState myState = (RamState) getState(state);
-		BitWidth dataBits = state.getAttributeValue(DATA_ATTR);
-		Object busVal = state.getAttributeValue(ATTR_BUS);
-		boolean asynch = busVal == null ? false : busVal.equals(BUS_ASYNCH);
-		boolean separate = busVal == null ? false : busVal.equals(BUS_SEPARATE);
+    @Override
+    public void propagate(InstanceState state) {
+        AttributeSet attrs = state.getAttributeSet();
+        Idx i = computeIdx(attrs);
 
-		Value addrValue = state.getPort(ADDR);
-		boolean chipSelect = state.getPort(CS) != Value.FALSE;
-		boolean triggered = asynch || myState.setClock(state.getPort(CLK), StdAttr.TRIG_RISING);
-		boolean outputEnabled = state.getPort(OE) != Value.FALSE;
-		boolean shouldClear = state.getPort(CLR) == Value.TRUE;
-		
-		if (shouldClear) {
-			myState.getContents().clear();
-		}
-		
-		if (!chipSelect) {
-			myState.setCurrent(-1);
-			state.setPort(DATA, Value.createUnknown(dataBits), DELAY);
-			return;
-		}
+        RamState myState = (RamState) getState(state);
+        BitWidth dataBits = state.getAttributeValue(DATA_ATTR);
 
-		int addr = addrValue.toIntValue();
-		if (!addrValue.isFullyDefined() || addr < 0)
-			return;
-		if (addr != myState.getCurrent()) {
-			myState.setCurrent(addr);
-			myState.scrollToShow(addr);
-		}
+        // Lecturas de atributos de modo
+        Object busVal = attrs.getValue(ATTR_BUS);
+        boolean asynch   = BUS_ASYNCH.equals(busVal);
+        boolean separate = BUS_SEPARATE.equals(busVal);
+        boolean clear    = Boolean.TRUE.equals(attrs.getValue(CLEAR_PIN));
 
-		if (!shouldClear && triggered) {
-			boolean shouldStore;
-			if (separate) {
-				shouldStore = state.getPort(WE) != Value.FALSE;
-			} else {
-				shouldStore = !outputEnabled;
-			}
-			if (shouldStore) {
-				Value dataValue = state.getPort(separate ? DIN : DATA);
-				myState.getContents().set(addr, dataValue.toIntValue());
-			}
-		}
+        Object trigger = attrs.getValue(StdAttr.TRIGGER);
 
-		if (outputEnabled) {
-			int val = myState.getContents().get(addr);
-			state.setPort(DATA, Value.createKnown(dataBits, val), DELAY);
-		} else {
-			state.setPort(DATA, Value.createUnknown(dataBits), DELAY);
-		}
-	}
+        Value addrValue   = state.getPort(ADDR);
+        boolean chipSelect   = state.getPort(CS) != Value.FALSE;
+        boolean outputEnabled= state.getPort(i.OE) != Value.FALSE;
 
-	@Override
-	public void paintInstance(InstancePainter painter) {
-		super.paintInstance(painter);
-		Object busVal = painter.getAttributeValue(ATTR_BUS);
-		boolean asynch = busVal == null ? false : busVal.equals(BUS_ASYNCH);
-		boolean separate = busVal == null ? false : busVal.equals(BUS_SEPARATE);
-		
-		if (!asynch) painter.drawClock(CLK, Direction.NORTH);
-		painter.drawPort(OE, Strings.get("ramOELabel"), Direction.SOUTH);
-		painter.drawPort(CLR, Strings.get("ramClrLabel"), Direction.SOUTH);
+        boolean triggered = asynch || (i.CLK >= 0 && myState.setClock(state.getPort(i.CLK), trigger));
 
-		if (separate) {
-			painter.drawPort(WE, Strings.get("ramWELabel"), Direction.SOUTH);
-			painter.getGraphics().setColor(Color.BLACK);
-			painter.drawPort(DIN, Strings.get("ramDataLabel"), Direction.EAST);
-		}
-	}
+        boolean shouldClear = false;
+        if (clear && i.CLR >= 0) {
+            shouldClear = state.getPort(i.CLR) == Value.TRUE;
+            if (shouldClear) {
+                myState.getContents().clear();
+            }
+        }
 
-	private static class RamState extends MemState
+        if (!chipSelect) {
+            myState.setCurrent(-1);
+            state.setPort(DATA, Value.createUnknown(dataBits), DELAY);
+            return;
+        }
+
+        int addr = addrValue.toIntValue();
+        if (!addrValue.isFullyDefined() || addr < 0) return;
+
+        if (addr != myState.getCurrent()) {
+            myState.setCurrent(addr);
+            myState.scrollToShow(addr);
+        }
+
+        if (!shouldClear && triggered) {
+            boolean shouldStore;
+            if (separate) {
+                shouldStore = (i.WE >= 0) && state.getPort(i.WE) != Value.FALSE;
+            } else {
+                shouldStore = !outputEnabled;
+            }
+            if (shouldStore) {
+                Value dataValue = state.getPort(separate && i.DIN >= 0 ? i.DIN : DATA);
+                myState.getContents().set(addr, dataValue.toIntValue());
+            }
+        }
+
+        if (outputEnabled) {
+            int val = myState.getContents().get(addr);
+            state.setPort(DATA, Value.createKnown(dataBits, val), DELAY);
+        } else {
+            state.setPort(DATA, Value.createUnknown(dataBits), DELAY);
+        }
+    }
+
+    @Override
+    public void paintInstance(InstancePainter painter) {
+        super.paintInstance(painter);
+
+        AttributeSet attrs = painter.getAttributeSet();
+        Idx i = computeIdx(attrs);
+
+        Object busVal = attrs.getValue(ATTR_BUS);
+        boolean asynch   = BUS_ASYNCH.equals(busVal);
+        boolean separate = BUS_SEPARATE.equals(busVal);
+        boolean clear    = Boolean.TRUE.equals(attrs.getValue(CLEAR_PIN));
+
+        if (i.CLR >= 0 && clear) {
+            painter.drawPort(i.CLR, Strings.get("ramClrLabel"), Direction.SOUTH);
+        }
+        if (i.CLK >= 0 && !asynch) {
+            painter.drawClock(i.CLK, Direction.NORTH);
+        }
+        painter.drawPort(i.OE, Strings.get("ramOELabel"), Direction.SOUTH);
+
+        if (separate) {
+            if (i.WE >= 0)  painter.drawPort(i.WE,  Strings.get("ramWELabel"), Direction.SOUTH);
+            if (i.DIN >= 0) painter.drawPort(i.DIN, Strings.get("ramDataLabel"), Direction.EAST);
+        }
+    }
+
+    private static class RamState extends MemState
 			implements InstanceData, AttributeListener {
 		private Instance parent;
 		private MemListener listener;

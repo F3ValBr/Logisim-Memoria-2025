@@ -33,6 +33,8 @@ public class Memory extends Library {
 				"ram.gif", "Ram"),
 		new FactoryDescription("ROM", Strings.getter("romComponent"),
 				"rom.gif", "Rom"),
+		new FactoryDescription("Timer", Strings.getter("timerComponent"),
+				"rom.gif", "Timer"),
 	};
 	
 	private List<Tool> tools = null;

@@ -5,12 +5,10 @@ package com.cburch.logisim.std.memory;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.cburch.logisim.data.Attribute;
-import com.cburch.logisim.data.BitWidth;
-import com.cburch.logisim.data.Bounds;
-import com.cburch.logisim.data.Direction;
-import com.cburch.logisim.data.Value;
+import com.cburch.logisim.data.*;
 import com.cburch.logisim.instance.Instance;
 import com.cburch.logisim.instance.InstanceFactory;
 import com.cburch.logisim.instance.InstancePainter;
@@ -23,124 +21,325 @@ import com.cburch.logisim.util.StringUtil;
 
 public class Register extends InstanceFactory {
 	private static final int DELAY = 8;
-	private static final int OUT = 0;
-	private static final int IN  = 1;
-	private static final int CK  = 2;
-	private static final int CLR = 3;
-	private static final int EN  = 4;
 
-	public Register() {
+    // Tipo de reset (asincrónico, sincrónico, ninguno)
+    static final AttributeOption ASYNC_RESET
+        = new AttributeOption("asyncReset", Strings.getter("registerAsyncResetOpt"));
+    static final AttributeOption SYNC_RESET
+        = new AttributeOption("syncReset",  Strings.getter("registerSyncResetOpt"));
+    static final AttributeOption NO_RESET
+        = new AttributeOption("noReset",    Strings.getter("registerNoResetOpt"));
+    static final Attribute<AttributeOption> RESET_TYPE
+        = Attributes.forOption("resetType", Strings.getter("registerResetTypeAttr"),
+            new AttributeOption[] { ASYNC_RESET, SYNC_RESET, NO_RESET });
+
+    // Polaridad del reset (activa alta o activa baja)
+    static final AttributeOption RST_ACTIVE_HIGH
+        = new AttributeOption("rstActiveHigh", Strings.getter("registerRstActiveHighOpt"));
+    static final AttributeOption RST_ACTIVE_LOW
+        = new AttributeOption("rstActiveLow",  Strings.getter("registerRstActiveLowOpt"));
+    static final Attribute<AttributeOption> RESET_POLARITY
+        = Attributes.forOption("resetPolarity", Strings.getter("registerResetPolarityAttr"),
+            new AttributeOption[] { RST_ACTIVE_HIGH, RST_ACTIVE_LOW });
+
+    // Valor de reset configurable (texto: dec, 0x.., 0b..)
+    static final Attribute<String> RESET_VALUE =
+            Attributes.forString("resetValue", Strings.getter("registerResetValueAttr"));
+
+    // Atributos nuevos (mostrar u ocultar puertos)
+    static final Attribute<Boolean> HAS_EN  = Attributes.forBoolean("regHasEnable",  Strings.getter("registerHasEnableAttr"));
+
+    // Polaridad del enable (activa alta o activa baja)
+    static final AttributeOption EN_ACTIVE_HIGH
+            = new AttributeOption("enActiveHigh", Strings.getter("registerEnActiveHighOpt"));
+    static final AttributeOption EN_ACTIVE_LOW
+            = new AttributeOption("enActiveLow",  Strings.getter("registerEnActiveLowOpt"));
+    static final Attribute<AttributeOption> EN_POLARITY
+            = Attributes.forOption("enablePolarity", Strings.getter("registerEnablePolarityAttr"),
+            new AttributeOption[] { EN_ACTIVE_HIGH, EN_ACTIVE_LOW });
+
+    public Register() {
 		super("Register", Strings.getter("registerComponent"));
-		setAttributes(new Attribute[] {
+		setAttributes(
+            new Attribute[] {
 				StdAttr.WIDTH, StdAttr.TRIGGER,
-				StdAttr.LABEL, StdAttr.LABEL_FONT
-			}, new Object[] {
+				StdAttr.LABEL, StdAttr.LABEL_FONT,
+                RESET_TYPE, RESET_POLARITY,
+                RESET_VALUE,
+                HAS_EN, EN_POLARITY
+			},
+            new Object[] {
 				BitWidth.create(8), StdAttr.TRIG_RISING,
-				"", StdAttr.DEFAULT_LABEL_FONT
+				"", StdAttr.DEFAULT_LABEL_FONT,
+                ASYNC_RESET, RST_ACTIVE_HIGH,
+                "0",
+                Boolean.TRUE, EN_ACTIVE_HIGH
 			});
 		setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
 		setOffsetBounds(Bounds.create(-30, -20, 30, 40));
 		setIconName("register.gif");
 		setInstancePoker(RegisterPoker.class);
 		setInstanceLogger(RegisterLogger.class);
-		
-		Port[] ps = new Port[5];
-		ps[OUT] = new Port(  0,  0, Port.OUTPUT, StdAttr.WIDTH);
-		ps[IN]  = new Port(-30,  0, Port.INPUT, StdAttr.WIDTH);
-		ps[CK]  = new Port(-20, 20, Port.INPUT, 1);
-		ps[CLR] = new Port(-10, 20, Port.INPUT, 1);
-		ps[EN]  = new Port(-30, 10, Port.INPUT, 1);
-		ps[OUT].setToolTip(Strings.getter("registerQTip"));
-		ps[IN].setToolTip(Strings.getter("registerDTip"));
-		ps[CK].setToolTip(Strings.getter("registerClkTip"));
-		ps[CLR].setToolTip(Strings.getter("registerClrTip"));
-		ps[EN].setToolTip(Strings.getter("registerEnableTip"));
-		setPorts(ps);
-	}
-	
-	@Override
-	protected void configureNewInstance(Instance instance) {
-		Bounds bds = instance.getBounds();
-		instance.setTextField(StdAttr.LABEL, StdAttr.LABEL_FONT,
-				bds.getX() + bds.getWidth() / 2, bds.getY() - 3,
-				GraphicsUtil.H_CENTER, GraphicsUtil.V_BASELINE);
 	}
 
-	@Override
-	public void propagate(InstanceState state) {
-		RegisterData data = (RegisterData) state.getData();
-		if (data == null) {
-			data = new RegisterData();
-			state.setData(data);
-		}
+    @Override
+    protected void configureNewInstance(Instance instance) {
+        Bounds bds = instance.getBounds();
+        instance.setTextField(StdAttr.LABEL, StdAttr.LABEL_FONT,
+                bds.getX() + bds.getWidth() / 2, bds.getY() - 3,
+                GraphicsUtil.H_CENTER, GraphicsUtil.V_BASELINE);
 
-		BitWidth dataWidth = state.getAttributeValue(StdAttr.WIDTH);
-		Object triggerType = state.getAttributeValue(StdAttr.TRIGGER);
-		boolean triggered = data.updateClock(state.getPort(CK), triggerType);
+        // Construir puertos según atributos
+        recomputePorts(instance);
+        instance.addAttributeListener();
+    }
 
-		if (state.getPort(CLR) == Value.TRUE) {
-			data.value = 0;
-		} else if (triggered && state.getPort(EN) != Value.FALSE) {
-			Value in = state.getPort(IN);
-			if (in.isFullyDefined()) data.value = in.toIntValue();
-		} 
+    @Override
+    public void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+        if (attr == StdAttr.WIDTH
+        || attr == StdAttr.TRIGGER
+        || attr == HAS_EN
+        || attr == RESET_TYPE
+        || attr == RESET_POLARITY) {
+            recomputePorts(instance);
+        }
+    }
 
-		state.setPort(OUT, Value.createKnown(dataWidth, data.value), DELAY);
-	}
+    /* ===== helpers de modo y polaridad ===== */
+    private static boolean hasEn(Instance inst) {
+        Boolean b = inst.getAttributeValue(HAS_EN);
+        return b != null && b.booleanValue();
+    }
 
-	@Override
-	public void paintInstance(InstancePainter painter) {
-		Graphics g = painter.getGraphics();
-		Bounds bds = painter.getBounds();
-		RegisterData state = (RegisterData) painter.getData();
-		BitWidth widthVal = painter.getAttributeValue(StdAttr.WIDTH);
-		int width = widthVal == null ? 8 : widthVal.getWidth();
+    private static boolean enActiveHigh(Instance inst) {
+        AttributeOption opt = inst.getAttributeValue(EN_POLARITY);
+        return opt == null || opt == EN_ACTIVE_HIGH;
+    }
 
-		// determine text to draw in label
-		String a;
-		String b = null;
-		if (painter.getShowState()) {
-			int val = state == null ? 0 : state.value;
-			String str = StringUtil.toHexString(width, val);
-			if (str.length() <= 4) {
-				a = str;
-			} else {
-				int split = str.length() - 4;
-				a = str.substring(0, split);
-				b = str.substring(split);
-			}
-		} else {
-			a = Strings.get("registerLabel");
-			b = Strings.get("registerWidthLabel", "" + widthVal.getWidth());
-		}
+    private static boolean hasRst(Instance inst) {
+        AttributeOption t = inst.getAttributeValue(RESET_TYPE);
+        return t != NO_RESET;
+    }
+    private static boolean rstIsSync(Instance inst) {
+        return inst.getAttributeValue(RESET_TYPE) == SYNC_RESET;
+    }
+    private static boolean rstActiveHigh(Instance inst) {
+        return inst.getAttributeValue(RESET_POLARITY) == RST_ACTIVE_HIGH;
+    }
 
-		// draw boundary, label
-		painter.drawBounds();
-		painter.drawLabel();
+    private static int parseResetValue(AttributeSet attrs, BitWidth w) {
+        String s = attrs.getValue(RESET_VALUE);
+        if (s == null || s.isBlank()) s = "0";
+        s = s.trim().toLowerCase();
 
-		// draw input and output ports
-		if (b == null) {
-			painter.drawPort(IN,  "D", Direction.EAST);
-			painter.drawPort(OUT, "Q", Direction.WEST);
-		} else {
-			painter.drawPort(IN);
-			painter.drawPort(OUT);
-		}
-		g.setColor(Color.GRAY);
-		painter.drawPort(CLR, "0", Direction.SOUTH);
-		painter.drawPort(EN, Strings.get("memEnableLabel"), Direction.EAST);
-		g.setColor(Color.BLACK);
-		painter.drawClock(CK, Direction.NORTH);
+        long val;
+        try {
+            if (s.startsWith("0x")) {
+                val = Long.parseUnsignedLong(s.substring(2), 16);
+            } else if (s.startsWith("0b")) {
+                val = Long.parseUnsignedLong(s.substring(2), 2);
+            } else {
+                // decimal (permite negativo; se ajusta por máscara)
+                val = Long.parseLong(s);
+            }
+        } catch (NumberFormatException ex) {
+            // inválido → usa 0
+            val = 0L;
+        }
 
-		// draw contents
-		if (b == null) {
-			GraphicsUtil.drawText(g, a, bds.getX() + 15, bds.getY() + 4,
-					GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
-		} else {
-			GraphicsUtil.drawText(g, a, bds.getX() + 15, bds.getY() + 3,
-					GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
-			GraphicsUtil.drawText(g, b, bds.getX() + 15, bds.getY() + 15,
-					GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
-		}
-	}
+        int width = (w != null ? w.getWidth() : 8);
+        if (width <= 0) return 0;
+
+        if (width >= 32) {
+            // RegisterData guarda int; si tu diseño usa >32 bits, aquí se trunca a 32.
+            // Puedes cambiar RegisterData.value a long si necesitas más.
+            long mask = 0xFFFF_FFFFL; // máx 32 bits
+            return (int) (val & mask);
+        } else {
+            int mask = (1 << width) - 1;
+            return (int) (val & mask);
+        }
+    }
+
+
+    /* ===== recomputePorts: crea puertos según atributos y guarda índices en RegisterData ===== */
+    private void recomputePorts(Instance instance) {
+        BitWidth w = instance.getAttributeValue(StdAttr.WIDTH);
+
+        List<Port> list = new ArrayList<>();
+
+        Port pOut = new Port( 0,  0, Port.OUTPUT, w);
+        pOut.setToolTip(Strings.getter("registerQTip"));
+        list.add(pOut); // 0
+
+        Port pIn  = new Port(-30, 0, Port.INPUT,  w);
+        pIn.setToolTip(Strings.getter("registerDTip"));
+        list.add(pIn); // 1
+
+        Port pCk  = new Port(-20, 20, Port.INPUT, 1);
+        pCk.setToolTip(Strings.getter("registerClkTip"));
+        list.add(pCk); // 2
+
+        if (hasRst(instance)) {
+            Port pRst = new Port(-10, 20, Port.INPUT, 1);
+            String rv = instance.getAttributeValue(RESET_VALUE);
+            if (rv == null) rv = "0";
+            pRst.setToolTip(Strings.getter("registerRstTip", rv));
+            list.add(pRst); // 3 si existe
+        }
+        if (hasEn(instance)) {
+            Port pEn = new Port(-30, 10, Port.INPUT, 1);
+            pEn.setToolTip(Strings.getter("registerEnableTip"));
+            list.add(pEn); // 3 o 4 según haya CLR
+        }
+
+        instance.setPorts(list.toArray(new Port[0]));
+        instance.recomputeBounds();
+
+        Bounds bds = instance.getBounds();
+        instance.setTextField(StdAttr.LABEL, StdAttr.LABEL_FONT,
+                bds.getX() + bds.getWidth() / 2, bds.getY() - 3,
+                GraphicsUtil.H_CENTER, GraphicsUtil.V_BASELINE);
+    }
+
+    private static void computeIdxs(Instance inst, RegisterData d) {
+        // Orden construido en recomputePorts:
+        d.OUT = 0;
+        d.IN  = 1;
+        d.CK  = 2;
+
+        boolean rst = hasRst(inst);
+        boolean en  = hasEn(inst);
+
+        if (rst) {
+            d.CLR = 3;
+            d.EN  = en ? 4 : -1;
+        } else {
+            d.CLR = -1;
+            d.EN  = en ? 3 : -1;
+        }
+    }
+
+    /* ===== propagate: reset async/sync + polaridad + enable ===== */
+    @Override
+    public void propagate(InstanceState state) {
+        RegisterData data = (RegisterData) state.getData();
+        if (data == null) { data = new RegisterData(); state.setData(data); }
+
+        // Calcular índices en base al Instance y atributos
+        computeIdxs(state.getInstance(), data);
+
+        BitWidth dataWidth = state.getAttributeValue(StdAttr.WIDTH);
+        Object triggerType = state.getAttributeValue(StdAttr.TRIGGER);
+
+        Value vCK  = state.getPort(data.CK);
+        Value vIN  = state.getPort(data.IN);
+        Value vEN  = (data.EN  >= 0) ? state.getPort(data.EN)  : Value.TRUE;
+        Value vCLR = (data.CLR >= 0) ? state.getPort(data.CLR) : Value.FALSE;
+
+        // EN
+        boolean enVisible   = (data.EN >= 0) && hasEn(state.getInstance());
+        boolean enHigh      = enActiveHigh(state.getInstance());
+        boolean enAsserted  = !enVisible || isAsserted(vEN, enHigh);
+
+        boolean triggered   = data.updateClock(vCK, triggerType);
+
+        // RST
+        boolean rstVisible  = (data.CLR >= 0);
+        boolean rstSync     = rstVisible && rstIsSync(state.getInstance());
+        boolean rstHigh     = rstActiveHigh(state.getInstance());
+        boolean rstAsserted = rstVisible && isAsserted(vCLR, rstHigh);
+
+        int rstValue = parseResetValue(state.getAttributeSet(), dataWidth);
+
+        if (!rstSync) {
+            if (rstAsserted) {
+                data.value = rstValue;
+            } else if (triggered && enAsserted) {
+                if (vIN.isFullyDefined()) data.value = vIN.toIntValue();
+            }
+        } else {
+            if (triggered) {
+                if (rstAsserted) {
+                    data.value = rstValue;
+                } else if (enAsserted) {
+                    if (vIN.isFullyDefined()) data.value = vIN.toIntValue();
+                }
+            }
+        }
+
+        state.setPort(data.OUT, Value.createKnown(dataWidth, data.value), DELAY);
+    }
+
+    /* ===== helper de detección de “señal activa” con polaridad ===== */
+    private static boolean isAsserted(Value v, boolean activeHigh) {
+        if (v == Value.ERROR || v == Value.UNKNOWN) return false;
+        if (v.getWidth() <= 1) {
+            boolean one = (v == Value.TRUE) || (v.isFullyDefined() && v.toIntValue() == 1);
+            return activeHigh == one;
+        }
+        if (!v.isFullyDefined()) return false;
+        boolean nonZero = v.toIntValue() != 0;
+        return activeHigh == nonZero;
+    }
+
+    @Override
+    public void paintInstance(InstancePainter painter) {
+        Graphics g = painter.getGraphics();
+        Bounds bds = painter.getBounds();
+
+        RegisterData st = (RegisterData) painter.getData();
+        if (st == null) st = new RegisterData();
+
+        // Calcular índices según atributos actuales
+        computeIdxs(painter.getInstance(), st);
+
+        BitWidth widthVal = painter.getAttributeValue(StdAttr.WIDTH);
+        int width = widthVal == null ? 8 : widthVal.getWidth();
+
+        painter.drawBounds();
+        painter.drawLabel();
+
+        painter.drawPort(st.OUT, "Q", Direction.WEST);
+        painter.drawPort(st.IN,  "D", Direction.EAST);
+        painter.drawClock(st.CK, Direction.NORTH);
+
+        if (st.CLR >= 0 && hasRst(painter.getInstance())) {
+            g.setColor(Color.GRAY);
+            painter.drawPort(st.CLR, Strings.get("registerRstLabel"), Direction.SOUTH);
+            g.setColor(Color.BLACK);
+        }
+        if (st.EN >= 0 && hasEn(painter.getInstance())) {
+            g.setColor(Color.GRAY);
+            painter.drawPort(st.EN, Strings.get("memEnableLabel"), Direction.EAST);
+            g.setColor(Color.BLACK);
+        }
+
+        String top, bottom = null;
+        if (painter.getShowState()) {
+            int val = st.getValue();
+            String hex = StringUtil.toHexString(width, val);
+            if (hex.length() <= 4) {
+                top = hex;
+            } else {
+                int split = hex.length() - 4;
+                top = hex.substring(0, split);
+                bottom = hex.substring(split);
+            }
+        } else {
+            top    = Strings.get("registerLabel");
+            assert widthVal != null;
+            bottom = Strings.get("registerWidthLabel", "" + widthVal.getWidth());
+        }
+
+        if (bottom == null) {
+            GraphicsUtil.drawText(g, top, bds.getX() + 15, bds.getY() + 4,
+                    GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
+        } else {
+            GraphicsUtil.drawText(g, top,    bds.getX() + 15, bds.getY() + 3,
+                    GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
+            GraphicsUtil.drawText(g, bottom, bds.getX() + 15, bds.getY() + 15,
+                    GraphicsUtil.H_CENTER, GraphicsUtil.V_TOP);
+        }
+    }
 }

@@ -40,7 +40,11 @@ public class Rom extends Mem {
 		setIconName("rom.gif");
 		memListeners = new WeakHashMap<Instance,MemListener>();
 	}
-
+	Rom(String name, String keyName, int extraPorts, String gifName){
+        super(name,Strings.getter(keyName),extraPorts);
+		setIconName(gifName);
+		memListeners = new WeakHashMap<Instance,MemListener>();
+    }
 	@Override
 	void configurePorts(Instance instance) {
 		Port[] ps = new Port[MEM_INPUTS];
