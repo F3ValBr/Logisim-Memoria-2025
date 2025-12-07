@@ -40,7 +40,7 @@ instalado en sus versiones más recientes. El uso de esta herramienta se detalla
 
 ## Descargas
 `LogisimCL` está únicamente disponible en el presente repositorio, tanto en el directorio de [Releases](releases) como en el
-apartado de [lanzamientos dentro del repositorio](https://github.com/F3ValBr/LogisimCL/releases/tag/release). La descarga es directa,
+apartado de [lanzamientos dentro del repositorio](https://github.com/F3ValBr/LogisimCL/releases). La descarga es directa,
 una vez se encuentre en tu máquina lo puedes ejecutar de forma inmediata.
 
 ## Más Información
