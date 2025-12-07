@@ -8,7 +8,7 @@
     * [Funcionalidades](#Funcionalidades)
     * [Requisitos](#Requisitos)
     * **[Descargas](#Descargas)**
-    * **[Uso]()**
+    * **[Uso](doc/repo/use.md)**
       * [Importador de `SystemVerilog`](doc/repo/howtoverilog.md)
     * [Más Información](#más-información)
     * [Creditos y contribuciones](#créditos-y-contribuciones)
