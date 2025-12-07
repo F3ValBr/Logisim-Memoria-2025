@@ -36,9 +36,6 @@ public final class GateOpAdapter extends AbstractComponentAdapter
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
     private final MacroRegistry registry = MacroRegistry.bootGateDefaults();
 
-    // Pareja (Library, ComponentFactory) para usar BuiltinPortMaps.forFactory(...)
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         return t != null && t.isGateLevel() && (t.isSimpleGate() || t.isComplexGate() || t.isMultiplexer());
@@ -58,12 +55,12 @@ public final class GateOpAdapter extends AbstractComponentAdapter
         if (composed != null) return composed;
 
         LibFactory lf = pickFactoryOrNull(proj, op);
-        if (lf == null || lf.factory == null) {
+        if (lf == null || lf.factory() == null) {
             return fallback.create(proj, circ, g, cell, where);
         }
 
         try {
-            AttributeSet attrs = lf.factory.createAttributeSet();
+            AttributeSet attrs = lf.factory().createAttributeSet();
 
             // --- 1) Width = 1 (gate-level 1-bit) + label “limpia”
             trySetWidthOne(attrs);
@@ -90,9 +87,9 @@ public final class GateOpAdapter extends AbstractComponentAdapter
                 setBooleanByName(attrs, "negate1", true);
             }
 
-            Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+            Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
-            Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+            Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
             PortGeom pg = PortGeom.of(comp, nameToIdx);
             return new InstanceHandle(comp, pg);
 
@@ -105,7 +102,7 @@ public final class GateOpAdapter extends AbstractComponentAdapter
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         GateOp op = GateOp.fromYosys(cell.type().typeId());
         LibFactory lf = pickFactoryOrNull(proj, op);
-        return lf == null ? null : lf.factory;
+        return lf == null ? null : lf.factory();
     }
 
     /** Selección de Factory según GateOp. */

@@ -46,9 +46,6 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
 
-    // Pareja (Library, ComponentFactory) para usar BuiltinPortMaps.forFactory(...)
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         return t != null && t.isWordLevel() && t.isRegister();
@@ -86,7 +83,7 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
         final ResetInfo rst = detectReset(cell);
 
         try {
-            AttributeSet attrs = lf.factory.createAttributeSet();
+            AttributeSet attrs = lf.factory().createAttributeSet();
 
             // Básicos
             safeSet(attrs, StdAttr.WIDTH, BitWidth.create(width));
@@ -132,11 +129,11 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
                 return fallback.create(proj, circ, g, cell, where);
             }
 
-            Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+            Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
             // == Port map dinámico por librería+factory+instancia ==
             Map<String,Integer> nameToIdx =
-                    BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+                    BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
 
             if (nameToIdx.isEmpty()) {
                 // Orden por tu Register: OUT=0, IN=1, CK=2, (RST=?, EN=?)
@@ -156,7 +153,7 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         LibFactory lf = pickRegisterFactory(proj);
-        return lf == null ? null : lf.factory;
+        return lf == null ? null : lf.factory();
     }
 
     /* ================= helpers ================= */

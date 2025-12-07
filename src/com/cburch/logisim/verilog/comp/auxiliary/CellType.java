@@ -1,29 +1,60 @@
 package com.cburch.logisim.verilog.comp.auxiliary;
 
 import com.cburch.logisim.verilog.comp.specs.gatelvl.GateOp;
+import com.cburch.logisim.verilog.comp.specs.gatelvl.RegisterGateOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.*;
 
 import java.util.*;
 
-/** CellType: classification of a cell by abstraction level and kind
+/**
+ * CellType — Classification of a Yosys cell by abstraction level and semantic kind.
  *
- * Cells are classified into three abstraction levels:
- *  - Word-level: operations on multi-bit words (e.g. $add, $sub, $and, $mux, $mem)
- *  - Gate-level: basic logic gates and flip-flops (e.g. $_AND_, $_OR_, $_DFF_)
- *  - Module instances: any other module instantiation (e.g. user-defined modules, primitives)
+ * <h2>Abstraction Levels</h2>
+ * Cells extracted from a Yosys netlist are grouped into one of the following
+ * abstraction layers:
  *
- * Within each level, cells are further classified by kind:
- *  - Unary: single-input word-level operations (e.g. $not, $neg)
- *  - Binary: two-input word-level operations (e.g. $add, $and)
- *  - Simple Gate: basic gate-level operations (e.g. $_AND_, $_OR_)
- *  - Complex Gate: combined gate-level operations (e.g. $_AOI21_, $_OAI22_)
- *  - Flip-Flop: gate-level flip-flops (e.g. $_DFF_, $_DFFE_)
- *  - Register: word-level registers (e.g. $dff, $dffe)
- *  - Multiplexer: multiplexers at word or gate level (e.g. $mux, $_MUX4_)
- *  - Memory: word-level memory blocks (e.g. $mem, $memrd, $memwr)
- *  - Other: any other type not fitting above categories
+ * <ul>
+ *   <li><b>Word-level</b> — Operations manipulating multi-bit vectors:
+ *       arithmetic ($add, $sub), bitwise ($and, $or), shifts ($shl, $shr),
+ *       multiplexers ($mux), memories ($mem), etc.</li>
  *
- * The main method is fromYosys(typeId) which classifies a cell based on its Yosys type ID.
+ *   <li><b>Gate-level</b> — Primitive digital gates and sequential elements:
+ *       logic gates ($_AND_, $_OR_), AOI/OAI variants, and flip-flops
+ *       ($_DFF_, $_DFFE_, ...).</li>
+ *
+ *   <li><b>Module instances</b> — Any user-defined Verilog module or unclassified
+ *       primitive that is not recognized as a word- or gate-level built-in.</li>
+ * </ul>
+ *
+ * <h2>Semantic Kinds</h2>
+ * Within each abstraction level, cells are further categorized by their logical role:
+ *
+ * <ul>
+ *   <li><b>Unary</b> — One-input word-level operators such as $not or $neg.</li>
+ *
+ *   <li><b>Binary</b> — Two-input word-level operators such as $add, $and, $xor.</li>
+ *
+ *   <li><b>Simple Gate</b> — Basic gate-level primitives such as $_AND_, $_OR_. </li>
+ *
+ *   <li><b>Complex Gate</b> — Compound logic structures like $_AOI21_, $_OAI22_. </li>
+ *
+ *   <li><b>Flip-Flop</b> — Gate-level storage elements ($_DFF_, $_DFFE_, etc.).</li>
+ *
+ *   <li><b>Register</b> — Word-level sequencing elements like $dff, $dffe.</li>
+ *
+ *   <li><b>Multiplexer</b> — Both gate-level (e.g. $_MUX4_) and word-level ($mux) multiplexers.</li>
+ *
+ *   <li><b>Memory</b> — Word-level memory blocks such as $mem, $memrd, $memwr.</li>
+ *
+ *   <li><b>Other</b> — Any construct not fitting the categories above.</li>
+ * </ul>
+ *
+ * <h2>Purpose</h2>
+ * The method {@code fromYosys(typeId)} performs the actual classification,
+ * interpreting the Yosys cell type string and mapping it onto the categories above.
+ * This classification is fundamental for adapter layers (e.g., UnaryOpAdapter,
+ * BinaryOpAdapter, GateAdapter) that select appropriate Logisim component
+ * factories and port mappings for each Yosys cell.
  */
 public final class CellType {
 
@@ -62,29 +93,6 @@ public final class CellType {
     public boolean isComplexGate() { return kind  == Kind.COMPLEX_GATE; }
     public boolean isFlipFlop()    { return kind  == Kind.FLIP_FLOP; }
 
-    // TODO: replace set with GateOp check
-    private static final Set<String> GATE_FLIP_FLOP = Set.of(
-            "$_ALDFFE_NNN_", "$_ALDFFE_NNP_", "$_ALDFFE_NPN_", "$_ALDFFE_NPP_", "$_ALDFFE_PNN_",
-            "$_ALDFFE_PNP_", "$_ALDFFE_PPN_", "$_ALDFFE_PPP_", "$_ALDFF_NN_", "$_ALDFF_NP_", "$_ALDFF_PN_",
-            "$_ALDFF_PP_", "$_DFFE_NN0N_", "$_DFFE_NN0P_", "$_DFFE_NN1N_", "$_DFFE_NN1P_", "$_DFFE_NN_",
-            "$_DFFE_NP0N_", "$_DFFE_NP0P_", "$_DFFE_NP1N_", "$_DFFE_NP1P_", "$_DFFE_NP_", "$_DFFE_PN0N_",
-            "$_DFFE_PN0P_", "$_DFFE_PN1N_", "$_DFFE_PN1P_", "$_DFFE_PN_", "$_DFFE_PP0N_", "$_DFFE_PP0P_",
-            "$_DFFE_PP1N_", "$_DFFE_PP1P_", "$_DFFE_PP_", "$_DFFSRE_NNNN_", "$_DFFSRE_NNNP_",
-            "$_DFFSRE_NNPN_","$_DFFSRE_NNPP_","$_DFFSRE_NPNN_","$_DFFSRE_NPNP_","$_DFFSRE_NPPN_",
-            "$_DFFSRE_NPPP_","$_DFFSRE_PNNN_","$_DFFSRE_PNNP_","$_DFFSRE_PNPN_","$_DFFSRE_PNPP_",
-            "$_DFFSRE_PPNN_","$_DFFSRE_PPNP_","$_DFFSRE_PPPN_","$_DFFSRE_PPPP_","$_DFFSR_NNN_",
-            "$_DFFSR_NNP_","$_DFFSR_NPN_","$_DFFSR_NPP_","$_DFFSR_PNN_","$_DFFSR_PNP_","$_DFFSR_PPN_",
-            "$_DFFSR_PPP_","$_DFF_NN0_","$_DFF_NN1_","$_DFF_NP0_","$_DFF_NP1_","$_DFF_N_","$_DFF_PN0_",
-            "$_DFF_PN1_","$_DFF_PP0_","$_DFF_PP1_","$_DFF_P_","$_FF_","$_SDFFCE_NN0N_","$_SDFFCE_NN0P_",
-            "$_SDFFCE_NN1N_","$_SDFFCE_NN1P_","$_SDFFCE_NP0N_","$_SDFFCE_NP0P_","$_SDFFCE_NP1N_",
-            "$_SDFFCE_NP1P_","$_SDFFCE_PN0N_","$_SDFFCE_PN0P_","$_SDFFCE_PN1N_","$_SDFFCE_PN1P_",
-            "$_SDFFCE_PP0N_","$_SDFFCE_PP0P_","$_SDFFCE_PP1N_","$_SDFFCE_PP1P_","$_SDFFE_NN0N_",
-            "$_SDFFE_NN0P_","$_SDFFE_NN1N_","$_SDFFE_NN1P_","$_SDFFE_NP0N_","$_SDFFE_NP0P_","$_SDFFE_NP1N_",
-            "$_SDFFE_NP1P_","$_SDFFE_PN0N_","$_SDFFE_PN0P_","$_SDFFE_PN1N_","$_SDFFE_PN1P_","$_SDFFE_PP0N_",
-            "$_SDFFE_PP0P_","$_SDFFE_PP1N_","$_SDFFE_PP1P_","$_SDFF_NN0_","$_SDFF_NN1_","$_SDFF_NP0_",
-            "$_SDFF_NP1_","$_SDFF_PN0_","$_SDFF_PN1_","$_SDFF_PP0_","$_SDFF_PP1_"
-    );
-
     /** Main classifier from Yosys type ID
      * Determines the CellType (level and kind) from a Yosys cell type ID.
      *
@@ -107,8 +115,10 @@ public final class CellType {
                     case MUX_FAMILY  -> new CellType(typeId, Level.GATE, Kind.MULTIPLEXER);
                 };
             }
-            // ¿flip-flop gate-level?
-            // TODO: implement FlipFlop logic
+            if (RegisterGateOp.matchesRGOp(typeId)) {
+                return new CellType(typeId, Level.GATE, Kind.FLIP_FLOP);
+            }
+            // Unknown Gate-level
             return new CellType(typeId, Level.GATE, Kind.OTHER);
         }
 

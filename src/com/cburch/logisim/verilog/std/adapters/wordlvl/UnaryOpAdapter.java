@@ -40,9 +40,6 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
     private final MacroRegistry registry = MacroRegistry.bootUnaryDefaults();
 
-    /** Pareja (Library, ComponentFactory) para poder resolver los mapas de puertos. */
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         // Solo word-level & kind UNARY

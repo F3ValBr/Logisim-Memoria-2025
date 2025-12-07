@@ -41,8 +41,6 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
     // Evita múltiples instancias por MEMID
     private final java.util.Set<String> createdMemIds = new java.util.HashSet<>();
 
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     /** Llamar desde el importador justo después de construir el MemoryIndex del módulo. */
     public void beginModule(MemoryIndex idx, VerilogModuleImpl mod) {
         this.currentMemIndex = idx;
@@ -52,10 +50,7 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
 
     @Override
     public boolean accepts(CellType t) {
-        if (t == null) return false;
-        if (t.isMemory()) return true;
-        String id = t.typeId();
-        return MemoryOp.isMemoryTypeId(id);
+        return t != null && t.isWordLevel() && t.isMemory();
     }
 
     @Override
@@ -146,7 +141,7 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
 
         boolean isRam = p.wrPorts() > 0;
         LibFactory lf = pickMemoryFactory(proj, isRam);
-        return lf == null ? null : lf.factory;
+        return lf == null ? null : lf.factory();
     }
 
     /** Forma soportada: exactamente 1 read port y 0 o 1 write ports. */
@@ -168,7 +163,7 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
         int width = Math.max(1, p.width());
         int abits = Math.max(1, p.abits());
 
-        AttributeSet attrs = lf.factory.createAttributeSet();
+        AttributeSet attrs = lf.factory().createAttributeSet();
         setOptionByName(attrs, "bus", "separate");
         setParsedByName(attrs, "dataWidth", Integer.toString(width));
         setParsedByName(attrs, "addrWidth", Integer.toString(abits));
@@ -180,10 +175,10 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
             attrs.setValue(StdAttr.TRIGGER, rising ? StdAttr.TRIG_RISING : StdAttr.TRIG_FALLING);
         } catch (Throwable ignore) { }
 
-        Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+        Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
         // 3) port-map
-        Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+        Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
         if (nameToIdx == null || nameToIdx.isEmpty()) {
             // Fallback estable:
             // ROM: A, Q

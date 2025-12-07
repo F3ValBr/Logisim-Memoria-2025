@@ -37,9 +37,6 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
     private final MacroRegistry registry = MacroRegistry.bootBinaryDefaults();
 
-    // Pareja (Library, ComponentFactory) para poder resolver port maps por librería
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         return t != null && t.isWordLevel() && t.isBinary();
@@ -60,7 +57,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
 
         // 1) Elegir factory según operación ($and/$or/$xor/$xnor → Gates; $add/$sub/$mul → Arithmetic)
         LibFactory lf = pickFactoryOrNull(proj, op);
-        if (lf == null || lf.factory == null) {
+        if (lf == null || lf.factory() == null) {
             // no soportado nativamente → subcircuito (en el circuito destino)
             return fallback.create(proj, circ, g, cell, where);
         }
@@ -74,7 +71,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
         }
 
         try {
-            AttributeSet attrs = lf.factory.createAttributeSet();
+            AttributeSet attrs = lf.factory().createAttributeSet();
 
             // Ancho de bus / Etiqueta
             try { attrs.setValue(StdAttr.WIDTH, BitWidth.create(width)); } catch (Exception ignore) { }
@@ -95,7 +92,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
 
             if (op == BinaryOp.EQX) setBooleanByName(attrs, "strictEq", true);
 
-            Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+            Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
             // Mapa nombre->índice específico de ESTA instancia (usa library + factory + instance)
             Map<String,Integer> nameToIdx = switch (op.category()) {
@@ -108,18 +105,18 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
                         // LE/GE/NE los compones fuera (ya tienes macros); aquí default a EQ
                         default -> BuiltinPortMaps.ComparatorOut.EQ;
                     };
-                    yield BuiltinPortMaps.forComparator(lf.lib, lf.factory, comp, outSel);
+                    yield BuiltinPortMaps.forComparator(lf.lib(), lf.factory(), comp, outSel);
                 }
                 case ARITH -> {
                     if (op == BinaryOp.DIV || op == BinaryOp.DIVFLOOR) {
-                        yield BuiltinPortMaps.forDivider(lf.lib, lf.factory, comp, BuiltinPortMaps.DividerOut.QUOT);
+                        yield BuiltinPortMaps.forDivider(lf.lib(), lf.factory(), comp, BuiltinPortMaps.DividerOut.QUOT);
                     } else if (op == BinaryOp.MOD || op == BinaryOp.MODFLOOR) {
-                        yield BuiltinPortMaps.forDivider(lf.lib, lf.factory, comp, BuiltinPortMaps.DividerOut.REM);
+                        yield BuiltinPortMaps.forDivider(lf.lib(), lf.factory(), comp, BuiltinPortMaps.DividerOut.REM);
                     } else {
-                        yield BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+                        yield BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
                     }
                 }
-                default -> BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+                default -> BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
             };
 
             PortGeom pg = PortGeom.of(comp, nameToIdx);
@@ -161,7 +158,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         BinaryOp op = BinaryOp.fromYosys(cell.type().typeId());
         LibFactory lf = pickFactoryOrNull(proj, op);
-        return lf == null ? null : lf.factory;
+        return lf == null ? null : lf.factory();
     }
 
     /** Selecciona el ComponentFactory nativo de Logisim según la operación. */

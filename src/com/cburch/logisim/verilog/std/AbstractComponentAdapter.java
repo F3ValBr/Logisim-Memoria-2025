@@ -7,6 +7,7 @@ import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.*;
 import com.cburch.logisim.proj.Project;
+import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.std.adapters.MacroRegistry;
@@ -16,6 +17,9 @@ import com.cburch.logisim.verilog.std.macrocomponents.Factories;
 import java.awt.*;
 
 public abstract class AbstractComponentAdapter implements ComponentAdapter {
+
+    /** Pareja (Library, ComponentFactory) para poder resolver los mapas de puertos. */
+    public record LibFactory(Library lib, ComponentFactory factory) { }
 
     @Override
     public boolean accepts(CellType type) {

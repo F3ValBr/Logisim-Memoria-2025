@@ -35,9 +35,6 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
 
-    // Pareja (Library, ComponentFactory) para resolver port maps por librería
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         return t != null && t.isWordLevel() && t.isMultiplexer();
@@ -54,7 +51,7 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
         }
 
         LibFactory lf = pickFactoryOrNull(proj, op);
-        if (lf == null || lf.factory == null) {
+        if (lf == null || lf.factory() == null) {
             // No hay mapeo nativo → subcircuito
             return fallback.create(proj, circ, g, cell, where);
         }
@@ -64,7 +61,7 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
         int selWidth  = guessSelectWidth(cell.params()); // S_WIDTH si el op lo tiene (bmux/pmux, etc.)
 
         try {
-            AttributeSet attrs = lf.factory.createAttributeSet();
+            AttributeSet attrs = lf.factory().createAttributeSet();
 
             // Intentar fijar ancho de bus (cuando el factory expose StdAttr.WIDTH)
             try {
@@ -89,11 +86,11 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
                 attrs.setValue(Plexers.ATTR_ENABLE, Boolean.FALSE);
             } catch (Exception ignore) { }
 
-            Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+            Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
             // Mapa nombre->índice específico de ESTA instancia (usa library + factory + instance)
             Map<String,Integer> nameToIdx =
-                    BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+                    BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
 
             PortGeom pg = PortGeom.of(comp, nameToIdx);
             return new InstanceHandle(comp, pg);
@@ -106,7 +103,7 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         MuxOp op = MuxOp.fromYosys(cell.type().typeId());
         LibFactory lf = pickFactoryOrNull(proj, op);
-        return lf == null ? null : lf.factory;
+        return lf == null ? null : lf.factory();
     }
 
     /** Selecciona el ComponentFactory nativo de Logisim para cada op soportada. */
