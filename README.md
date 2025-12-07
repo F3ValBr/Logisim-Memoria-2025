@@ -9,7 +9,7 @@
     * [Requisitos](#Requisitos)
     * **[Descargas](#Descargas)**
     * **[Uso]()**
-      * [Importador de SystemVerilog](doc/repo/howtoverilog.md)
+      * [Importador de `SystemVerilog`](doc/repo/howtoverilog.md)
     * [Más Información](#más-información)
     * [Creditos y contribuciones](#créditos-y-contribuciones)
 
@@ -30,7 +30,7 @@ Este proyecto cuenta con las siguientes características:
 * Soporte para procesadores `Risc-V`.
 * ¡Y más por venir!
 
-[]()
+![logisimCL_ex.png](doc/repo/resources/logisimCL_ex.png)
 
 ## Requisitos
 `LogisimCL` es una aplicación Java, por lo que puede correr en cualquier máquina con la `JRE`.
