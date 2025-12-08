@@ -28,8 +28,11 @@ import com.cburch.logisim.instance.Port;
 import com.cburch.logisim.instance.StdAttr;
 
 public class Power extends InstanceFactory {
+
+    public static final String _ID = "Power";
+
 	public Power() {
-		super("Power", Strings.getter("powerComponent"));
+		super(_ID, Strings.getter("powerComponent"));
 		setIconName("power.gif");
 		setAttributes(new Attribute[] { StdAttr.FACING, StdAttr.WIDTH },
 				new Object[] { Direction.NORTH, BitWidth.ONE });

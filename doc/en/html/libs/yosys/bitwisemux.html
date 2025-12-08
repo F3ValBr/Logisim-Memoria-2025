@@ -1,0 +1,124 @@
+<html>
+<head>
+    <title>Bitwise Multiplexer (BWMUX)</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1><img align="center" height="32" width="32" src="../../../icons/bwmultiplexer.gif">
+    <em>Bitwise Multiplexer</em></h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Yosys Components</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/bwmux.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The Bitwise Multiplexer (BWMUX) selects between two multi-bit inputs
+    <var>A</var> and <var>B</var> on a <em>bit-by-bit</em> basis.
+    For each bit position <em>i</em>, the output bit <code>Y[i]</code>
+    is determined by the corresponding bit <code>S[i]</code> of the
+    selection input:
+</p>
+
+<center>
+    <code>Y[i] = S[i] ? B[i] : A[i]</code>
+</center>
+
+<p>
+    This component emulates the Yosys <code>$bwmux</code> cell, which
+    performs a vectorized multiplexing operation where each bit of the
+    select signal independently chooses which operand contributes to the
+    corresponding output bit.
+</p>
+
+<p>
+    Undefined (<em>X</em>) or floating (<em>Z</em>) bits in the selection
+    or data inputs propagate to the output according to Logisim's standard
+    multi-bit logic rules. If <code>S[i]</code> cannot be conclusively
+    interpreted as <code>0</code> or <code>1</code>, then
+    <code>Y[i]</code> becomes <em>X</em>.
+</p>
+
+<h2>Pins (assuming component faces east)</h2>
+
+<dl>
+
+    <dt>West edge, labeled <var>A</var> (input, width = Data Bits)</dt>
+    <dd>
+        First data input. For each bit <em>i</em>, this value is selected
+        when <code>S[i] = 0</code>.
+    </dd>
+
+    <dt>West edge, labeled <var>B</var> (input, width = Data Bits)</dt>
+    <dd>
+        Second data input. For each bit <em>i</em>, this value is selected
+        when <code>S[i] = 1</code>.
+    </dd>
+
+    <dt>South edge, labeled <var>S</var> (input, width = Data Bits)</dt>
+    <dd>
+        Select signal, interpreted bitwise. Each bit <code>S[i]</code>
+        determines whether the output bit is taken from <var>A</var> or
+        <var>B</var>.
+    </dd>
+
+    <dt>East edge, labeled <var>Y</var> (output, width = Data Bits)</dt>
+    <dd>
+        Output of the bitwise multiplexing operation. Each bit is selected
+        individually according to <var>S</var>.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Facing</dt>
+    <dd>
+        Determines the orientation of the component (east, west, north, south).
+    </dd>
+
+    <dt>Data Bits</dt>
+    <dd>
+        Sets the bit width of all inputs and the output.
+        Increasing this value scales all ports accordingly.
+    </dd>
+
+</dl>
+
+<h2>Behavior Notes</h2>
+
+<p>
+    The BWMUX does <em>not</em> behave like a regular multiplexer.
+    Unlike standard muxes, which select between entire buses at once,
+    this component makes a separate selection for every single bit.
+    This makes it useful for implementing conditional masking,
+    blending of signals, or selective bit replacement - matching the
+    semantics of the underlying Yosys <code>$bwmux</code> cell.
+</p>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    If pressed Alt + some number when selected, it changes the Data Bits value.
+    If pressed arrows when selected, it changes the facing direction.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    Allows the user to edit the label associated with the component.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

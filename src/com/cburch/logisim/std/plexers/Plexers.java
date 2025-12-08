@@ -19,7 +19,10 @@ import com.cburch.logisim.tools.Tool;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Plexers extends Library {
-	public static final Attribute<BitWidth> ATTR_SELECT
+
+    public static final String LIB_NAME = "Plexers";
+
+    public static final Attribute<BitWidth> ATTR_SELECT
 		= Attributes.forBitWidth("select", Strings.getter("plexerSelectBitsAttr"), 1, 5);
 	public static final Object DEFAULT_SELECT = BitWidth.create(1);
 
@@ -47,26 +50,49 @@ public class Plexers extends Library {
 			new AttributeOption[] { SELECT_BOTTOM_LEFT, SELECT_TOP_RIGHT });
 
 	protected static final int DELAY = 3;
-	
-	private static final FactoryDescription[] DESCRIPTIONS = {
-		new FactoryDescription("Multiplexer", Strings.getter("multiplexerComponent"),
-				"multiplexer.gif", "Multiplexer"),
-		new FactoryDescription("Demultiplexer", Strings.getter("demultiplexerComponent"),
-				"demultiplexer.gif", "Demultiplexer"),
-		new FactoryDescription("Decoder", Strings.getter("decoderComponent"),
-				"decoder.gif", "Decoder"),
-		new FactoryDescription("Priority Encoder", Strings.getter("priorityEncoderComponent"),
-				"priencod.gif", "PriorityEncoder"),
-		new FactoryDescription("BitSelector", Strings.getter("bitSelectorComponent"),
-				"bitSelector.gif", "BitSelector"),
-	};
 
-	private List<Tool> tools = null;
+    // ==== IDs públicos de Plexers ====
+    public static final String MULTIPLEXER_ID      = Multiplexer._ID;
+    public static final String DEMULTIPLEXER_ID    = Demultiplexer._ID;
+    public static final String DECODER_ID          = Decoder._ID;
+    public static final String PRIORITYENC_ID      = PriorityEncoder._ID;
+    public static final String BITSELECTOR_ID      = BitSelector._ID;
+
+    // ==== Descriptions ====
+    private static final FactoryDescription[] DESCRIPTIONS = {
+        new FactoryDescription(MULTIPLEXER_ID,
+            Strings.getter("multiplexerComponent"),
+            "multiplexer.gif",
+            Multiplexer.class.getSimpleName()
+        ),
+        new FactoryDescription(DEMULTIPLEXER_ID,
+            Strings.getter("demultiplexerComponent"),
+            "demultiplexer.gif",
+            Demultiplexer.class.getSimpleName()
+        ),
+        new FactoryDescription(DECODER_ID,
+            Strings.getter("decoderComponent"),
+            "decoder.gif",
+            Decoder.class.getSimpleName()
+        ),
+        new FactoryDescription(PRIORITYENC_ID,
+            Strings.getter("priorityEncoderComponent"),
+            "priencod.gif",
+            PriorityEncoder.class.getSimpleName()
+        ),
+        new FactoryDescription(BITSELECTOR_ID,
+            Strings.getter("bitSelectorComponent"),
+            "bitSelector.gif",
+            BitSelector.class.getSimpleName()
+        ),
+    };
+
+    private List<Tool> tools = null;
 
 	public Plexers() { }
 
 	@Override
-	public String getName() { return "Plexers"; }
+	public String getName() { return LIB_NAME; }
 
 	@Override
 	public String getDisplayName() { return Strings.get("plexerLibrary"); }

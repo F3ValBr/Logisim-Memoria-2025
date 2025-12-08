@@ -25,11 +25,14 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class BitSelector extends InstanceFactory {
+
+    public static final String _ID = "BitSelector";
+
 	public static final Attribute<BitWidth> GROUP_ATTR
 		= Attributes.forBitWidth("group", Strings.getter("bitSelectorGroupAttr"));
 
 	public BitSelector() {
-		super("BitSelector", Strings.getter("bitSelectorComponent"));
+		super(_ID, Strings.getter("bitSelectorComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, StdAttr.WIDTH, GROUP_ATTR
 			}, new Object[] {

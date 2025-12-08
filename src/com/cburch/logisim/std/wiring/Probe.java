@@ -25,6 +25,9 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Probe extends InstanceFactory {
+
+    public static final String _ID = "Probe";
+
 	public static final Probe FACTORY = new Probe();
 
 	private static class StateData implements InstanceData, Cloneable {
@@ -56,7 +59,7 @@ public class Probe extends InstanceFactory {
 	}
 
 	public Probe() {
-		super("Probe", Strings.getter("probeComponent"));
+		super(_ID, Strings.getter("probeComponent"));
 		setIconName("probe.gif");
 		setFacingAttribute(StdAttr.FACING);
 		setInstanceLogger(ProbeLogger.class);

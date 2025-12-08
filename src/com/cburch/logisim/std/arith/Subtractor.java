@@ -12,6 +12,9 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Subtractor extends InstanceFactory {
+
+    public static final String _ID = "Subtractor";
+
     static final int IN0   = 0; // A (minuend)
     static final int IN1   = 1; // B (subtrahend)
     static final int OUT   = 2; // Y = A - B - B_IN
@@ -34,7 +37,7 @@ public class Subtractor extends InstanceFactory {
                     new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Subtractor() {
-        super("Subtractor", Strings.getter("subtractorComponent"));
+        super(_ID, Strings.getter("subtractorComponent"));
         setAttributes(
                 new Attribute[] { StdAttr.WIDTH, SIGN_MODE },
                 new Object[]  { BitWidth.create(8), MODE_UNSIGNED }

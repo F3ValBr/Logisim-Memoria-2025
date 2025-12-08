@@ -9,9 +9,10 @@ import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
-import com.cburch.logisim.tools.Library;
+import com.cburch.logisim.std.arith.Arithmetic;
+import com.cburch.logisim.std.gates.Gates;
+import com.cburch.logisim.std.yosys.YosysComponent;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
@@ -36,9 +37,6 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
     private final MacroRegistry registry = MacroRegistry.bootUnaryDefaults();
-
-    /** Pareja (Library, ComponentFactory) para poder resolver los mapas de puertos. */
-    private record LibFactory(Library lib, ComponentFactory factory) { }
 
     @Override
     public boolean accepts(CellType t) {
@@ -85,7 +83,7 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
         }
     }
 
-    /** Para sizing previo (no imprescindible si no lo usas en tu NodeSizer). */
+    /** Para sizing previo. */
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         UnaryOp op = UnaryOp.fromYosys(cell.type().typeId());
@@ -95,52 +93,43 @@ public final class UnaryOpAdapter extends AbstractComponentAdapter
 
     /** Mapea BUF/NOT/LOGIC_NOT/NEG/POS a factories nativas y devuelve (lib,factory). */
     private static LibFactory pickFactory(Project proj, UnaryOp op) {
+
+        String libName;
+        String compName;
+
         switch (op.category()) {
-
             case BITWISE -> {
-                // Gates: Buffer / NOT Gate
-                Library gates = proj.getLogisimFile().getLibrary("Gates");
-                if (gates == null) return null;
-                String gateName = switch (op) {
-                    case BUF -> "Buffer";
-                    case NOT -> "NOT Gate";
-                    default  -> null;
+                libName = Gates.LIB_NAME;
+                compName = switch (op) {
+                    case BUF -> Gates.BUFFER_ID;
+                    case NOT -> Gates.NOT_ID;
+                    default -> null;
                 };
-                if (gateName == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(gates, gateName);
-                return (f == null) ? null : new LibFactory(gates, f);
             }
-
             case LOGIC -> {
-                // Tu librería con lógicas de Yosys (Logical NOT Gate)
-                Library yosysLib = proj.getLogisimFile().getLibrary("Yosys Components");
-                if (yosysLib == null) return null;
-                String name = (op == UnaryOp.LOGIC_NOT) ? "Logical NOT Gate" : null;
-                if (name == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(yosysLib, name);
-                return (f == null) ? null : new LibFactory(yosysLib, f);
+                libName = YosysComponent.LIB_NAME;
+                compName = switch (op) {
+                    case LOGIC_NOT -> YosysComponent.LOGIC_NOT_ID;
+                    default -> null;
+                };
             }
-
             case ARITH -> {
                 switch (op) {
                     case NEG -> {
-                        Library arith = proj.getLogisimFile().getLibrary("Arithmetic");
-                        if (arith == null) return null;
-                        ComponentFactory f = FactoryLookup.findFactory(arith, "Negator");
-                        return (f == null) ? null : new LibFactory(arith, f);
+                        libName = Arithmetic.LIB_NAME;
+                        compName = Arithmetic.NEGATOR_ID;
                     }
                     case POS -> {
-                        Library gates = proj.getLogisimFile().getLibrary("Gates");
-                        if (gates == null) return null;
-                        ComponentFactory f = FactoryLookup.findFactory(gates, "Buffer");
-                        return (f == null) ? null : new LibFactory(gates, f);
+                        libName = Gates.LIB_NAME;
+                        compName = Gates.BUFFER_ID;
                     }
-                    default -> { return null; }
+                    default ->  { return null; }
                 }
             }
-
             default -> { return null; }
         }
+
+        return resolveFactory(proj, libName, compName);
     }
 
     /** Heurística de ancho para unarias Yosys. */

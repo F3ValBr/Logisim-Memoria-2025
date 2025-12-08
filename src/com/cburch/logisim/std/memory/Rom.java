@@ -29,6 +29,9 @@ import com.cburch.logisim.instance.Port;
 import com.cburch.logisim.proj.Project;
 
 public class Rom extends Mem {
+
+    public static final String _ID = "ROM";
+
 	public static Attribute<MemContents> CONTENTS_ATTR = new ContentsAttribute();
 	
 	// The following is so that instance's MemListeners aren't freed by the
@@ -36,7 +39,7 @@ public class Rom extends Mem {
 	private WeakHashMap<Instance,MemListener> memListeners;
 	
 	public Rom() {
-		super("ROM", Strings.getter("romComponent"), 0);
+		super(_ID, Strings.getter("romComponent"), 0);
 		setIconName("rom.gif");
 		memListeners = new WeakHashMap<Instance,MemListener>();
 	}

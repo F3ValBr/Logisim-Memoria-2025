@@ -31,6 +31,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 public class Clock extends InstanceFactory {
+
+    public static final String _ID = "Clock";
+
 	public static final Attribute<Integer> ATTR_HIGH
 		= new DurationAttribute("highDuration", Strings.getter("clockHighAttr"),
 				1, Integer.MAX_VALUE);
@@ -93,7 +96,7 @@ public class Clock extends InstanceFactory {
 	}
 
 	public Clock() {
-		super("Clock", Strings.getter("clockComponent"));
+		super(_ID, Strings.getter("clockComponent"));
 		setAttributes(new Attribute[] {
 					StdAttr.FACING, ATTR_HIGH, ATTR_LOW,
 					StdAttr.LABEL, Pin.ATTR_LABEL_LOC, StdAttr.LABEL_FONT

@@ -12,6 +12,8 @@ import static com.cburch.logisim.data.Direction.*;
 
 public class PriorityMultiplexer extends InstanceFactory {
 
+    public static final String _ID = "Priority Multiplexer";
+
     /** Límite de bits por puerto en Logisim */
     private static final int MAX_BUS  = 32;
     /** Límite capacidad total */
@@ -29,7 +31,7 @@ public class PriorityMultiplexer extends InstanceFactory {
             Attributes.forBitWidth("swidth", Strings.getter("priorityMuxSWidth"), 1, 8);
 
     public PriorityMultiplexer() {
-        super("Priority Multiplexer", Strings.getter("pmuxComponent"));
+        super(_ID, Strings.getter("pmuxComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.FACING, StdAttr.WIDTH, ATTR_SWIDTH },
                 new Object[]   { Direction.EAST, BitWidth.create(8), BitWidth.create(2) }

@@ -23,7 +23,10 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.tools.key.BitWidthConfigurator;
 
 public class Shifter extends InstanceFactory {
-	static final AttributeOption SHIFT_LOGICAL_LEFT
+
+    public static final String _ID = "Shifter";
+
+    static final AttributeOption SHIFT_LOGICAL_LEFT
 		= new AttributeOption("ll", Strings.getter("shiftLogicalLeft"));
 	static final AttributeOption SHIFT_LOGICAL_RIGHT
 		= new AttributeOption("lr", Strings.getter("shiftLogicalRight"));
@@ -43,7 +46,7 @@ public class Shifter extends InstanceFactory {
 	static final int OUT   = 2;
 	
 	public Shifter() {
-		super("Shifter", Strings.getter("shifterComponent"));
+		super(_ID, Strings.getter("shifterComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.WIDTH, ATTR_SHIFT
 			}, new Object[] {

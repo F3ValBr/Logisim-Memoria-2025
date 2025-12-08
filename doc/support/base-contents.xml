@@ -96,6 +96,7 @@
 		<tocitem target="wiring_pin" image="icon_pin" />
 		<tocitem target="wiring_probe" image="icon_probe" />
 		<tocitem target="wiring_tunnel" image="icon_tunnel" />
+        <tocitem target="wiring_bitlabeledtunnel" image="icon_bitlabeledtunnel" />
 		<tocitem target="wiring_pull" image="icon_pull" />
 		<tocitem target="wiring_clock" image="icon_clock" />
 		<tocitem target="wiring_constant" image="icon_constant" />
@@ -137,6 +138,7 @@
 		<tocitem target="mem_random" image="icon_random" />
 		<tocitem target="mem_ram" image="icon_ram" />
 		<tocitem target="mem_rom" image="icon_rom" />
+        <tocitem target="mem_timer" image="icon_timer" />
 	  </tocitem>
 	  <tocitem target="io">
 		<tocitem target="io_button" image="icon_button" />
@@ -148,6 +150,18 @@
 		<tocitem target="io_dotmat" image="icon_dotmat" />
 		<tocitem target="io_tty" image="icon_tty" />
 	  </tocitem>
+      <tocitem target="riscv">
+        <tocitem target="riscv_rv32im" image="icon_rv32im" />
+        <tocitem target="riscv_rv32im_micro" image="icon_rv32im_micro" />
+      </tocitem>
+      <tocitem target="yosys">
+        <tocitem target="yosys_logicgates" image="icon_logicgates" />
+        <tocitem target="yosys_pow" image="icon_pow" />
+        <tocitem target="yosys_dynshift" image="icon_dynshift" />
+        <tocitem target="yosys_bitwisemux" image="icon_bitwisemux" />
+        <tocitem target="yosys_prioritymux" image="icon_prioritymux" />
+        <tocitem target="yosys_binarymux" image="icon_binarymux" />
+      </tocitem>
 	  <tocitem target="base">
 		<tocitem target="base_poke" image="icon_poke" />
 		<tocitem target="base_edit" image="icon_edit" />

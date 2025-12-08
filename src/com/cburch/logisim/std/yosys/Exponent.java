@@ -13,58 +13,84 @@ import java.math.BigInteger;
  *  - EXP se interpreta SIEMPRE como UNSIGNED
  */
 public class Exponent extends InstanceFactory {
+
+    public static final String _ID = "Exponent";
+
     static final int PER_DELAY = 1;
 
-    static final int IN0 = 0; // BASE
-    static final int IN1 = 1; // EXP (unsigned)
-    static final int OUT = 2; // RESULT
+    static final int IN0      = 0; // BASE
+    static final int IN1      = 1; // EXP (unsigned)
+    static final int OUT      = 2; // RESULT
+    static final int SIGN_SEL = 3; // PIN opcional para seleccionar signo
 
     // ===== Modo de signo =====
     public static final AttributeOption MODE_UNSIGNED
             = new AttributeOption("unsigned", "unsigned", Strings.getter("unsignedOption"));
     public static final AttributeOption MODE_SIGNED
             = new AttributeOption("signed", "signed",  Strings.getter("signedOption"));
+    public static final AttributeOption MODE_PIN
+            = new AttributeOption("pin", "pin", Strings.getter("pinOption"));
     public static final AttributeOption MODE_AUTO
             = new AttributeOption("auto", "auto", Strings.getter("autoOption"));
+
     public static final Attribute<AttributeOption> SIGN_MODE =
             Attributes.forOption("signMode", Strings.getter("arithSignMode"),
-                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_AUTO });
+                    new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Exponent() {
-        super("Exponent", Strings.getter("exponentComponent"));
+        super(_ID, Strings.getter("exponentComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.WIDTH, SIGN_MODE },
-                new Object[]  { BitWidth.create(8), MODE_AUTO }
+                new Object[]  { BitWidth.create(8), MODE_UNSIGNED }
         );
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
         setOffsetBounds(Bounds.create(-40, -20, 40, 40));
-        setIconName("exponent.gif"); // si no tienes icono, no pasa nada
-
-        Port[] ps = new Port[3];
-        ps[IN0] = new Port(-40, -10, Port.INPUT,  StdAttr.WIDTH);
-        ps[IN1] = new Port(-40,  10, Port.INPUT,  StdAttr.WIDTH);
-        ps[OUT] = new Port(  0,   0, Port.OUTPUT, StdAttr.WIDTH);
-        ps[IN0].setToolTip(Strings.getter("exponentBaseTip"));
-        ps[IN1].setToolTip(Strings.getter("exponentExponentTip"));
-        ps[OUT].setToolTip(Strings.getter("exponentOutputTip"));
-        setPorts(ps);
+        setIconName("exponent.gif");
     }
 
     @Override
     protected void configureNewInstance(Instance instance) {
-        super.configureNewInstance(instance);
-        instance.getAttributeSet().addAttributeListener(new AttributeListener() {
-            @Override public void attributeValueChanged(AttributeEvent e) {
-                Attribute<?> a = e.getAttribute();
-                if (a == SIGN_MODE) {
-                    instance.fireInvalidated();
-                } else if (a == StdAttr.WIDTH) {
-                    instance.recomputeBounds();
-                    instance.fireInvalidated();
-                }
-            }
-            @Override public void attributeListChanged(AttributeEvent e) { }
-        });
+        instance.addAttributeListener();
+        updatePorts(instance);
+    }
+
+    @Override
+    protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+        if (attr == SIGN_MODE || attr == StdAttr.WIDTH) {
+            updatePorts(instance);
+            instance.recomputeBounds();
+            instance.fireInvalidated();
+        }
+    }
+
+    /* ===== helpers de modo de signo ===== */
+
+    private static boolean pinModeEnabled(Instance instance) {
+        AttributeOption mode = instance.getAttributeValue(SIGN_MODE);
+        return mode == MODE_PIN;
+    }
+
+    private void updatePorts(Instance instance) {
+        BitWidth w = instance.getAttributeValue(StdAttr.WIDTH);
+        boolean pinMode = pinModeEnabled(instance);
+
+        Port base = new Port(-40, -10, Port.INPUT,  w);          // IN0
+        Port exp  = new Port(-40,  10, Port.INPUT,  w);          // IN1 (unsigned)
+        Port out  = new Port(  0,   0, Port.OUTPUT, w);          // OUT
+
+        base.setToolTip(Strings.getter("exponentBaseTip"));
+        exp.setToolTip(Strings.getter("exponentExponentTip"));
+        out.setToolTip(Strings.getter("exponentOutputTip"));
+
+        if (pinMode) {
+            Port signSel = new Port(-30, 20, Port.INPUT, BitWidth.ONE); // SIGN_SEL
+            signSel.setToolTip(Strings.getter("exponentSignSelTip"));
+            instance.setPorts(new Port[]{ base, exp, out, signSel });
+        } else {
+            instance.setPorts(new Port[]{ base, exp, out });
+        }
+
+        instance.fireInvalidated();
     }
 
     @Override
@@ -75,10 +101,41 @@ public class Exponent extends InstanceFactory {
         Value base = state.getPort(IN0);
         Value exp  = state.getPort(IN1);
 
-        Value out = computePow(w, base, exp, signOpt);
+        boolean signed = decideSigned(state, signOpt, w, base);
+        Value out = computePow(w, base, exp, signed);
 
         int delay = Math.max(1, (w.getWidth() + 2) * PER_DELAY);
         state.setPort(OUT, out, delay);
+    }
+
+    /**
+     * Decide si la BASE se interpreta como signed o unsigned, según:
+     * - SIGNED  → siempre signed
+     * - UNSIGNED→ siempre unsigned
+     * - PIN     → lee SIGN_SEL (1 => signed)
+     * - AUTO    → mira MSB(BASE)
+     */
+    private static boolean decideSigned(InstanceState st,
+                                        AttributeOption signOpt,
+                                        BitWidth w,
+                                        Value base) {
+        if (signOpt == MODE_SIGNED)   return true;
+        if (signOpt == MODE_UNSIGNED) return false;
+
+        if (signOpt == MODE_PIN) {
+            try {
+                Value sel = st.getPort(SIGN_SEL);
+                return sel == Value.TRUE; // 1 => signed, 0/X/NC => unsigned
+            } catch (IndexOutOfBoundsException ex) {
+                return false;
+            }
+        }
+
+        // AUTO: signed si MSB(base)==1
+        int width = w.getWidth();
+        if (!base.isFullyDefined() || width <= 0) return false;
+        Value[] bits = base.getAll();
+        return bits[width - 1] == Value.TRUE;
     }
 
     @Override
@@ -86,31 +143,40 @@ public class Exponent extends InstanceFactory {
         Graphics g = painter.getGraphics();
         painter.drawBounds();
 
-        g.setColor(Color.GRAY);
-        painter.drawPort(IN0);
-        painter.drawPort(IN1);
-        painter.drawPort(OUT);
+        AttributeOption m = painter.getAttributeValue(SIGN_MODE);
+        boolean pinMode = (m == MODE_PIN);
 
-        // Dibujo simple de “^”
+        g.setColor(Color.GRAY);
+        painter.drawPort(IN0);          // BASE
+        painter.drawPort(IN1);          // EXP
+        painter.drawPort(OUT);          // RESULT
+        if (pinMode) {
+            painter.drawPort(SIGN_SEL); // pin de signo si existe
+        }
+        g.setColor(Color.BLACK);
+
+        // Dibujito simple de "^"
         Location loc = painter.getLocation();
         int x = loc.getX(), y = loc.getY();
         GraphicsUtil.switchToWidth(g, 2);
-        g.setColor(Color.BLACK);
-        g.drawLine(x - 15, y, x - 10, y - 5);
-        g.drawLine(x - 10, y - 5, x - 5, y);
+        g.drawLine(x - 15, y,     x - 10, y - 5);
+        g.drawLine(x - 10, y - 5, x - 5,  y);
         GraphicsUtil.switchToWidth(g, 1);
 
-        // Marca de modo U/S/A
+        // Marca de modo U/S/P/A
         try {
-            AttributeOption m = painter.getAttributeValue(SIGN_MODE);
-            String tag = (m == MODE_SIGNED) ? "S" : (m == MODE_UNSIGNED ? "U" : "A");
+            String tag =
+                    (m == MODE_SIGNED)   ? "S" :
+                            (m == MODE_UNSIGNED) ? "U" :
+                                    (m == MODE_PIN)      ? "P" : "A";
             g.setColor(Color.DARK_GRAY);
             g.drawString(tag, x - 30, y + 5);
         } catch (Exception ignore) { }
+        g.setColor(Color.BLACK);
     }
 
     /* =================== Núcleo =================== */
-    static Value computePow(BitWidth width, Value base, Value exp, AttributeOption signOpt) {
+    static Value computePow(BitWidth width, Value base, Value exp, boolean signed) {
         int w = width.getWidth();
 
         // Errores/unknowns
@@ -126,17 +192,7 @@ public class Exponent extends InstanceFactory {
         // EXP siempre UNSIGNED (Yosys estándar)
         BigInteger e = bigUnsigned(exp, w);
 
-        // Decide modo para la BASE
-        boolean signed;
-        if (signOpt == MODE_SIGNED) {
-            signed = true;
-        } else if (signOpt == MODE_UNSIGNED) {
-            signed = false;
-        } else { // AUTO: signed si MSB(base)==1
-            signed = base.getAll()[w - 1] == Value.TRUE;
-        }
-
-        // Lee la base según el modo
+        // BASE según el modo
         BigInteger a = signed ? bigSigned(base, w) : bigUnsigned(base, w);
 
         // Casos rápidos
@@ -164,7 +220,6 @@ public class Exponent extends InstanceFactory {
             }
         }
 
-        // Value.createKnown(BitWidth,int) ya recorta a W bits internamente
         return Value.createKnown(width, res.intValue());
     }
 
@@ -191,37 +246,4 @@ public class Exponent extends InstanceFactory {
             return u;
         }
     }
-
-
-
-    private static long mulWrap(long a, long b, int w) {
-        // Multiplica y hace wrap 2^w
-        if (w >= 63) {
-            long mask = mask(w);
-            long prod = a * b;
-            return prod & mask;
-        } else {
-            long mask = (1L << w) - 1L;
-            long prod = (a & mask) * (b & mask);
-            return prod & mask;
-        }
-    }
-
-    /* =================== helpers =================== */
-    private static long mask(int w) {
-        return (w >= 64) ? -1L : ((1L << w) - 1L);
-    }
-
-    private static boolean msbSet(int val, int w) {
-        if (w <= 0) return false;
-        int bit = 1 << (w - 1);
-        return (val & bit) != 0;
-    }
-
-    private static long signExtend(int val, int w) {
-        long u = ((long) val) & mask(w);
-        long sign = 1L << (w - 1);
-        return (u ^ sign) - sign;
-    }
 }
-

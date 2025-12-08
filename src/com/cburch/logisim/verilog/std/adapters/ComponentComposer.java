@@ -7,7 +7,7 @@ import com.cburch.logisim.instance.StdAttr;
 
 import java.awt.*;
 
-/** Núcleo reusable para “construir” celdas Yosys a partir de combinaciones Logisim (vainilla 2.7.1). */
+/** Núcleo reusable para “construir” celdas Yosys a partir de combinaciones Logisim. */
 public final class ComponentComposer {
     public static AttributeSet attrsWithWidthAndLabel(ComponentFactory f, int width, String label){
         AttributeSet a = f.createAttributeSet();
@@ -31,7 +31,7 @@ public final class ComponentComposer {
         return sb.toString();
     }
 
-    /* === Pines “aproximados” (vainilla: formas estáticas) para uso en pinMap si lo necesitas === */
+    /* === Pines “aproximados” para uso en pinMap === */
     public static Location pinComparatorEQ(Component cmp){ Location c=cmp.getLocation(); return Location.create(c.getX()+30, c.getY()); }
     public static Location pinNotOut(Component not){ Location c=not.getLocation(); return Location.create(c.getX()+10, c.getY()); }
 }

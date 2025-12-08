@@ -35,6 +35,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 public class Transistor extends InstanceFactory {
+
+    public static final String _ID = "Transistor";
+
 	static final AttributeOption TYPE_P
 		= new AttributeOption("p", Strings.getter("transistorTypeP"));
 	static final AttributeOption TYPE_N
@@ -51,7 +54,7 @@ public class Transistor extends InstanceFactory {
 	private static final Icon ICON_P = Icons.getIcon("trans0.gif");
 
 	public Transistor() {
-		super("Transistor", Strings.getter("transistorComponent"));
+		super(_ID, Strings.getter("transistorComponent"));
 		setAttributes(
 				new Attribute[] { ATTR_TYPE, StdAttr.FACING,
 						Wiring.ATTR_GATE, StdAttr.WIDTH },

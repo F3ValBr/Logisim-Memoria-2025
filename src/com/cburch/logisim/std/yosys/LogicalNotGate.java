@@ -8,6 +8,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import java.awt.*;
 
 public class LogicalNotGate extends InstanceFactory {
+
+    public static final String _ID = "Logical NOT Gate";
+
     private static final int DELAY = 2;
 
     // Puertos
@@ -15,7 +18,7 @@ public class LogicalNotGate extends InstanceFactory {
     static final int OUT = 1;
 
     public LogicalNotGate() {
-        super("Logical NOT Gate", Strings.getter("logicNotGateComponent"));
+        super(_ID, Strings.getter("logicNotGateComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.FACING, StdAttr.WIDTH },
                 new Object[]  { Direction.EAST,  BitWidth.create(8) }

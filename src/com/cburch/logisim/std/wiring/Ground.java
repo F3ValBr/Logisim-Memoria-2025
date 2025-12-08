@@ -28,8 +28,11 @@ import com.cburch.logisim.instance.Port;
 import com.cburch.logisim.instance.StdAttr;
 
 public class Ground extends InstanceFactory {
+
+    public static final String _ID = "Ground";
+
 	public Ground() {
-		super("Ground", Strings.getter("groundComponent"));
+		super(_ID, Strings.getter("groundComponent"));
 		setIconName("ground.gif");
 		setAttributes(new Attribute[] { StdAttr.FACING, StdAttr.WIDTH },
 				new Object[] { Direction.SOUTH, BitWidth.ONE });

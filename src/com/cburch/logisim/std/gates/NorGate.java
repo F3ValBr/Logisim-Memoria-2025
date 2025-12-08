@@ -15,10 +15,13 @@ import com.cburch.logisim.tools.WireRepairData;
 import com.cburch.logisim.util.GraphicsUtil;
 
 class NorGate extends AbstractGate {
-	public static NorGate FACTORY = new NorGate();
+
+    public static final String _ID = "NOR Gate";
+
+    public static NorGate FACTORY = new NorGate();
 
 	private NorGate() {
-		super("NOR Gate", Strings.getter("norGateComponent"));
+		super(_ID, Strings.getter("norGateComponent"));
 		setNegateOutput(true);
 		setRectangularLabel(OrGate.FACTORY.getRectangularLabel(null));
 		setIconNames("norGate.gif", "norGateRect.gif", "dinNorGate.gif");

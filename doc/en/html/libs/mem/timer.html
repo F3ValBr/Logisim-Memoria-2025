@@ -1,0 +1,112 @@
+<html>
+<head>
+    <title>Timer</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1>
+    <img align="center" height="32" width="32" src="../../../icons/timer.gif">
+    <em>Timer</em>
+</h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Memory</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>2.7.1</td></tr>
+    <tr><td><strong>Updated:</strong></td>
+        <td>LogisimCL&nbsp;-&nbsp;3.0.1</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/timer.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The <em>Timer</em> component measures elapsed time between trigger events and
+    outputs the result as a 32-bit value. It supports two operating modes:
+</p>
+
+<ul>
+    <li><b>Real time</b> - uses the actual system clock (wall-clock time).
+        Each trigger event outputs the number of milliseconds elapsed since
+        the previous trigger.</li>
+
+    <li><b>Virtual time</b> - time advances according to an external clock
+        input. Each rising edge on the clock increments an internal counter,
+        and a trigger event outputs the number of ticks since the last trigger.</li>
+</ul>
+
+<p>
+    The component can therefore be used either as a real-time measurement tool
+    (e.g., for latency analysis) or as a purely digital tick counter driven by
+    the circuit's own logic.
+</p>
+
+<h2>Pins</h2>
+
+<dl>
+
+    <dt>Labeled <var>T</var> (output, 32 bits)</dt>
+    <dd>
+        Outputs the measured time difference. In real-time mode this represents
+        milliseconds; in virtual mode it represents clock ticks.
+    </dd>
+
+    <dt>Labeled <var>S</var> (input, 1 bit)</dt>
+    <dd>
+        Trigger input. A rising edge causes the timer to measure and output the
+        elapsed time since the previous rising edge of <var>S</var>.
+    </dd>
+
+    <dt>Labeled <var>CK</var> (input, 1 bit, virtual-mode only)</dt>
+    <dd>
+        Clock input used exclusively in virtual mode. Each rising edge increments
+        the internal tick counter. This pin is <em>not</em> present in real-time mode.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Mode</dt>
+    <dd>
+        Determines how time is measured:
+        <ul>
+            <li><q>Real time</q>: measures actual elapsed milliseconds;</li>
+            <li><q>Virtual</q>: counts rising edges on the external <var>CK</var> pin.</li>
+        </ul>
+        Changing the mode dynamically adds or removes the <var>CK</var> pin.
+    </dd>
+
+    <dt>Label</dt>
+    <dd>
+        Text drawn next to the component.</dd>
+
+    <dt>Label Font</dt>
+    <dd>
+        Font used for the label's rendering.</dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    The internal state of the timer cannot be modified directly with the Poke
+    Tool, but activating or deactivating the trigger and clock inputs allows you
+    to observe how the measured output value changes.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    Allows editing the component's label.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+<html>
+<head>
+    <title>Dynamic Shifter</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1><img align="center" height="32" width="32" src="../../../icons/dynamicShifter.gif">
+    <em>Dynamic Shifter</em></h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Yosys Components</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/dynamicshifter.png"></td>
+        <td valign="top"><img src="../../../img-libs/dynamicshifter2.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The Dynamic Shifter applies a variable shift to its data input
+    according to a shift amount received on a second input.
+    It is designed to emulate the behavior of the Yosys
+    <code>$shift</code> and <code>$shiftx</code> cells,
+    allowing circuits that use these operators to be imported
+    without changing their semantics.
+</p>
+
+<p>
+    The component has two main inputs:
+    <var>A</var> (data) and <var>B</var> (shift amount or index).
+    Depending on the selected <q>Shift Mode</q>, it can operate in
+    two ways:
+</p>
+
+<ul>
+    <li>
+        <strong>Variable shift:</strong> the value of <var>B</var> specifies
+        how many positions <var>A</var> is shifted. Bits that move beyond
+        the output range are discarded; newly vacated bits are filled with
+        either <code>0</code> or the sign bit, depending on the
+        <q>Signed A</q> setting.
+    </li>
+    <li>
+        <strong>Indexed part-select:</strong> the value of <var>B</var>
+        is interpreted as an index into <var>A</var>; the output <var>Y</var>
+        corresponds to a contiguous window of bits of width
+        <q>Output Y Bits</q>, starting at that index. This mode acts as a
+        variable subrange extractor and corresponds to the Yosys
+        <code>$shiftx</code> cell.
+    </li>
+</ul>
+
+<p>
+    When <q>Signed A</q> is enabled, right shifts propagate the most
+    significant bit of <var>A</var> (arithmetic shift); when it is
+    disabled, right shifts fill with zeros (logical shift).
+    The <q>Signed B</q> attribute controls whether <var>B</var> is treated
+    as a signed or unsigned quantity. In variable shift mode, a negative
+    value on a signed <var>B</var> is interpreted as a shift in the
+    opposite direction. In indexed part-select mode, it does not matter the
+    A input.
+</p>
+
+<h2>Pins</h2>
+
+<dl>
+
+    <dt>West edge, labeled <var>A</var> (input, bit width matches <q>Input A Width</q>)</dt>
+    <dd>
+        Data input. This is the value to be shifted (variable shift mode)
+        or the bus from which a slice will be extracted (indexed part-select
+        mode).
+    </dd>
+
+    <dt>West edge, labeled <var>B</var> (input, bit width matches <q>Input B Width</q>)</dt>
+    <dd>
+        Shift amount or index input. In variable shift mode, its value
+        specifies the displacement applied to <var>A</var>. In indexed
+        part-select mode, its value selects the starting bit of the slice
+        taken from <var>A</var>.
+    </dd>
+
+    <dt>East edge, labeled <var>Y</var> (output, bit width matches <q>Output Y Width</q>)</dt>
+    <dd>
+        Result of the operation. In variable shift mode, this is the shifted
+        version of <var>A</var>; in indexed part-select mode, it is the
+        extracted window of bits.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Data A Bits</dt>
+    <dd>
+        Sets the bit width of the data input <var>A</var>.
+    </dd>
+
+    <dt>Shift B Bits</dt>
+    <dd>
+        Sets the bit width of the shift/index input <var>B</var>.
+        A larger width allows larger displacements or access to higher
+        bit positions within <var>A</var>.
+    </dd>
+
+    <dt>Output Y Bits</dt>
+    <dd>
+        Sets the bit width of the output <var>Y</var>. In variable shift
+        mode this is typically chosen to match <q>Input A Width</q>;
+        in indexed part-select mode it determines the size of the
+        extracted window.
+    </dd>
+
+    <dt>Shift Mode</dt>
+    <dd>
+        Selects how the component interprets its inputs:
+        <ul>
+            <li><q>Variable shift</q>: behaves as a directional dynamic shifter, corresponding to Yosys <code>$shift</code>.</li>
+            <li><q>Indexed part-select</q>: extracts a contiguous slice of <var>A</var>, corresponding to Yosys <code>$shiftx</code>.</li>
+        </ul>
+    </dd>
+
+    <dt>Signed A?</dt>
+    <dd>
+        Indicates whether <var>A</var> is treated as a signed value.
+        When enabled, right shifts propagate the sign bit; when disabled,
+        vacated bits are filled with zeros.
+    </dd>
+
+    <dt>Signed B?</dt>
+    <dd>
+        Indicates whether <var>B</var> is treated as a signed value.
+        In variable shift mode, negative values invert the shift direction.
+        In indexed part-select mode, it is considered to apply the right
+        amount of indexation.
+    </dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    None
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    None
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

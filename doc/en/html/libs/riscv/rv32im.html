@@ -1,0 +1,177 @@
+<html>
+<head>
+    <title>RV32IM Processor</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1>
+    <img align="center" height="32" width="32" src="../../../icons/riscvproc.gif">
+    <em>RV32IM Processor</em>
+</h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Risc-V Processors</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL&nbsp;-&nbsp;3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/rv32im.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The <em>RV32IM Processor</em> is a 32-bit RISC-V core with support for the
+    integer base set (RV32I) plus the multiplication and division extension (M).
+    It is intended to be connected to a single 32-bit memory bus, through which
+    it fetches instructions and accesses data.
+</p>
+
+<p>
+    The processor drives the address bus <var>ADDR</var>, uses the data bus
+    <var>DATA</var> for reads and writes, and controls accesses via the
+    <var>RD/WR</var> and <var>BE</var> (byte enable) lines. An external
+    interrupt request can be signalled through the <var>INTR</var> input, in
+    which case the core jumps to the address configured in the
+    <q>Processor interruption address</q> attribute.
+</p>
+
+<p>
+    Optionally, the component can include an internal 4&nbsp;KB memory. When
+    this option is enabled, the memory is initialized according to the
+    <q>Processor memory content</q> attribute and mapped to the address space
+    defined by the remaining memory-related attributes. When the internal
+    memory is disabled, the processor behaves as a bus master that must be
+    connected to an external memory subsystem implemented by the user.
+</p>
+
+<h2>Pins (assuming component faces east)</h2>
+
+<dl>
+
+    <dt>North edge, labeled <var>INTR</var> (input, 1&nbsp;bit)</dt>
+    <dd>
+        Interrupt request input. When asserted, the processor jumps to the address
+        configured in <q>Processor interruption address</q>, according to the
+        interrupt handling scheme defined by the loaded program.
+    </dd>
+
+    <dt>West edge, labeled <var>ADDR</var> (output, 32&nbsp;bits)</dt>
+    <dd>
+        Address bus driven by the processor for instruction fetches and data
+        accesses. The width is fixed to 32&nbsp;bits, but effectively only the low
+        bits required by the configured memory depth are used.
+    </dd>
+
+    <dt>West edge, labeled <var>BE</var> (output, 4&nbsp;bits)</dt>
+    <dd>
+        Byte-enable lines associated to the data bus. Each bit corresponds to one
+        byte of the 32-bit word on <var>DATA</var>, and indicates which bytes are
+        valid for the current access.
+    </dd>
+
+    <dt>East edge, labeled <var>DATA</var> (input/output, 32&nbsp;bits)</dt>
+    <dd>
+        Data bus used both for instruction fetches and data loads/stores. During
+        read cycles, the memory must drive this bus; during write cycles, the
+        processor places the value to be stored on it.
+    </dd>
+
+    <dt>South edge, labeled <var>RDWR</var> (input, 1&nbsp;bit)</dt>
+    <dd>
+        Read/Write control: indicates the type of memory access currently
+        requested. When the signal is in read mode, the connected memory must
+        present data on <var>DATA</var>; in write mode, the value on <var>DATA</var>
+        must be stored at the address specified by <var>ADDR</var>. The exact
+        encoding (for example, 1&nbsp;=&nbsp;read, 0&nbsp;=&nbsp;write) is
+        documented in the processor design and should be respected by attached
+        memory components.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Processor memory content</dt>
+    <dd>
+        Selects the initial contents of the internal memory when it is enabled.
+        Typical options include an empty memory or a predefined memory image
+        assembled for the RV32IM core.
+    </dd>
+
+    <dt>Enable/Disable Memory</dt>
+    <dd>
+        Enables or disables the internal 4&nbsp;KB memory.
+        When set to <q>Enable</q>, the processor includes an internal memory block
+        initialized according to <q>Processor memory content</q>.
+        When set to <q>Disable</q>, no internal memory is instantiated and the
+        external circuit must provide the memory connected to the bus signals.
+    </dd>
+
+    <dt>First address on processor</dt>
+    <dd>
+        Base address that the processor uses as the lowest valid address in its
+        memory map. This value is typically the start of the memory region where
+        the program resides.
+    </dd>
+
+    <dt>Processor boot address</dt>
+    <dd>
+        Reset program counter (PC) value. Upon reset, the processor begins
+        execution at this address, which should normally point to the program
+        boot routine.
+    </dd>
+
+    <dt>Processor interruption address</dt>
+    <dd>
+        Address to which the PC jumps when an interrupt is taken through the
+        <var>INTR</var> input. The interrupt handler code should be stored at this
+        location.
+    </dd>
+
+    <dt>Memory width 32bits</dt>
+    <dd>
+        Logarithm base&nbsp;2 of the number of 32-bit words in the memory. For
+        example, a value of 10 corresponds to 2<sup>10</sup> 32-bit words
+        (4&nbsp;KB total).
+    </dd>
+
+    <dt>Processor instruction multiplier</dt>
+    <dd>
+        Simulation multiplier for instruction timing. A value of 1 corresponds to
+        the nominal behavior; higher values can be used to slow down or model
+        multi-cycle execution, which can help when observing interactions with
+        other components in the circuit.
+    </dd>
+
+    <dt>Display processor information</dt>
+    <dd>
+        Controls whether additional information about the processor (such as
+        internal signals or status text) is displayed inside the component’s
+        symbol. When set to <q>Hide information</q>, only the minimal label
+        is shown.
+    </dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    The processor itself cannot be modified directly using the Poke Tool.
+    However, the memory connected to its bus (internal or external) may be
+    edited if the corresponding memory components support poking.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    Allows the label associated with the component to be edited.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

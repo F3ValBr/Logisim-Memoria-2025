@@ -11,7 +11,24 @@ import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.tools.Tool;
 
 public class Gates extends Library {
-	private List<Tool> tools = null;
+
+    public static final String LIB_NAME = "Gates";
+
+    // ==== IDs públicos para cada componente ====
+    public static final String NOT_ID              = NotGate._ID;
+    public static final String BUFFER_ID           = Buffer._ID;
+    public static final String AND_ID              = AndGate._ID;
+    public static final String OR_ID               = OrGate._ID;
+    public static final String NAND_ID             = NandGate._ID;
+    public static final String NOR_ID              = NorGate._ID;
+    public static final String XOR_ID              = XorGate._ID;
+    public static final String XNOR_ID             = XnorGate._ID;
+    public static final String ODD_PARITY_ID       = OddParityGate._ID;
+    public static final String EVEN_PARITY_ID      = EvenParityGate._ID;
+    public static final String CONTROLLED_BUFFER_ID    = ControlledBuffer.BUFFER_ID;
+    public static final String CONTROLLED_INVERTER_ID  = ControlledBuffer.INVERTER_ID;
+
+    private List<Tool> tools = null;
 
 	public Gates() {
 		tools = Arrays.asList(new Tool[] {
@@ -31,7 +48,7 @@ public class Gates extends Library {
 	}
 
 	@Override
-	public String getName() { return "Gates"; }
+	public String getName() { return LIB_NAME; }
 
 	@Override
 	public String getDisplayName() { return Strings.get("gatesLibrary"); }

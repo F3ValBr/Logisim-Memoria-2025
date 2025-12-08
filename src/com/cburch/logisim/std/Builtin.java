@@ -20,7 +20,10 @@ import com.cburch.logisim.tools.Tool;
 import com.cburch.logisim.std.riscv.Riscv;
 
 public class Builtin extends Library {
-	private List<Library> libraries = null;
+
+    public static final String LIB_NAME = "Builtin";
+
+    private List<Library> libraries = null;
 
 	public Builtin() {
 		libraries = Arrays.asList(new Library[] {
@@ -37,7 +40,7 @@ public class Builtin extends Library {
 	}
 
 	@Override
-	public String getName() { return "Builtin"; }
+	public String getName() { return LIB_NAME; }
 
 	@Override
 	public String getDisplayName() { return Strings.get("builtinLibrary"); }

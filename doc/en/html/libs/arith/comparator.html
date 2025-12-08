@@ -1,67 +1,111 @@
 <html>
 <head>
-<title>Comparator</title>
+    <title>Comparator</title>
 </head>
 
 <body bgcolor="FFFFFF">
 
 <h1><img align="center" height="32" width="32" src="../../../icons/comparator.gif">
-<em>Comparator</em></h1>
+    <em>Comparator</em></h1>
 
 <p><table>
-<tr><td><strong>Library:</strong></td>
-	<td><a href="index.html">Arithmetic</a></td></tr>
-<tr><td><strong>Introduced:</strong></td>
-	<td>2.0 Beta 22</td></tr>
-<tr><td valign="top"><strong>Appearance:</strong></td>
-	<td valign="top"><img src="../../../img-libs/comparator.png"></td></tr>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Arithmetic</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>2.0 Beta 22</td></tr>
+    <tr><td><strong>Updated:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/comparator.png"></td></tr>
 </table></p>
 
 <h2>Behavior</h2>
 
-<p>Compares two values, either as unsigned values or as two's-complement
-values, depending on the Numeric Type attribute. Normally, one of the
-outputs will be 1, and the other two outputs will be 0.</p>
+<p>
+    The comparator checks the relation between two multi-bit values
+    (greater than, equal, less than). The comparison is performed bit by bit,
+    starting from the most significant bit and descending in parallel until
+    a position is found where the two values differ.
+</p>
 
-<p>The comparison is performed starting at the most significant bits in
-each number and descending downward in parallel until a location is
-found where the two values disagree. If, however, an error value or
-a floating value is encountered during this descent, then all outputs
-will match that error or floating value.</p>
+<p>
+    Normally, exactly one of the three outputs will be <code>1</code> and the
+    remaining two will be <code>0</code>. If, during the descent, an error
+    value or a floating value is encountered, then all three outputs adopt
+    that error or floating value.
+</p>
+
+<p>
+    The <q>Strict Equality</q> attribute refines the behaviour of the
+    equality output (<code>=</code>):
+</p>
+
+<ul>
+    <li><strong>No (default):</strong> the component behaves as in the
+        original version of Logisim; any undefined or floating bits in the
+        inputs cause the three outputs to become unknown or floating.</li>
+    <li><strong>Yes:</strong> the equality output is evaluated even in the
+        presence of undefined bits. If both operands are completely
+        undefined, the equality output is driven to <code>1</code>; if they
+        differ at any defined position, the equality output is <code>0</code>.
+        The greater-than and less-than outputs keep the original behaviour
+        and propagate undefined values as usual.</li>
+</ul>
 
 <h2>Pins</h2>
 
 <dl>
 
-<dt>West edge, north end (input, bit width matches Data Bits attribute)
-<dd>The first of the two values to be compared.
+    <dt>West edge, north end (input, bit width matches Data Bits attribute)</dt>
+    <dd>The first of the two values to be compared.</dd>
 
-<dt>West edge, south end (input, bit width matches Data Bits attribute)
-<dd>The second of the two values to be compared.
+    <dt>West edge, south end (input, bit width matches Data Bits attribute)</dt>
+    <dd>The second of the two values to be compared.</dd>
 
-<dt>East edge, labeled <tt>&gt;</tt> (output, bit width 1)
-<dd>1 if the first input is greater than the second input, 0 if
-the first input is less than or equal the second input.
+    <dt>East edge, labeled <tt>&gt;</tt> (output, bit width 1)</dt>
+    <dd>
+        <code>1</code> if the first input is greater than the second input;
+        <code>0</code> otherwise. This output propagates undefined values as
+        described above.
+    </dd>
 
-<dt>East edge, labeled <tt>=</tt> (output, bit width 1)
-<dd>1 if the first input equals the second input, 0 if
-the first input is not equal the second input.
+    <dt>East edge, labeled <tt>=</tt> (output, bit width 1)</dt>
+    <dd>
+        Indicates whether the two inputs are equal. With <q>Strict Equality</q>
+        set to <q>No</q>, any undefined or floating bits cause this output to
+        become undefined. With <q>Strict Equality</q> set to <q>Yes</q>, the
+        equality is evaluated even in the presence of undefined bits, and may
+        still produce a definite <code>0</code> or <code>1</code>.
+    </dd>
 
-<dt>East edge, labeled <tt>&lt;</tt> (output, bit width 1)
-<dd>1 if the first input is less than the second input, 0 if
-the first input is greater than or equal the second input.
+    <dt>East edge, labeled <tt>&lt;</tt> (output, bit width 1)</dt>
+    <dd>
+        <code>1</code> if the first input is less than the second input;
+        <code>0</code> otherwise. This output propagates undefined values as
+        described above.
+    </dd>
 
 </dl>
 
 <h2>Attributes</h2>
 
 <p>When the component is selected or being added,
-Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
+    Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
 
 <dl>
 
-<dt>Data Bits</dt>
-<dd>The bit width of the component's inputs.</dd>
+    <dt>Data Bits</dt>
+    <dd>The bit width of the component's inputs.</dd>
+
+    <dt>Strict Equality</dt>
+    <dd>
+        Determines how the equality output reacts to undefined or floating bits.
+        When set to <q>No</q>, any undefined bits force the equality output to
+        become undefined, matching the original Logisim behaviour. When set to
+        <q>Yes</q>, the comparator attempts to decide equality even in the
+        presence of undefined bits, and treats the case where both operands are
+        fully undefined as equal.
+    </dd>
 
 </dl>
 

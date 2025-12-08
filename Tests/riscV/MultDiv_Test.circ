@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project source="2.7.2" version="1.0">
+<project source="3.0.1" version="1.0">
   This file is intended to be loaded by Logisim (http://www.cburch.com/logisim/).
 
   <lib desc="#Wiring" name="0">
@@ -26,8 +26,6 @@
   <lib desc="#Gates" name="1">
     <tool name="AND Gate">
       <a name="facing" val="north"/>
-      <a name="size" val="30"/>
-      <a name="inputs" val="2"/>
     </tool>
   </lib>
   <lib desc="#Plexers" name="2"/>
@@ -54,7 +52,7 @@
 0
 </a>
     </tool>
-    <tool name="RV32IM_MIcro">
+    <tool name="RV32IM_Micro">
       <a name="contents">addr/data: 10 32
 0
 </a>
@@ -100,17 +98,6 @@
     <a name="clabelfont" val="SansSerif plain 12"/>
     <wire from="(460,820)" to="(710,820)"/>
     <wire from="(380,820)" to="(440,820)"/>
-    <wire from="(470,760)" to="(520,760)"/>
-    <wire from="(290,860)" to="(340,860)"/>
-    <wire from="(290,590)" to="(290,860)"/>
-    <wire from="(440,810)" to="(440,820)"/>
-    <wire from="(630,590)" to="(630,850)"/>
-    <wire from="(470,750)" to="(470,760)"/>
-    <wire from="(460,700)" to="(460,720)"/>
-    <wire from="(450,760)" to="(450,780)"/>
-    <wire from="(450,910)" to="(450,940)"/>
-    <wire from="(540,870)" to="(650,870)"/>
-    <wire from="(360,870)" to="(400,870)"/>
     <wire from="(710,820)" to="(710,860)"/>
     <wire from="(420,940)" to="(450,940)"/>
     <wire from="(610,590)" to="(630,590)"/>
@@ -118,22 +105,21 @@
     <wire from="(630,590)" to="(650,590)"/>
     <wire from="(690,860)" to="(710,860)"/>
     <wire from="(290,590)" to="(310,590)"/>
+    <wire from="(470,760)" to="(520,760)"/>
     <wire from="(360,930)" to="(380,930)"/>
     <wire from="(360,950)" to="(380,950)"/>
+    <wire from="(290,860)" to="(340,860)"/>
+    <wire from="(290,590)" to="(290,860)"/>
+    <wire from="(440,810)" to="(440,820)"/>
+    <wire from="(630,590)" to="(630,850)"/>
+    <wire from="(470,750)" to="(470,760)"/>
+    <wire from="(460,700)" to="(460,720)"/>
+    <wire from="(450,760)" to="(450,780)"/>
     <wire from="(360,880)" to="(360,930)"/>
+    <wire from="(450,910)" to="(450,940)"/>
+    <wire from="(540,870)" to="(650,870)"/>
+    <wire from="(360,870)" to="(400,870)"/>
     <wire from="(380,700)" to="(380,820)"/>
-    <comp lib="1" loc="(460,720)" name="AND Gate">
-      <a name="facing" val="north"/>
-      <a name="size" val="30"/>
-      <a name="inputs" val="2"/>
-      <a name="negate0" val="true"/>
-    </comp>
-    <comp lib="0" loc="(520,760)" name="Clock">
-      <a name="facing" val="west"/>
-    </comp>
-    <comp lib="3" loc="(420,940)" name="Comparator">
-      <a name="width" val="26"/>
-    </comp>
     <comp lib="3" loc="(690,860)" name="Comparator">
       <a name="width" val="32"/>
     </comp>
@@ -173,9 +159,22 @@
       <a name="bit30" val="1"/>
       <a name="bit31" val="1"/>
     </comp>
-    <comp lib="0" loc="(650,590)" name="Probe">
+    <comp lib="7" loc="(460,550)" name="RV32IM">
+      <a name="contents">addr/data: 10 32
+100113 1e11113 fff00193 200213 100293 1f29293 2418533 24195b3
+2521633 25236b3 2522733 251b7b3 251a833 25528b3 a12023 b12223
+c12423 d12623 e12823 f12a23 1012c23 1112e23 ffd00193 241ca33
+2a1cab3 201cb33 241dbb3 2355c33 2356cb3 2357d33 3412023 3512223
+3612423 3712623 3812823 3912a23 3a12c23
+</a>
+      <a name="displayRegister" val="showRegister"/>
+    </comp>
+    <comp lib="1" loc="(460,720)" name="AND Gate">
+      <a name="facing" val="north"/>
+      <a name="negate0" val="true"/>
+    </comp>
+    <comp lib="0" loc="(520,760)" name="Clock">
       <a name="facing" val="west"/>
-      <a name="radix" val="16"/>
     </comp>
     <comp lib="4" loc="(540,870)" name="ROM">
       <a name="addrWidth" val="4"/>
@@ -187,23 +186,18 @@ ffffffff 1 0 7ffffffe 1 fffffffe 1
     </comp>
     <comp lib="1" loc="(450,780)" name="AND Gate">
       <a name="facing" val="north"/>
-      <a name="size" val="30"/>
-      <a name="inputs" val="2"/>
       <a name="negate1" val="true"/>
     </comp>
     <comp lib="0" loc="(360,950)" name="Constant">
       <a name="width" val="26"/>
       <a name="value" val="0x1000000"/>
     </comp>
-    <comp lib="7" loc="(460,550)" name="RV32IM">
-      <a name="contents">addr/data: 10 32
-100113 1e11113 fff00193 200213 100293 1f29293 2418533 24195b3
-2521633 25236b3 2522733 251b7b3 251a833 25528b3 a12023 b12223
-c12423 d12623 e12823 f12a23 1012c23 1112e23 ffd00193 241ca33
-2a1cab3 201cb33 241dbb3 2355c33 2356cb3 2357d33 3412023 3512223
-3612423 3712623 3812823 3912a23 3a12c23
-</a>
-      <a name="displayRegister" val="showRegister"/>
+    <comp lib="3" loc="(420,940)" name="Comparator">
+      <a name="width" val="26"/>
+    </comp>
+    <comp lib="0" loc="(650,590)" name="Probe">
+      <a name="facing" val="west"/>
+      <a name="radix" val="16"/>
     </comp>
   </circuit>
 </project>

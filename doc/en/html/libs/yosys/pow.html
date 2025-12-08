@@ -1,0 +1,146 @@
+<html>
+<head>
+    <title>Exponent</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1><img align="center" height="32" width="32" src="../../../icons/exponent.gif">
+    <em>Exponent</em></h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Yosys Components</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/exponent.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The Exponent component computes an integer power between two
+    multi-bit operands and emits the result on its output.
+    It is intended to emulate the behavior of the Yosys
+    <code>$pow</code> cell (operator <code>**</code>) so that
+    designs synthesized from SystemVerilog can be imported without
+    changing their arithmetic semantics.
+</p>
+
+<p>
+    The west side of the component has two inputs:
+    <var>A</var>, the base, and <var>B</var>, the exponent.
+    The east side has one output, <var>Y</var>, which carries the
+    value <code>A ** B</code> interpreted according to the selected
+    signedness mode.
+</p>
+
+<p>
+    All three ports share the same bit width, defined by the
+    <q>Data Bits</q> attribute.
+    The computation is performed within this width; if the exact
+    mathematical result does not fit, the high-order bits are
+    discarded and only the least significant bits are kept,
+    matching the usual behavior of fixed-width arithmetic.
+</p>
+
+<p>
+    The <q>Signedness</q> attribute controls how the operands are
+    interpreted:
+</p>
+
+<ul>
+    <li><strong>Unsigned:</strong> <var>A</var>, <var>B</var> and
+        <var>Y</var> are treated as unsigned integers.</li>
+    <li><strong>Signed:</strong> operands are interpreted as
+        two's-complement signed values.</li>
+    <li><strong>Auto-detect Signedness:</strong> the component
+        infers whether to use signed or unsigned arithmetic based
+        on the most significant bit (MSB) of the operands, in a
+        way compatible with the conventions used by Yosys.</li>
+    <li><strong>Controlled by pin (if available):</strong> when
+        this mode is selected, an additional control input can be
+        used to switch between signed and unsigned interpretation
+        at run time.</li>
+</ul>
+
+<p>
+    When the exponent <var>B</var> is zero and the base is a
+    defined value, the output is <code>1</code> (with the
+    appropriate width). If the inputs contain undefined
+    (<em>X</em>) or floating (<em>Z</em>) bits that prevent
+    determining a consistent result, the output becomes
+    <em>X</em>.
+</p>
+
+<h2>Pins</h2>
+
+<dl>
+
+    <dt>West edge, labeled <var>Base</var> (input, width = Data Bits)</dt>
+    <dd>
+        Base of the exponentiation. Its bit width is determined by
+        the <q>Data Bits</q> attribute and its interpretation
+        (signed/unsigned) depends on the <q>Signedness</q> setting.
+    </dd>
+
+    <dt>West edge, labeled <var>Exponent</var> (input, width = Data Bits)</dt>
+    <dd>
+        Exponent of the operation. Must be an integer value; the
+        component uses only the lower bits according to
+        <q>Data Bits</q>. Undefined or invalid values may produce
+        an undefined (<em>X</em>) result.
+    </dd>
+
+    <dt>East edge, labeled <var>Y</var> (output, width = Data Bits)</dt>
+    <dd>
+        Result of the exponentiation <code>A ** B</code>, truncated
+        to the configured bit width.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Data Bits</dt>
+    <dd>
+        Bit width of the inputs <var>A</var>, <var>B</var> and the
+        output <var>Y</var>. All arithmetic is performed within this
+        fixed width.
+    </dd>
+
+    <dt>Signedness</dt>
+    <dd>
+        Controls how the component interprets its operands:
+        <ul>
+            <li><q>Unsigned</q>: all ports are treated as unsigned.</li>
+            <li><q>Signed</q>: all ports are treated as two's-complement signed.</li>
+            <li><q>Auto-detect Signedness</q>: the component selects a
+                signed or unsigned interpretation in a way compatible
+                with Yosys' internal rules.</li>
+            <li><q>Decide on pin</q> (if present): the sign mode is
+                chosen at simulation time based on an external input.</li>
+        </ul>
+    </dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    If pressed Alt + some number when selected, it changes the Data Bits value.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    None.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

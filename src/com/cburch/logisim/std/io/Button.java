@@ -26,10 +26,13 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Button extends InstanceFactory {
-	private static final int DEPTH = 3;
+
+    public static final String _ID = "Button";
+
+    private static final int DEPTH = 3;
 
 	public Button() {
-		super("Button", Strings.getter("buttonComponent"));
+		super(_ID, Strings.getter("buttonComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, Io.ATTR_COLOR,
 				StdAttr.LABEL, Io.ATTR_LABEL_LOC,

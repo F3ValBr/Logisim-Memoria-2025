@@ -25,7 +25,10 @@ import com.cburch.logisim.util.GraphicsUtil;
 // TODO repropagate when rows/cols change
 
 public class DotMatrix extends InstanceFactory {
-	static final AttributeOption INPUT_SELECT
+
+    public static final String _ID = "DotMatrix";
+
+    static final AttributeOption INPUT_SELECT
 		= new AttributeOption("select", Strings.getter("ioInputSelect"));
 	static final AttributeOption INPUT_COLUMN
 		= new AttributeOption("column", Strings.getter("ioInputColumn"));
@@ -53,7 +56,7 @@ public class DotMatrix extends InstanceFactory {
 			Strings.getter("ioMatrixPersistenceAttr"), 0, Integer.MAX_VALUE);
 
 	public DotMatrix() {
-		super("DotMatrix", Strings.getter("dotMatrixComponent"));
+		super(_ID, Strings.getter("dotMatrixComponent"));
 		setAttributes(new Attribute<?>[] {
 				ATTR_INPUT_TYPE, ATTR_MATRIX_COLS, ATTR_MATRIX_ROWS,
 				Io.ATTR_ON_COLOR, Io.ATTR_OFF_COLOR,

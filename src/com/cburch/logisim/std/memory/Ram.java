@@ -29,6 +29,9 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
 
 public class Ram extends Mem {
+
+    public static final String _ID = "RAM";
+
 	static final AttributeOption BUS_COMBINED
 		= new AttributeOption("combined", Strings.getter("ramBusSynchCombined"));
 	static final AttributeOption BUS_ASYNCH
@@ -88,7 +91,7 @@ public class Ram extends Mem {
     private final static Object[][] logOptions = new Object[9][];
 
 	public Ram() {
-		super("RAM", Strings.getter("ramComponent"), 3);
+		super(_ID, Strings.getter("ramComponent"), 3);
 		setIconName("ram.gif");
 		setInstanceLogger(Logger.class);
 	}

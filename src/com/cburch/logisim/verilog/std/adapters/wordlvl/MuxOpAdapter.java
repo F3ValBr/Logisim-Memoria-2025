@@ -9,13 +9,12 @@ import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Location;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
+import com.cburch.logisim.std.gates.Gates;
 import com.cburch.logisim.std.plexers.Plexers;
-import com.cburch.logisim.tools.Library;
+import com.cburch.logisim.std.yosys.YosysComponent;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
@@ -33,9 +32,6 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
 
-    // Pareja (Library, ComponentFactory) para resolver port maps por librería
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         return t != null && t.isWordLevel() && t.isMultiplexer();
@@ -51,8 +47,8 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
             return fallback.create(proj, circ, g, cell, where);
         }
 
-        LibFactory lf = pickFactoryOrNull(proj, op);
-        if (lf == null || lf.factory == null) {
+        LibFactory lf = pickFactory(proj, op);
+        if (lf == null || lf.factory() == null) {
             // No hay mapeo nativo → subcircuito
             return fallback.create(proj, circ, g, cell, where);
         }
@@ -62,7 +58,7 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
         int selWidth  = guessSelectWidth(cell.params()); // S_WIDTH si el op lo tiene (bmux/pmux, etc.)
 
         try {
-            AttributeSet attrs = lf.factory.createAttributeSet();
+            AttributeSet attrs = lf.factory().createAttributeSet();
 
             // Intentar fijar ancho de bus (cuando el factory expose StdAttr.WIDTH)
             try {
@@ -87,15 +83,11 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
                 attrs.setValue(Plexers.ATTR_ENABLE, Boolean.FALSE);
             } catch (Exception ignore) { }
 
-            // Nota: Multiplexer/Demultiplexer en Logisim determinan #entradas/salidas con los "Select Bits".
-            // Para $mux/$demux de 2-vías, suele ser el valor por defecto (1). Si quisieras setearlo:
-            // usa el atributo de “Select Bits” si tu build lo expone. Lo dejamos así por compatibilidad.
-
-            Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+            Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
             // Mapa nombre->índice específico de ESTA instancia (usa library + factory + instance)
             Map<String,Integer> nameToIdx =
-                    BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+                    BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
 
             PortGeom pg = PortGeom.of(comp, nameToIdx);
             return new InstanceHandle(comp, pg);
@@ -107,52 +99,47 @@ public final class MuxOpAdapter extends AbstractComponentAdapter
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         MuxOp op = MuxOp.fromYosys(cell.type().typeId());
-        LibFactory lf = pickFactoryOrNull(proj, op);
-        return lf == null ? null : lf.factory;
+        LibFactory lf = pickFactory(proj, op);
+        return lf == null ? null : lf.factory();
     }
 
     /** Selecciona el ComponentFactory nativo de Logisim para cada op soportada. */
-    private static LibFactory pickFactoryOrNull(Project proj, MuxOp op) {
-        LogisimFile lf = proj.getLogisimFile();
+    private static LibFactory pickFactory(Project proj, MuxOp op) {
+
+        String libName;
+        String compName;
+
         switch (op) {
             case MUX -> {
-                Library plex = lf.getLibrary("Plexers");
-                if (plex == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(plex, "Multiplexer");
-                return (f == null) ? null : new LibFactory(plex, f);
+                libName  = Plexers.LIB_NAME;
+                compName = Plexers.MULTIPLEXER_ID;
             }
             case DEMUX -> {
-                Library plex = lf.getLibrary("Plexers");
-                if (plex == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(plex, "Demultiplexer");
-                return (f == null) ? null : new LibFactory(plex, f);
+                libName  = Plexers.LIB_NAME;
+                compName = Plexers.DEMULTIPLEXER_ID;
             }
             case TRIBUF -> {
-                Library gates = lf.getLibrary("Gates");
-                if (gates == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(gates, "Controlled Buffer");
-                return (f == null) ? null : new LibFactory(gates, f);
+                libName  = Gates.LIB_NAME;
+                compName = Gates.CONTROLLED_BUFFER_ID;
             }
             case BWMUX -> {
-                Library yosys = lf.getLibrary("Yosys Components");
-                if (yosys == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(yosys, "Bitwise Multiplexer");
-                return (f == null) ? null : new LibFactory(yosys, f);
+                libName  = YosysComponent.LIB_NAME;
+                compName = YosysComponent.BITWISE_MUX_ID;
             }
             case PMUX -> {
-                Library yosys = lf.getLibrary("Yosys Components");
-                if (yosys == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(yosys, "Priority Multiplexer");
-                return (f == null) ? null : new LibFactory(yosys, f);
+                libName  = YosysComponent.LIB_NAME;
+                compName = YosysComponent.PRIORITY_MUX_ID;
             }
             case BMUX -> {
-                Library yosys = lf.getLibrary("Yosys Components");
-                if (yosys == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(yosys, "Binary Multiplexer");
-                return (f == null) ? null : new LibFactory(yosys, f);
+                libName  = YosysComponent.LIB_NAME;
+                compName = YosysComponent.BINARY_MUX_ID;
             }
-            default -> { return null; }
+            default -> {
+                return null;
+            }
         }
+
+        return resolveFactory(proj, libName, compName);
     }
 
     private static int guessWidth(CellParams params) {

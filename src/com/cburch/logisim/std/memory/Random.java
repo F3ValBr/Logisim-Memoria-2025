@@ -24,6 +24,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.StringUtil;
 
 public class Random extends InstanceFactory {
+
+    public static final String _ID = "Random";
+
 	private static final Attribute<Integer> ATTR_SEED
 		= Attributes.forInteger("seed", Strings.getter("randomSeedAttr"));
 	
@@ -33,7 +36,7 @@ public class Random extends InstanceFactory {
 	private static final int RST = 3;
 
 	public Random() {
-		super("Random", Strings.getter("randomComponent"));
+		super(_ID, Strings.getter("randomComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.WIDTH, ATTR_SEED, StdAttr.EDGE_TRIGGER,
 				StdAttr.LABEL, StdAttr.LABEL_FONT

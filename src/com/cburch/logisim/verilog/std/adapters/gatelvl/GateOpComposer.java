@@ -3,6 +3,8 @@ package com.cburch.logisim.verilog.std.adapters.gatelvl;
 import com.cburch.logisim.circuit.Circuit;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.data.Location;
+import com.cburch.logisim.std.gates.Gates;
+import com.cburch.logisim.std.plexers.Plexers;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.std.InstanceHandle;
 import com.cburch.logisim.verilog.std.adapters.BaseComposer;
@@ -19,7 +21,7 @@ public class GateOpComposer extends BaseComposer {
     private final MacroSubcktKit sub = new MacroSubcktKit();
 
     public InstanceHandle buildAOI3AsSubckt(ComposeCtx ctx, VerilogCell cell, Location where) {
-        require(ctx.fx.andF, "AND Gate"); require(ctx.fx.orF, "OR Gate"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.andF, Gates.AND_ID); require(ctx.fx.orF, Gates.OR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("aoi3");
 
         BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
@@ -59,7 +61,7 @@ public class GateOpComposer extends BaseComposer {
     }
 
     public InstanceHandle buildAOI4AsSubckt(ComposeCtx ctx, VerilogCell cell, Location where) {
-        require(ctx.fx.andF, "AND Gate"); require(ctx.fx.orF, "OR Gate"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.andF, Gates.AND_ID); require(ctx.fx.orF, Gates.OR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("aoi4");
 
         BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
@@ -108,7 +110,7 @@ public class GateOpComposer extends BaseComposer {
     }
 
     public InstanceHandle buildOAI3AsSubckt(ComposeCtx ctx, VerilogCell cell, Location where) {
-        require(ctx.fx.andF, "AND Gate"); require(ctx.fx.orF, "OR Gate"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.andF, Gates.AND_ID); require(ctx.fx.orF, Gates.OR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("oai3");
 
         BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
@@ -148,7 +150,7 @@ public class GateOpComposer extends BaseComposer {
     }
 
     public InstanceHandle buildOAI4AsSubckt(ComposeCtx ctx, VerilogCell cell, Location where) {
-        require(ctx.fx.andF, "AND Gate"); require(ctx.fx.orF, "OR Gate"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.andF, Gates.AND_ID); require(ctx.fx.orF, Gates.OR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("oai4");
 
         BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
@@ -197,7 +199,7 @@ public class GateOpComposer extends BaseComposer {
     }
 
     public InstanceHandle buildNMuxAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where) {
-        require(ctx.fx.andF, "Multiplexer"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.andF, Plexers.MULTIPLEXER_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("nmux");
 
         BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {

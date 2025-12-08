@@ -10,6 +10,9 @@ import com.cburch.logisim.tools.key.KeyConfigurator;
 import java.awt.*;
 
 public class DynamicShifter extends InstanceFactory {
+
+    public static final String _ID = "Dynamic Shifter";
+
     private static final int DELAY = 3;
 
     // ---- Opciones de modo ----
@@ -77,7 +80,7 @@ public class DynamicShifter extends InstanceFactory {
     }
 
     public DynamicShifter() {
-        super("Dynamic Shifter", Strings.getter("dynamicShifterComponent"));
+        super(_ID, Strings.getter("dynamicShifterComponent"));
         setAttributes(
                 new Attribute[]{
                         ATTR_AWIDTH,     // ancho de A

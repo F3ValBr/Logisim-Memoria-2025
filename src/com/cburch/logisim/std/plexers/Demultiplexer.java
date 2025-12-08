@@ -25,8 +25,11 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Demultiplexer extends InstanceFactory {
+
+    public static final String _ID = "Demultiplexer";
+
 	public Demultiplexer() {
-		super("Demultiplexer", Strings.getter("demultiplexerComponent"));
+		super(_ID, Strings.getter("demultiplexerComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, Plexers.ATTR_SELECT_LOC, Plexers.ATTR_SELECT, StdAttr.WIDTH,
 				Plexers.ATTR_TRISTATE, Plexers.ATTR_DISABLED, Plexers.ATTR_ENABLE

@@ -6,8 +6,11 @@ package com.cburch.logisim.std.memory;
 import com.cburch.logisim.data.Value;
 
 public class JKFlipFlop extends AbstractFlipFlop {
+
+    public static final String _ID = "J-K Flip-Flop";
+
 	public JKFlipFlop() {
-		super("J-K Flip-Flop", "jkFlipFlop.gif",
+		super(_ID, "jkFlipFlop.gif",
 				Strings.getter("jkFlipFlopComponent"), 2, false);
 	}
 

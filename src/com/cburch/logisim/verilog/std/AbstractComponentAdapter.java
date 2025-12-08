@@ -6,8 +6,11 @@ import com.cburch.logisim.circuit.CircuitMutation;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.*;
+import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.proj.Project;
+import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
+import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.std.adapters.MacroRegistry;
 import com.cburch.logisim.verilog.std.macrocomponents.ComposeCtx;
@@ -16,6 +19,9 @@ import com.cburch.logisim.verilog.std.macrocomponents.Factories;
 import java.awt.*;
 
 public abstract class AbstractComponentAdapter implements ComponentAdapter {
+
+    /** Pareja (Library, ComponentFactory) para poder resolver los mapas de puertos. */
+    public record LibFactory(Library lib, ComponentFactory factory) { }
 
     @Override
     public boolean accepts(CellType type) {
@@ -43,6 +49,19 @@ public abstract class AbstractComponentAdapter implements ComponentAdapter {
         m.add(comp);
         proj.doAction(m.toAction(Strings.getter("addComponentAction", factory.getDisplayGetter())));
         return comp;
+    }
+
+    protected static LibFactory resolveFactory(Project proj, String libName, String compName) {
+        if (proj == null || libName == null || compName == null) return null;
+
+        LogisimFile lf = proj.getLogisimFile();
+        if (lf == null) return null;
+
+        Library lib = lf.getLibrary(libName);
+        if (lib == null) return null;
+
+        ComponentFactory f = FactoryLookup.findFactory(lib, compName);
+        return (f == null) ? null : new LibFactory(lib, f);
     }
 
     /** Parser tolerante (número o string decimal/binario). */

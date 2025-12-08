@@ -8,6 +8,9 @@ import com.cburch.logisim.instance.*;
 import com.cburch.logisim.tools.key.BitWidthConfigurator;
 
 public class Negator extends InstanceFactory {
+
+    public static final String _ID = "Negator";
+
     static final int IN  = 0;
     static final int OUT = 1;
     static final int SIGN_SEL = 2;
@@ -27,10 +30,10 @@ public class Negator extends InstanceFactory {
                     new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Negator() {
-        super("Negator", Strings.getter("negatorComponent"));
+        super(_ID, Strings.getter("negatorComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.WIDTH, SIGN_MODE },
-                new Object[]   { BitWidth.create(8), MODE_UNSIGNED }
+                new Object[]   { BitWidth.create(8), MODE_SIGNED }
         );
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));
         setOffsetBounds(Bounds.create(-40, -20, 40, 40));

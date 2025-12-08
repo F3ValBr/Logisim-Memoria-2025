@@ -10,22 +10,22 @@ import java.util.Map;
 public final class ArithmeticPortMapRegister implements PortMapRegister {
     @Override
     public void register(LogisimFile lf) {
-        Library arithLib = lf.getLibrary("Arithmetic");
+        Library arithLib = lf.getLibrary(Arithmetic.LIB_NAME);
         if (arithLib == null) return;
 
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Adder",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Adder._ID,
                 Map.of("A", Adder.IN0, "B", Adder.IN1, "Y", Adder.OUT, "CIN", Adder.C_IN, "COUT", Adder.C_OUT));
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Subtractor",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Subtractor._ID,
                 Map.of("A", Subtractor.IN0, "B", Subtractor.IN1, "Y", Subtractor.OUT, "BIN", Subtractor.B_IN, "BOUT", Subtractor.B_OUT));
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Multiplier",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Multiplier._ID,
                 Map.of("A", Multiplier.IN0, "B", Multiplier.IN1, "Y", Multiplier.OUT, "CIN", Multiplier.C_IN, "COUT", Multiplier.C_OUT));
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Divider",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Divider._ID,
                 Map.of("A", Divider.IN0, "B", Divider.IN1, "Y", Divider.OUT, "REM", Divider.REM));
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Comparator",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Comparator._ID,
                 Map.of("A", Comparator.IN0, "B", Comparator.IN1, "GT", Comparator.GT, "EQ", Comparator.EQ, "LT", Comparator.LT));
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Negator",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Negator._ID,
                 Map.of("A", Negator.IN, "Y", Negator.OUT));
-        BuiltinPortMaps.registerByName(arithLib.getName(), "Shifter",
+        BuiltinPortMaps.registerByName(arithLib.getName(), Shifter._ID,
                 Map.of("A", Shifter.IN0, "B", Shifter.IN1, "Y", Shifter.OUT));
     }
 }

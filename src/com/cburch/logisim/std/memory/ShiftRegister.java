@@ -24,6 +24,9 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class ShiftRegister extends InstanceFactory {
+
+    public static final String _ID = "Shift Register";
+
 	static final Attribute<Integer> ATTR_LENGTH = Attributes.forIntegerRange("length",
 			Strings.getter("shiftRegLengthAttr"), 1, 32);
 	static final Attribute<Boolean> ATTR_LOAD = Attributes.forBoolean("parallel",
@@ -37,7 +40,7 @@ public class ShiftRegister extends InstanceFactory {
 	private static final int LD  = 5;
 
 	public ShiftRegister() {
-		super("Shift Register", Strings.getter("shiftRegisterComponent"));
+		super(_ID, Strings.getter("shiftRegisterComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.WIDTH, ATTR_LENGTH, ATTR_LOAD, StdAttr.EDGE_TRIGGER,
 				StdAttr.LABEL, StdAttr.LABEL_FONT

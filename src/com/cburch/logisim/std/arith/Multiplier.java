@@ -12,7 +12,10 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Multiplier extends InstanceFactory {
-	static final int PER_DELAY = 1;
+
+    public static final String _ID = "Multiplier";
+
+    static final int PER_DELAY = 1;
 
     static final int IN0   = 0;
     static final int IN1   = 1;
@@ -36,7 +39,7 @@ public class Multiplier extends InstanceFactory {
                     new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Multiplier() {
-        super("Multiplier", Strings.getter("multiplierComponent"));
+        super(_ID, Strings.getter("multiplierComponent"));
 
         setAttributes(
                 new Attribute[]{ StdAttr.WIDTH, SIGN_MODE },

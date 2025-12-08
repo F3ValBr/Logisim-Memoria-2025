@@ -16,11 +16,14 @@ import com.cburch.logisim.instance.InstanceState;
 import com.cburch.logisim.instance.Port;
 
 public class SevenSegment extends InstanceFactory {
-	static Bounds[] SEGMENTS = null;
+
+    public static final String _ID = "7-Segment Display";
+
+    static Bounds[] SEGMENTS = null;
 	static Color DEFAULT_OFF = new Color(220, 220, 220);
 	
 	public SevenSegment() {
-		super("7-Segment Display", Strings.getter("sevenSegmentComponent"));
+		super(_ID, Strings.getter("sevenSegmentComponent"));
 		setAttributes(new Attribute[] { Io.ATTR_ON_COLOR, Io.ATTR_OFF_COLOR,
 					Io.ATTR_BACKGROUND, Io.ATTR_ACTIVE },
 				new Object[] { new Color(240, 0, 0), DEFAULT_OFF,

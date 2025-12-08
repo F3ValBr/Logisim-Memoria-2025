@@ -25,8 +25,11 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Multiplexer extends InstanceFactory {
+
+    public static final String _ID = "Multiplexer";
+
 	public Multiplexer() {
-		super("Multiplexer", Strings.getter("multiplexerComponent"));
+		super(_ID, Strings.getter("multiplexerComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, Plexers.ATTR_SELECT_LOC, Plexers.ATTR_SELECT, StdAttr.WIDTH,
 				Plexers.ATTR_DISABLED, Plexers.ATTR_ENABLE

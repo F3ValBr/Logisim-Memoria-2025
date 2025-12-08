@@ -30,13 +30,16 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class TransmissionGate extends InstanceFactory {
+
+    public static final String _ID = "Transmission Gate";
+
 	static final int OUTPUT = 0;
 	static final int INPUT = 1;
 	static final int GATE0 = 2;
 	static final int GATE1 = 3;
 
 	public TransmissionGate() {
-		super("Transmission Gate", Strings.getter("transmissionGateComponent"));
+		super(_ID, Strings.getter("transmissionGateComponent"));
 		setIconName("transmis.gif");
 		setAttributes(new Attribute[] { StdAttr.FACING, Wiring.ATTR_GATE, StdAttr.WIDTH },
 				new Object[] { Direction.EAST, Wiring.GATE_TOP_LEFT, BitWidth.ONE });

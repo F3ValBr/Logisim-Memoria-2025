@@ -11,8 +11,11 @@ import com.cburch.logisim.util.GraphicsUtil;
 import java.awt.*;
 
 public class RV32IMMicro extends Processor{
+
+    public static final String _ID = "RV32IM_Micro";
+
     public RV32IMMicro(){
-        super("RV32IM_Micro","processorRV32IMMicro","riscvprocmicro.gif");
+        super(_ID,"processorRV32IMMicro","riscvprocmicro.gif");
         setOffsetBounds(Bounds.create(-40, -40, 80, 80));
     }
 

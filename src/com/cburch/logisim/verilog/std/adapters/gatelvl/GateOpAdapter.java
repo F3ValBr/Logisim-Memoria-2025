@@ -7,13 +7,12 @@ import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Location;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.PortGeom;
 import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
-import com.cburch.logisim.tools.Library;
+import com.cburch.logisim.std.gates.Gates;
+import com.cburch.logisim.std.plexers.Plexers;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.gatelvl.GateOp;
@@ -34,9 +33,6 @@ public final class GateOpAdapter extends AbstractComponentAdapter
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
     private final MacroRegistry registry = MacroRegistry.bootGateDefaults();
 
-    // Pareja (Library, ComponentFactory) para usar BuiltinPortMaps.forFactory(...)
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
         return t != null && t.isGateLevel() && (t.isSimpleGate() || t.isComplexGate() || t.isMultiplexer());
@@ -55,13 +51,13 @@ public final class GateOpAdapter extends AbstractComponentAdapter
         InstanceHandle composed = tryComposeWithMacroOrNull(proj, circ, g, cell, where, registry);
         if (composed != null) return composed;
 
-        LibFactory lf = pickFactoryOrNull(proj, op);
-        if (lf == null || lf.factory == null) {
+        LibFactory lf = pickFactory(proj, op);
+        if (lf == null || lf.factory() == null) {
             return fallback.create(proj, circ, g, cell, where);
         }
 
         try {
-            AttributeSet attrs = lf.factory.createAttributeSet();
+            AttributeSet attrs = lf.factory().createAttributeSet();
 
             // --- 1) Width = 1 (gate-level 1-bit) + label “limpia”
             trySetWidthOne(attrs);
@@ -88,9 +84,9 @@ public final class GateOpAdapter extends AbstractComponentAdapter
                 setBooleanByName(attrs, "negate1", true);
             }
 
-            Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+            Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
-            Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+            Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
             PortGeom pg = PortGeom.of(comp, nameToIdx);
             return new InstanceHandle(comp, pg);
 
@@ -102,66 +98,56 @@ public final class GateOpAdapter extends AbstractComponentAdapter
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         GateOp op = GateOp.fromYosys(cell.type().typeId());
-        LibFactory lf = pickFactoryOrNull(proj, op);
-        return lf == null ? null : lf.factory;
+        LibFactory lf = pickFactory(proj, op);
+        return lf == null ? null : lf.factory();
     }
 
     /** Selección de Factory según GateOp. */
-    private static LibFactory pickFactoryOrNull(Project proj, GateOp op) {
-        LogisimFile lf = proj.getLogisimFile();
+    private static LibFactory pickFactory(Project proj, GateOp op) {
+
+        String libName;
+        String compName;
 
         switch (op.category()) {
 
             // === 1) Puertas simples (Gates) ===
             case SIMPLE -> {
-                Library lib = lf.getLibrary("Gates");
-                if (lib == null) return null;
-
-                String name = switch (op) {
-                    case AND  -> "AND Gate";
-                    case OR   -> "OR Gate";
-                    case XOR  -> "XOR Gate";
-                    case XNOR -> "XNOR Gate";
-                    case NAND -> "NAND Gate";
-                    case NOR  -> "NOR Gate";
-                    case NOT  -> "NOT Gate";
-                    case BUF  -> "Buffer";
+                libName = Gates.LIB_NAME;
+                compName = switch (op) {
+                    case AND  -> Gates.AND_ID;
+                    case OR   -> Gates.OR_ID;
+                    case XOR  -> Gates.XOR_ID;
+                    case XNOR -> Gates.XNOR_ID;
+                    case NAND -> Gates.NAND_ID;
+                    case NOR  -> Gates.NOR_ID;
+                    case NOT  -> Gates.NOT_ID;
+                    case BUF  -> Gates.BUFFER_ID;
                     default   -> null;
                 };
-                if (name == null) return null;
-
-                ComponentFactory f = FactoryLookup.findFactory(lib, name);
-                return (f == null) ? null : new LibFactory(lib, f);
             }
 
-            // === 2) Combinadas (AOI/OAI) — por ahora placeholder a AND/OR base ===
+            // === 2) Combinadas — AND/OR base ===
             case COMBINED -> {
-                Library lib = lf.getLibrary("Gates");
-                if (lib == null) return null;
-
-                String base = switch (op) {
-                    case ANDNOT -> "AND Gate";
-                    case ORNOT  -> "OR Gate";
-                    default -> null;
+                libName = Gates.LIB_NAME;
+                compName = switch (op) {
+                    case ANDNOT -> Gates.AND_ID;
+                    case ORNOT  -> Gates.OR_ID;
+                    default     -> null;
                 };
-                if (base == null) return null;
-
-                ComponentFactory f = FactoryLookup.findFactory(lib, base);
-                return (f == null) ? null : new LibFactory(lib, f);
             }
 
             // === 3) MUX family ===
             case MUX_FAMILY -> {
-                Library lib = lf.getLibrary("Plexers");
-                if (lib == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(lib, "Multiplexer");
-                return (f == null) ? null : new LibFactory(lib, f);
+                libName  = Plexers.LIB_NAME;
+                compName = Plexers.MULTIPLEXER_ID;
             }
 
             default -> {
                 return null;
             }
         }
+
+        return resolveFactory(proj, libName, compName);
     }
 
     /* ===================== Helpers de atributos ===================== */

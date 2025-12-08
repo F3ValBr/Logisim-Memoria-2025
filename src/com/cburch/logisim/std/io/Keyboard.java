@@ -23,7 +23,10 @@ import com.cburch.logisim.instance.Port;
 import com.cburch.logisim.instance.StdAttr;
 
 public class Keyboard extends InstanceFactory {
-	private static final int CLR = 0;
+
+    public static final String _ID = "Keyboard";
+
+    private static final int CLR = 0;
 	private static final int CK = 1;
 	private static final int RE = 2;
 	private static final int AVL = 3;
@@ -43,7 +46,7 @@ public class Keyboard extends InstanceFactory {
 				Strings.getter("keybBufferLengthAttr"), 1, 256);
 
 	public Keyboard() {
-		super("Keyboard", Strings.getter("keyboardComponent"));
+		super(_ID, Strings.getter("keyboardComponent"));
 		setAttributes(new Attribute[] { ATTR_BUFFER, StdAttr.EDGE_TRIGGER },
 				new Object[] { Integer.valueOf(32), StdAttr.TRIG_RISING });
 		setOffsetBounds(Bounds.create(0, -15, WIDTH, HEIGHT));

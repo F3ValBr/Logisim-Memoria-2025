@@ -13,6 +13,8 @@
 	<td><a href="index.html">Arithmetic</a></td></tr>
 <tr><td><strong>Introduced:</strong></td>
 	<td>2.0 Beta 22</td></tr>
+<tr><td><strong>Updated:</strong></td>
+    <td>LogisimCL - 3.0.0</td></tr>
 <tr><td valign="top"><strong>Appearance:</strong></td>
 	<td valign="top"><img src="../../../img-libs/divider.png"></td></tr>
 </table></p>
@@ -70,6 +72,10 @@ above.
 <dd>The remainder of the division. This value will always be between 0
 and <var>divisor</var>-1.
 
+<dt>South edge, labeled <var>Sign select</var> (input, bit width 1, only when selected mode sign <var>Decide on Pin</var>)
+<dd>The selection of the sign mode controlled by the circuit.
+    When 1, the component behaves as <q>Signed mode</q>, while 0 or disconnected it computes with <q>Unsigned mode</q>.
+
 </dl>
 
 <h2>Attributes</h2>
@@ -79,8 +85,32 @@ Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
 
 <dl>
 
-<dt>Data Bits</dt>
-<dd>The bit width of the values to be divided and of the result.</dd>
+    <dt>Data Bits</dt>
+    <dd>The bit width of the values to be divided and of the result.</dd>
+
+    <dt>Signedness</dt>
+    <dd>
+        Controls how the component interprets its operands:
+        <ul>
+            <li><q>Unsigned</q>: all ports are treated as unsigned.</li>
+            <li><q>Signed</q>: all ports are treated as two's-complement signed.</li>
+            <li><q>Auto-detect Signedness</q>: the component selects
+                signed or unsigned mode based on the MSB of the divisor.</li>
+            <li><q>Decide on pin</q> (if present): the sign mode is
+                chosen at simulation time via an external control signal.</li>
+        </ul>
+    </dd>
+
+    <dt>Division Mode</dt>
+    <dd>
+        Specifies how the quotient is computed when the division involves signed operands.
+        This setting has no effect in unsigned mode. The options are:
+        <ul>
+            <li><q>Truncate</q>: the result is truncated toward zero, matching the behavior of most hardware ALUs and the SystemVerilog <code>/</code> operator.</li>
+            <li><q>Floor</q>: the result is rounded toward negative infinity, matching mathematical floor division.</li>
+        </ul>
+        In cases where the sign mode is determined at simulation time (via <q>Decide on pin</q>), the selected division mode applies consistently under either signed interpretation.
+    </dd>
 
 </dl>
 

@@ -12,7 +12,10 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Divider extends InstanceFactory {
-	static final int PER_DELAY = 1;
+
+    public static final String _ID = "Divider";
+
+    static final int PER_DELAY = 1;
 
     static final int IN0   = 0; // dividend lower
     static final int IN1   = 1; // divisor
@@ -46,7 +49,7 @@ public class Divider extends InstanceFactory {
                     new AttributeOption[]{ DIV_TRUNC, DIV_FLOOR });
 
     public Divider() {
-        super("Divider", Strings.getter("dividerComponent"));
+        super(_ID, Strings.getter("dividerComponent"));
         setAttributes(
                 new Attribute[] { StdAttr.WIDTH, SIGN_MODE, DIV_MODE },
                 new Object[]   { BitWidth.create(8), MODE_UNSIGNED, DIV_TRUNC });

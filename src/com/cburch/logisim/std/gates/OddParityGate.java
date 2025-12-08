@@ -16,10 +16,13 @@ import com.cburch.logisim.instance.InstanceState;
 import com.cburch.logisim.util.GraphicsUtil;
 
 class OddParityGate extends AbstractGate {
-	public static OddParityGate FACTORY = new OddParityGate();
+
+    public static final String _ID = "Odd Parity";
+
+    public static OddParityGate FACTORY = new OddParityGate();
 
 	private OddParityGate() {
-		super("Odd Parity", Strings.getter("oddParityComponent"));
+		super(_ID, Strings.getter("oddParityComponent"));
 		setRectangularLabel("2k+1");
 		setIconNames("parityOddGate.gif");
 	}

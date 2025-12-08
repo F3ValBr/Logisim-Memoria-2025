@@ -22,8 +22,11 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Led extends InstanceFactory {
-	public Led() {
-		super("LED", Strings.getter("ledComponent"));
+
+    public static final String _ID = "LED";
+
+    public Led() {
+		super(_ID, Strings.getter("ledComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, Io.ATTR_ON_COLOR, Io.ATTR_OFF_COLOR,
 				Io.ATTR_ACTIVE,

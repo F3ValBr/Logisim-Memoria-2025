@@ -29,10 +29,13 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 class Buffer extends InstanceFactory {
-	public static InstanceFactory FACTORY = new Buffer();
+
+    public static final String _ID = "Buffer";
+
+    public static InstanceFactory FACTORY = new Buffer();
 
 	private Buffer() {
-		super("Buffer", Strings.getter("bufferComponent"));
+		super(_ID, Strings.getter("bufferComponent"));
 		setAttributes(new Attribute[] { StdAttr.FACING, StdAttr.WIDTH,
 					GateAttributes.ATTR_OUTPUT, StdAttr.LABEL, StdAttr.LABEL_FONT },
 				new Object[] { Direction.EAST, BitWidth.ONE,

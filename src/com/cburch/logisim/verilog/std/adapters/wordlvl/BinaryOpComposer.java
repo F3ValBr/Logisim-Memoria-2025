@@ -4,6 +4,8 @@ import com.cburch.logisim.circuit.Circuit;
 import com.cburch.logisim.circuit.CircuitException;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.data.Location;
+import com.cburch.logisim.std.arith.Arithmetic;
+import com.cburch.logisim.std.gates.Gates;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.BinaryOpParams;
@@ -24,7 +26,7 @@ public final class BinaryOpComposer extends BaseComposer {
     /** Y = (A != B) = NOT (A == B) */
     public InstanceHandle buildNeAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where,
                                           int aWidth, int bWidth, boolean strict) throws CircuitException {
-        require(ctx.fx.cmpF, "Comparator"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.cmpF, Arithmetic.COMPARATOR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("ne(!=)", aWidth, bWidth);
 
         BinaryOpParams p = new BinaryOpParams(BinaryOp.NE, cell.params().asMap());
@@ -71,7 +73,7 @@ public final class BinaryOpComposer extends BaseComposer {
     /** Y = (A <= B) = (A < B) OR (A == B) */
     public InstanceHandle buildLeAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where,
                                           int aWidth, int bWidth) throws CircuitException {
-        require(ctx.fx.cmpF, "Comparator"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.cmpF, Arithmetic.COMPARATOR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("le(<=)", aWidth, bWidth);
 
         BinaryOpParams p = new BinaryOpParams(BinaryOp.LE, cell.params().asMap());
@@ -116,7 +118,7 @@ public final class BinaryOpComposer extends BaseComposer {
     /** Y = (A >= B) = (A > B) OR (A == B) */
     public InstanceHandle buildGeAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where,
                                           int aWidth, int bWidth) throws CircuitException {
-        require(ctx.fx.cmpF, "Comparator"); require(ctx.fx.notF, "NOT Gate");
+        require(ctx.fx.cmpF, Arithmetic.COMPARATOR_ID); require(ctx.fx.notF, Gates.NOT_ID);
         final String name = MacroSubcktKit.macroName("ge(>=)", aWidth, bWidth);
 
         BinaryOpParams p = new BinaryOpParams(BinaryOp.GE, cell.params().asMap());

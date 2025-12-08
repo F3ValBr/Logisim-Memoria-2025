@@ -27,6 +27,8 @@ import static com.cburch.logisim.data.Direction.*;
  */
 public class BitLabeledTunnel extends InstanceFactory {
 
+    public static final String _ID = "BitLabeledTunnel";
+
     public static final BitLabeledTunnel FACTORY = new BitLabeledTunnel();
 
     // Atributos nuevos
@@ -40,7 +42,7 @@ public class BitLabeledTunnel extends InstanceFactory {
     static final int ARROW_MIN_WIDTH = 16;
 
     public BitLabeledTunnel() {
-        super("BitLabeledTunnel", Strings.getter("BLTunnelComponent"));
+        super(_ID, Strings.getter("BLTunnelComponent"));
         setIconName("bltunnel.gif");
         setFacingAttribute(StdAttr.FACING);
         setKeyConfigurator(new BitWidthConfigurator(StdAttr.WIDTH));

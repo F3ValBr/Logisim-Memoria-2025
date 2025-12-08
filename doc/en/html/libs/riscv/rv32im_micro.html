@@ -1,0 +1,125 @@
+<html>
+<head>
+    <title>RV32IM Processor Micro</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1>
+    <img align="center" height="32" width="32" src="../../../icons/riscvprocmicro.gif">
+    <em>RV32IM Processor Micro</em>
+</h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Risc-V Processors</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL&nbsp;-&nbsp;3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/rv32im_micro.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The <em>RV32IM Processor Micro</em> provides the same functional core as the
+    <em>RV32IM Processor</em>, but packaged in a more compact symbol suitable for
+    use in diagrams with limited space. Its bus interface and behavior are
+    identical: it is a 32-bit RISC-V RV32IM processor that communicates with
+    memory through the <var>ADDR</var>, <var>DATA</var>, <var>BE</var> and
+    <var>RDWR</var> signals and accepts an interrupt request on <var>INTR</var>.
+</p>
+
+<p>
+    As with the larger variant, the component may include an internal 4&nbsp;KB
+    memory initialized from a configurable image, or it may operate purely with
+    external memory depending on the chosen attributes. All timing,
+    interrupt-handling and execution semantics are shared between both
+    representations.
+</p>
+
+<h2>Pins (assuming component faces east)</h2>
+
+<dl>
+
+    <dt>North edge, labeled <var>INTR</var> (input, 1&nbsp;bit)</dt>
+    <dd>
+        Interrupt request input, identical in meaning to the corresponding pin in
+        the full-size <em>RV32IM Processor</em>.
+    </dd>
+
+    <dt>West edge, labeled <var>ADDR</var> (output, 32&nbsp;bits)</dt>
+    <dd>
+        Address bus used for instruction and data accesses.
+    </dd>
+
+    <dt>West edge, labeled <var>BE</var> (output, 4&nbsp;bits)</dt>
+    <dd>
+        Byte-enable lines associated with the 32-bit data bus.
+    </dd>
+
+    <dt>East edge, labeled <var>DATA</var> (input/output, 32&nbsp;bits)</dt>
+    <dd>
+        Shared data bus for memory reads and writes.
+    </dd>
+
+    <dt>South edge, labeled <var>RDWR</var> (input, 1&nbsp;bit)</dt>
+    <dd>
+        Read/Write control signal for the memory interface.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<p>
+    The attributes of the <em>RV32IM Processor Micro</em> are identical to those
+    of the <em>RV32IM Processor</em>:
+</p>
+
+<dl>
+
+    <dt>Processor memory content</dt>
+    <dd>Initial contents of the optional internal memory.</dd>
+
+    <dt>Enable/Disable Memory</dt>
+    <dd>Enables or disables the internal 4&nbsp;KB memory block.</dd>
+
+    <dt>First address on processor</dt>
+    <dd>Base address used by the core for its memory map.</dd>
+
+    <dt>Processor boot address</dt>
+    <dd>Reset program counter value.</dd>
+
+    <dt>Processor interruption address</dt>
+    <dd>Vector address used when an interrupt is taken.</dd>
+
+    <dt>Memory width 32bits</dt>
+    <dd>Log<sub>2</sub> of the number of 32-bit words available in memory.</dd>
+
+    <dt>Processor instruction multiplier</dt>
+    <dd>Simulation multiplier for instruction timing.</dd>
+
+    <dt>Display processor information</dt>
+    <dd>Shows or hides additional status text inside the symbol.</dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    Same as for the full-size processor: the core itself is not directly
+    modifiable with the Poke Tool, but attached memories may be edited if they
+    support it.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    Allows the label associated with the component to be edited.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

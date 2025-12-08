@@ -20,6 +20,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.StringUtil;
 
 public class Register extends InstanceFactory {
+
+    public static final String _ID = "Register";
+
 	private static final int DELAY = 8;
 
     // Tipo de reset (asincrónico, sincrónico, ninguno)
@@ -59,7 +62,7 @@ public class Register extends InstanceFactory {
             new AttributeOption[] { EN_ACTIVE_HIGH, EN_ACTIVE_LOW });
 
     public Register() {
-		super("Register", Strings.getter("registerComponent"));
+		super(_ID, Strings.getter("registerComponent"));
 		setAttributes(
             new Attribute[] {
 				StdAttr.WIDTH, StdAttr.TRIGGER,

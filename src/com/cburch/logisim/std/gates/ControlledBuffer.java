@@ -33,7 +33,11 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 class ControlledBuffer extends InstanceFactory {
-	private static final AttributeOption RIGHT_HANDED
+
+    public static final String BUFFER_ID = "Controlled Buffer";
+    public static final String INVERTER_ID = "Controlled Inverter";
+
+    private static final AttributeOption RIGHT_HANDED
 		= new AttributeOption("right", Strings.getter("controlledRightHanded"));
 	private static final AttributeOption LEFT_HANDED
 		= new AttributeOption("left", Strings.getter("controlledLeftHanded"));
@@ -50,7 +54,7 @@ class ControlledBuffer extends InstanceFactory {
 	private boolean isInverter;
 
 	private ControlledBuffer(boolean isInverter) {
-		super(isInverter ? "Controlled Inverter" : "Controlled Buffer",
+		super(isInverter ? INVERTER_ID : BUFFER_ID,
 			isInverter ? Strings.getter("controlledInverterComponent")
 					: Strings.getter("controlledBufferComponent"));
 		this.isInverter = isInverter;

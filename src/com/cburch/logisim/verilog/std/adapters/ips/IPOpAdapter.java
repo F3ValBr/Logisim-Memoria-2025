@@ -10,6 +10,7 @@ import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.PortGeom;
 import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
+import com.cburch.logisim.std.memory.Memory;
 import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
@@ -56,13 +57,13 @@ public final class IPOpAdapter extends AbstractComponentAdapter implements Suppo
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         LogisimFile lf = proj.getLogisimFile();
-        Library mem = lf.getLibrary("Memory");
+        Library mem = lf.getLibrary(Memory.LIB_NAME);
         if (mem == null) return null;
         String kindId = (cell.typeId() == null) ? "" : cell.typeId();
         return KnownIP.from(kindId)
                 .map(kind -> switch (kind) {
-                    case RAM -> FactoryLookup.findFactory(mem, "RAM");
-                    case ROM -> FactoryLookup.findFactory(mem, "ROM");
+                    case RAM -> FactoryLookup.findFactory(mem, Memory.RAM_ID);
+                    case ROM -> FactoryLookup.findFactory(mem, Memory.ROM_ID);
                 })
                 .orElse(null);
     }
@@ -72,10 +73,10 @@ public final class IPOpAdapter extends AbstractComponentAdapter implements Suppo
     private InstanceHandle createForRam(Project proj, Circuit circ, Graphics g, VerilogCell cell, Location where) {
         try {
             LogisimFile lf = proj.getLogisimFile();
-            Library mem = lf.getLibrary("Memory");
+            Library mem = lf.getLibrary(Memory.LIB_NAME);
             if (mem == null) return null;
 
-            ComponentFactory f = FactoryLookup.findFactory(mem, "RAM");
+            ComponentFactory f = FactoryLookup.findFactory(mem, Memory.RAM_ID);
             if (f == null) return null;
 
             // $3 -> addr, $4 -> dataIn (DIN), $5 -> dataOut (DATA/Q), $1 -> clk, $2 -> we
@@ -108,10 +109,10 @@ public final class IPOpAdapter extends AbstractComponentAdapter implements Suppo
     private InstanceHandle createForRom(Project proj, Circuit circ, Graphics g, VerilogCell cell, Location where) {
         try {
             LogisimFile lf = proj.getLogisimFile();
-            Library mem = lf.getLibrary("Memory");
+            Library mem = lf.getLibrary(Memory.LIB_NAME);
             if (mem == null) return null;
 
-            ComponentFactory f = FactoryLookup.findFactory(mem, "ROM");
+            ComponentFactory f = FactoryLookup.findFactory(mem, Memory.ROM_ID);
             if (f == null) return null;
 
             // $1 -> addr, $2 -> dataOut (DATA/Q)

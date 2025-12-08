@@ -29,6 +29,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 public class PullResistor extends InstanceFactory {
+
+    public static final String _ID = "Pull Resistor";
+
 	public static final Attribute<AttributeOption> ATTR_PULL_TYPE
 		= Attributes.forOption("pull", Strings.getter("pullTypeAttr"),
 				new AttributeOption[] {
@@ -43,7 +46,7 @@ public class PullResistor extends InstanceFactory {
 	private static final Icon ICON_RECTANGULAR = Icons.getIcon("pullrect.gif");
 
 	public PullResistor() {
-		super("Pull Resistor", Strings.getter("pullComponent"));
+		super(_ID, Strings.getter("pullComponent"));
 		setAttributes(new Attribute[] { StdAttr.FACING, ATTR_PULL_TYPE },
 				new Object[] { Direction.SOUTH, ATTR_PULL_TYPE.parse("0") });
 		setFacingAttribute(StdAttr.FACING);

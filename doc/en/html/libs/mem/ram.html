@@ -1,144 +1,206 @@
 <html>
 <head>
-<title>RAM</title>
+    <title>RAM</title>
 </head>
 
 <body bgcolor="FFFFFF">
 
 <h1><img align="center" height="32" width="32" src="../../../icons/ram.gif">
-<em>RAM</em></h1>
+    <em>RAM</em></h1>
 
 <p><table>
-<tr><td><strong>Library:</strong></td>
-	<td><a href="index.html">Memory</a></td></tr>
-<tr><td><strong>Introduced:</strong></td>
-	<td>2.0 Beta 1</td></tr>
-<tr><td valign="top"><strong>Appearance:</strong></td>
-	<td valign="top"><img src="../../../img-libs/ram.png"></td></tr>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Memory</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>2.0 Beta 1</td></tr>
+    <tr><td><strong>Updated:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/ram.png"></td></tr>
 </table></p>
 
 <h2>Behavior</h2>
 
-<p>The RAM component, easily the most complex component in Logisim's
-built-in libraries, stores up to 16,777,216 values (specified in the Address
-Bit Width attribute), each of which can include up to to 32 bits
-(specified in the Data Bit Width attribute). The circuit can load and
-store values in RAM. Also, the user can modify individual values
-interactively via the Poke Tool, or the user can modify the entire
-contents via the Menu Tool.</p>
+<p>
+    The RAM component stores up to 16,777,216 values (as determined by the
+    <q>Address Bit Width</q> attribute), each containing up to 32 bits
+    (as determined by the <q>Data Bit Width</q> attribute).
+    Circuits can read from and write to the memory, the user can edit
+    individual locations with the Poke Tool, and the entire contents can
+    be loaded or saved via the Menu Tool.
+</p>
 
-<p>Current values are displayed in the component. Addresses displayed
-are listed in gray to the left of the display area. Inside, each value
-is listed using hexadecimal. The value at the currently selected address
-will be displayed in inverse text (white on black).</p>
+<p>
+    Current contents are displayed inside the component.  Addresses are
+    shown in gray to the left of the display area; data values are shown
+    in hexadecimal.  The currently selected address is highlighted in
+    inverse video (white on black).
+</p>
 
-<p>The RAM component supports three different interfaces, depending on the
-Data Interface attribute.</p>
+<p>
+    The RAM supports three different data interfaces, selected via the
+    <q>Data Interface</q> attribute:
+</p>
 
 <dl>
 
-<dt>One synchronous load/store port (default)</dt>
-<dd><p>The component includes a single port on its east side that serves for both
-loading and storing data. Which it performs depends on the input labeled
-<em>ld</em>: 1 (or floating) indicates to load the data at the address
-designated on the component's west side, and 0 indicates to store the data
-given on the port. To transmit data into and out of the component, you will
-need to use a Controlled Buffer component, as illustrated below.</p>
+    <dt>One synchronous load/store port (default)</dt>
+    <dd>
+        A single data port on the east side is used for both reading and
+        writing.  The <var>ld</var> input selects the operation:
+        when <var>ld</var> is 1 (or floating), the value at address
+        <var>A</var> is driven onto the data port; when <var>ld</var> is 0,
+        a clock event triggers a write of the value present on the data port.
+    </dd>
 
-<center><img src="../../../img-libs/ramdemo.png"></center></dd>
+    <dt>One asynchronous load/store port</dt>
+    <dd>
+        Similar to the previous interface, but without a clock input.
+        Whenever <var>ld</var> is 0, the value on the data port is written
+        immediately to the selected address, and any subsequent change in
+        address or data while <var>ld</var> remains 0 produces another write.
+    </dd>
 
-<dt>One asynchronous load/store port</dt>
-<dd><p>This is the same as above, except that there is no clock. The value
-found on the data bus is stored into memory whenever the <em>ld</em> input is
-0. If, while the <em>ld</em> input is 0, the address or data changes, then an
-additional store occurs. This option is meant to more closely approximate the
-interface of many available random-access memories.</p></dd>
+    <dt>Separate load and store ports</dt>
+    <dd>
+        Two independent data ports are provided: a write port on the west
+        side and a read port on the east side.  This avoids the need for
+        explicit bus buffers and is often more convenient in complex designs.
+    </dd>
 
-<dt>Separate load and store ports</dt>
-<dd><p>Two data ports are provided - one on the west side for storing data,
-and another on the east side for loading data. This option removes the
-necessity of dealing with the Controlled Buffer and so it is easier to
-use.</p></dd>
+</dl>
+
+<p>
+    For the synchronous interfaces, the moment at which writes occur is
+    determined by the <q>Trigger</q> attribute, which interprets the clock
+    input as rising edge, falling edge, high level or low level, in the
+    same way as registers.  Writes occur only when the clock satisfies
+    the configured trigger and the RAM is enabled.
+</p>
+
+<p>
+    If the <q>Asynchronous Clear Pin</q> attribute is set to <q>Yes</q>,
+    the component includes a <var>clr</var> input.  When this input is 1,
+    all memory locations are forced to 0 immediately, regardless of the
+    clock, load/store control or data interface.  When the attribute is
+    set to <q>No</q>, the clear pin is omitted and the RAM has no global
+    asynchronous reset.
+</p>
 
 <h2>Pins</h2>
 
 <dl>
 
-<dt><var>A</var> on west edge (input, bit width matches Address Bit Width attribute)</dt>
-<dd>Selects which of the values in memory is currently being accessed by the
-circuit.</dd>
+    <dt><var>A</var> on west edge (input, bit width matches Address Bit Width)</dt>
+    <dd>
+        Selects which memory location is currently accessed.
+    </dd>
 
-<dt><var>D</var> on west edge (input, bit width matches Data Bit Width attribute)</dt>
-<dd>This input is present only if "separate load and store ports" is selected
-for the Data Interface attribute. When a store is requested (via the clock changing
-from 0 to 1 while <em>sel</em> and <em>str</em> are both 1 or floating), the
-value found at this port is stored into memory at the currently selected address.</dd>
+    <dt><var>D</var> on west edge (input, bit width matches Data Bit Width)</dt>
+    <dd>
+        Present only for the <q>Separate load and store ports</q> interface.
+        When a store is requested, the value on this port is written into
+        memory at address <var>A</var>.
+    </dd>
 
-<dt><var>D</var> on east edge (input/output or output, bit width matches Data Bit Width attribute)</dt>
-<dd>If <var>sel</var> and <var>ld</var> are 1 or floating, then the RAM
-component emits the value found at the currently selected address on this port.
-If there is a single load/store port, the value read from this port is
-stored whenever a store is requested.</dd>
+    <dt><var>D</var> on east edge (input/output or output, bit width matches Data Bit Width)</dt>
+    <dd>
+        For interfaces with a single load/store port, this pin is bidirectional:
+        it carries data being read from or written to memory depending on
+        <var>ld</var> and the clock.  For the <q>Separate load and store
+        ports</q> interface, it is a read-only output that presents the value
+        stored at address <var>A</var> whenever the chip is enabled.
+    </dd>
 
-<dt><var>str</var> on south edge (input, bit width 1)</dt>
-<dd>Store: This input is present only if "separate load and store ports" is selected
-for the Data Interface attribute. When it is 1 or floating, a clock pulse will result
-in storing the data found on the west edge into memory (provided the
-<var>sel</var> input is also 1 or floating).</dd>
+    <dt><var>str</var> on south edge (input, bit width 1)</dt>
+    <dd>
+        Store control (only for <q>Separate load and store ports</q>):
+        when 1 or floating, a valid clock event stores the data from the
+        west-side <var>D</var> input into memory, provided <var>sel</var> is
+        also active.
+    </dd>
 
-<dt><var>sel</var> on south edge (input, bit width 1)
-<dd>Chip select: This input enables or disables the entire RAM module, based on
-whether the value is 1/floating or 0. The input is meant primarily for
-situations where you have multiple RAM units, only one of which would be
-enabled at any time.</dd>
+    <dt><var>sel</var> on south edge (input, bit width 1)</dt>
+    <dd>
+        Chip select: enables or disables the RAM.  When 0, the component
+        ignores clock events and does not drive the data output.
+    </dd>
 
-<dt>triangle on south edge (input, bit width 1)
-<dd>Clock input: This is absent when the Data Interface attribute's value is "One
-asynchronous load/store port." In other circumstances, when <var>ld</var> is 0,
-and this input rises from 0 to 1 (and <var>sel</var> is 1/undefined and
-<var>clr</var> is 0), then the value at the currently selected address
-changes to whatever value is
-at the <var>D</var> pin. As long as the clock input remains 0 or 1,
-though, the <var>D</var> value will not be stored into memory.</dd>
+    <dt>Triangle on south edge (input, bit width 1)</dt>
+    <dd>
+        Clock input (absent for the asynchronous interface).
+        Writes are triggered according to the <q>Trigger</q> attribute
+        (rising edge, falling edge, high level or low level), provided
+        the RAM is selected and <var>ld</var>/<var>str</var> indicate a store.
+    </dd>
 
-<dt><var>ld</var> on south edge (input, bit width 1)
-<dd>Load: Selects whether the RAM should emit (on <var>D</var>)
-the value at the current address (<var>A</var>). This output behavior
-is enabled if <var>out</var> is 1 or undefined; if <var>out</var>
-is 0, then no value is pushed onto <var>D</var> - but if there is a combined
-load/store port, stores will be enabled.</dd>
+    <dt><var>ld</var> on south edge (input, bit width 1)</dt>
+    <dd>
+        Load control: when 1 or undefined, the RAM drives the value at the
+        selected address onto the data output; when 0, it enables stores
+        according to the current interface and clock configuration.
+    </dd>
 
-<dt><var>clr</var> on south edge (input, bit width 1)</dt>
-<dd>Clear: When this is 1, all values
-in memory are pinned to 0, no matter what the other inputs are.</dd>
+    <dt><var>clr</var> on south edge (input, bit width 1)</dt>
+    <dd>
+        Asynchronous clear (present only if <q>Asynchronous Clear Pin</q> is
+        <q>Yes</q>): when 1, all locations in memory are immediately forced to
+        0, regardless of other inputs.
+    </dd>
 
 </dl>
 
 <h2>Attributes</h2>
 
-<p>When the component is selected or being added,
-the digits '0' through '9' alter its <q>Address Bit Width</q> attribute
-and Alt-0 through Alt-9 alter its <q>Data Bit Width</q> attribute.</p>
+<p>
+    When the component is selected or being added, the digits
+    <code>0</code> through <code>9</code> alter its
+    <q>Address Bit Width</q> attribute, and Alt-0 through Alt-9 alter its
+    <q>Data Bit Width</q> attribute.
+</p>
 
 <dl>
 
-<dt>Address Bit Width</dt>
-<dd>The bit width of the address bits. The number of values stored in
-RAM is 2<sup><var>addrBitWidth</var></sup>.</dd>
+    <dt>Address Bit Width</dt>
+    <dd>
+        The width of the address bus.  The RAM stores
+        2<sup><var>addrBitWidth</var></sup> locations.
+    </dd>
 
-<dt>Data Bit Width</dt>
-<dd>The bit width of each individual value in memory.</dd>
+    <dt>Data Bit Width</dt>
+    <dd>
+        The width of each memory location.
+    </dd>
 
-<dt>Data Interface</dt>
-<dd>Configures which of the three interfaces are used for communicating data
-into and out of the component.</dd>
+    <dt>Data Interface</dt>
+    <dd>
+        Selects which of the three interfaces (single synchronous port,
+        single asynchronous port, or separate load/store ports) is used.
+    </dd>
+
+    <dt>Trigger</dt>
+    <dd>
+        For synchronous interfaces, determines how the clock input is
+        interpreted:
+        <q>rising edge</q>, <q>falling edge</q>, <q>high level</q> or
+        <q>low level</q>.  Has no effect when using the asynchronous interface.
+    </dd>
+
+    <dt>Asynchronous Clear Pin</dt>
+    <dd>
+        When set to <q>Yes</q>, the RAM includes a <var>clr</var> input that
+        clears all memory locations asynchronously.  When set to <q>No</q>,
+        this pin is omitted.
+    </dd>
 
 </dl>
 
 <h2>Poke Tool Behavior</h2>
 
-<p>See <a href="../../guide/mem/poke.html">poking memory</a>
-in the <em>User's Guide</em>.</p>
+<p>
+    See <a href="../../guide/mem/poke.html">poking memory</a> in the
+    <em>User's Guide</em>.
+</p>
 
 <h2>Text Tool Behavior</h2>
 
@@ -146,8 +208,10 @@ in the <em>User's Guide</em>.</p>
 
 <h2>Menu Tool Behavior</h2>
 
-<p>See <a href="../../guide/mem/menu.html">pop-up menus and files</a>
-in the <em>User's Guide</em>.</p>
+<p>
+    See <a href="../../guide/mem/menu.html">pop-up menus and files</a> in the
+    <em>User's Guide</em>.
+</p>
 
 <p><a href="../index.html">Back to <em>Library Reference</em></a></p>
 

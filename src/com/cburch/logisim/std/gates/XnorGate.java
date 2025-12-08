@@ -16,10 +16,13 @@ import com.cburch.logisim.tools.WireRepairData;
 import com.cburch.logisim.util.GraphicsUtil;
 
 class XnorGate extends AbstractGate {
-	public static XnorGate FACTORY = new XnorGate();
+
+    public static final String _ID = "XNOR Gate";
+
+    public static XnorGate FACTORY = new XnorGate();
 
 	private XnorGate() {
-		super("XNOR Gate", Strings.getter("xnorGateComponent"), true);
+		super(_ID, Strings.getter("xnorGateComponent"), true);
 		setNegateOutput(true);
 		setAdditionalWidth(10);
 		setIconNames("xnorGate.gif", "xnorGateRect.gif", "dinXnorGate.gif");

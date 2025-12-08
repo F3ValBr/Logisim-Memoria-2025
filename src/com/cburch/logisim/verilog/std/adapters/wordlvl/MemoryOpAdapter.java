@@ -8,9 +8,8 @@ import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
-import com.cburch.logisim.tools.Library;
+import com.cburch.logisim.std.memory.Memory;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.LogicalMemory;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
@@ -39,8 +38,6 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
     // Evita múltiples instancias por MEMID
     private final java.util.Set<String> createdMemIds = new java.util.HashSet<>();
 
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     /** Llamar desde el importador justo después de construir el MemoryIndex del módulo. */
     public void beginModule(MemoryIndex idx, VerilogModuleImpl mod) {
         this.currentMemIndex = idx;
@@ -50,10 +47,7 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
 
     @Override
     public boolean accepts(CellType t) {
-        if (t == null) return false;
-        if (t.isMemory()) return true;
-        String id = t.typeId();
-        return MemoryOp.isMemoryTypeId(id);
+        return t != null && t.isWordLevel() && t.isMemory();
     }
 
     @Override
@@ -144,7 +138,7 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
 
         boolean isRam = p.wrPorts() > 0;
         LibFactory lf = pickMemoryFactory(proj, isRam);
-        return lf == null ? null : lf.factory;
+        return lf == null ? null : lf.factory();
     }
 
     /** Forma soportada: exactamente 1 read port y 0 o 1 write ports. */
@@ -166,7 +160,7 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
         int width = Math.max(1, p.width());
         int abits = Math.max(1, p.abits());
 
-        AttributeSet attrs = lf.factory.createAttributeSet();
+        AttributeSet attrs = lf.factory().createAttributeSet();
         setOptionByName(attrs, "bus", "separate");
         setParsedByName(attrs, "dataWidth", Integer.toString(width));
         setParsedByName(attrs, "addrWidth", Integer.toString(abits));
@@ -178,10 +172,10 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
             attrs.setValue(StdAttr.TRIGGER, rising ? StdAttr.TRIG_RISING : StdAttr.TRIG_FALLING);
         } catch (Throwable ignore) { }
 
-        Component comp = addComponent(proj, circ, g, lf.factory, where, attrs);
+        Component comp = addComponent(proj, circ, g, lf.factory(), where, attrs);
 
         // 3) port-map
-        Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib, lf.factory, comp);
+        Map<String, Integer> nameToIdx = BuiltinPortMaps.forFactory(lf.lib(), lf.factory(), comp);
         if (nameToIdx == null || nameToIdx.isEmpty()) {
             // Fallback estable:
             // ROM: A, Q
@@ -208,18 +202,11 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
 
     private static LibFactory pickMemoryFactory(Project proj, boolean hasWrite) {
         if (proj == null || proj.getLogisimFile() == null) return null;
-        String compName = hasWrite ? "RAM" : "ROM";
 
-        Library mem = proj.getLogisimFile().getLibrary("Memory");
-        if (mem != null) {
-            ComponentFactory f = FactoryLookup.findFactory(mem, compName);
-            if (f != null) return new LibFactory(mem, f);
-        }
-        Library yosys = proj.getLogisimFile().getLibrary("Yosys Components");
-        if (yosys != null) {
-            ComponentFactory f = FactoryLookup.findFactory(yosys, compName);
-            if (f != null) return new LibFactory(yosys, f);
-        }
-        return null;
+        // RAM si hay escritura, ROM si no
+        String libName = Memory.LIB_NAME;
+        String compName = hasWrite ? Memory.RAM_ID : Memory.ROM_ID;
+
+        return resolveFactory(proj, libName, compName);
     }
 }

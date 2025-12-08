@@ -22,13 +22,16 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class PriorityEncoder extends InstanceFactory {
+
+    public static final String _ID = "Priority Encoder";
+
 	private static final int OUT = 0;
 	private static final int EN_IN = 1;
 	private static final int EN_OUT = 2;
 	private static final int GS = 3;
 	
 	public PriorityEncoder() {
-		super("Priority Encoder", Strings.getter("priorityEncoderComponent"));
+		super(_ID, Strings.getter("priorityEncoderComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, Plexers.ATTR_SELECT, Plexers.ATTR_DISABLED
 			}, new Object[] {

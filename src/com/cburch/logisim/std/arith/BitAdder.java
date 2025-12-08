@@ -24,11 +24,14 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class BitAdder extends InstanceFactory {
-	static final Attribute<Integer> NUM_INPUTS
+
+    public static final String _ID = "BitAdder";
+
+    static final Attribute<Integer> NUM_INPUTS
 		= Attributes.forIntegerRange("inputs", Strings.getter("gateInputsAttr"), 1, 32);
 	
 	public BitAdder() {
-		super("BitAdder", Strings.getter("bitAdderComponent"));
+		super(_ID, Strings.getter("bitAdderComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.WIDTH, NUM_INPUTS
 			}, new Object[] {

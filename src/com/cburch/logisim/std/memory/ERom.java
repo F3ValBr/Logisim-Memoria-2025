@@ -8,9 +8,12 @@ import com.cburch.logisim.instance.InstanceState;
 import com.cburch.logisim.instance.Port;
 
 public class ERom extends Rom {
+
+    public static final String _ID = "ERom";
+
     static final int WR = MEM_INPUTS;
     public ERom() {
-        super("ERom","ERomComponent",2,"Rom.gif");
+        super(_ID,"ERomComponent",2,"Rom.gif");
     }
     @Override
     void configurePorts(Instance instance) {

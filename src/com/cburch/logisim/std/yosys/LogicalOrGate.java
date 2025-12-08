@@ -8,6 +8,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import java.awt.*;
 
 public class LogicalOrGate extends InstanceFactory {
+
+    public static final String _ID = "Logical OR Gate";
+
     private static final int DELAY = 3;
 
     // Puertos (índices estables)
@@ -16,7 +19,7 @@ public class LogicalOrGate extends InstanceFactory {
     static final int OUT = 2;
 
     public LogicalOrGate() {
-        super("Logical OR Gate", Strings.getter("logicOrGateComponent"));
+        super(_ID, Strings.getter("logicOrGateComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.FACING, StdAttr.WIDTH },
                 new Object[]  { Direction.EAST,  BitWidth.create(8) }

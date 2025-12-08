@@ -13,23 +13,60 @@
 	<td><a href="index.html">Memory</a></td></tr>
 <tr><td><strong>Introduced:</strong></td>
 	<td>2.0 Beta 1</td></tr>
+<tr><td><strong>Updated:</strong></td>
+    <td>LogisimCL - 3.0.0</td></tr>
 <tr><td valign="top"><strong>Appearance:</strong></td>
 	<td valign="top"><img src="../../../img-libs/register.png"></td></tr>
 </table></p>
 
 <h2>Behavior</h2>
 
-<p>A register stores a single multi-bit value, which is displayed in
-hexadecimal within its rectangle, and is emitted on its
-<var>Q</var> output. When the clock input
-(indicated by a triangle on the south edge) indicates so,
-the value stored in the register changes to the value of the
-<var>D</var> input at that instant. Exactly when the clock input indicates
-for this to happen is configured via the Trigger attribute.</p>
+<p>
+    A register stores a single multi-bit value, displayed in hexadecimal
+    inside its rectangle and emitted on its <var>Q</var> output.
+    When the clock input (the triangle on the south edge) triggers according
+    to the selected <q>Trigger</q> attribute, the register loads the value
+    present on its <var>D</var> input.
+</p>
 
-<p>The <var>reset</var> input resets the register's value to 0 (all
-zeroes) asynchronously; that is, as long as <var>reset</var>
-is 1, the value is pinned to 0, regardless of the clock input.</p>
+<p>
+    If an <var>enable</var> pin is included, the register updates its value
+    only when the enable signal is active, according to its configured
+    polarity. When the enable input is inactive, all clock triggers are
+    ignored and the register simply holds its current value.
+</p>
+
+<p>
+    The <var>reset</var> input forces the register to load the value specified
+    in the <q>Reset Value</q> attribute. The effect of this input depends on
+    the <q>Reset Type</q>:
+</p>
+
+<ul>
+    <li>
+        <strong>Synchronous reset:</strong>
+        the register loads the reset value only when a valid clock trigger
+        occurs, provided the reset input is active according to its polarity.
+    </li>
+    <li>
+        <strong>Asynchronous reset:</strong>
+        the register loads the reset value immediately—regardless of the
+        clock input—whenever the reset signal is active.
+    </li>
+    <li>
+        <strong>No Reset:</strong>
+        the register does not respond to any reset input, and the
+        <var>rst</var> pin is omitted.
+    </li>
+</ul>
+
+<p>
+    The polarity of the reset signal determines whether the reset is active
+    when the input is <code>1</code> (<q>Active High</q>) or when it is
+    <code>0</code> (<q>Active Low</q>). While the reset is active, the stored
+    value is forced to the configured reset constant, and the register
+    ignores clock triggers (in the asynchronous case) and the enable input.
+</p>
 
 <h2>Pins</h2>
 
@@ -44,47 +81,103 @@ the register's value changes to the value of the <var>D</var> input at
 that instant.</dd>
 
 <dt>West edge, labeled <var>en</var> (input, bit width 1)</dt>
-<dd>Enable: When this is 0, clock triggers are ignored. The current value
-continues to appear on the output. The clock triggers are enabled when this
-input is 1 or undefined.</dd>
+<dd>
+Enable: Controls whether the register responds to clock triggers.
+When this input is inactive, clock events are ignored and the current value is held.
+When it is active, the register updates normally on the clock edge.
+The meaning of “active” depends on the selected polarity (<em>Active High</em> or
+<em>Active Low</em>).
+If the register is configured with <var>No Enable</var>, this pin does not appear.
+</dd>
 
 <dt>South edge, indicated with a triangle (input, bit width 1)</dt>
 <dd>Clock input: At the instant that this input value rises from 0 to
 1 (the rising edge), the register's value will be updated to the value
 of the <var>D</var> input.</dd>
 
-<dt>South edge, labeled <var>0</var> (input, bit width 1)</dt>
-<dd>Asynchronous reset: When 0 or undefined, this input has no effect.
-As long as it is 1, the register's value is pinned to 0. This occurs
-asynchronously - that is, without regard to the current clock input
-value. As long as this is 1, the other inputs have no effect.</dd>
+<dt>South edge, labeled <var>rst</var> (input, bit width 1)</dt>
+<dd>
+Reset: When this input is inactive (0 or undefined), it has no effect on the register.
+When it becomes active (1), the register's output is forced to the configured
+<var>Reset Value</var>. The moment at which this occurs depends on the selected reset
+type: <em>Synchronous</em> resets apply only in relation to the clock input, whereas
+<em>Asynchronous</em> resets take effect immediately, regardless of the clock.
+The behavior also depends on the chosen polarity, which may be <em>Active High</em> or
+<em>Active Low</em>. While the reset is active, all other inputs are ignored.
+If the selected reset type is <var>No Reset</var>, this pin does not appear on the register.
+</dd>
+
 
 </dl>
 
 <h2>Attributes</h2>
 
 <p>When the component is selected or being added,
-Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
+    Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
 
 <dl>
 
-<dt>Data Bits</dt>
-<dd>The bit width of the value stored in the register.</dd>
+    <dt>Data Bits</dt>
+    <dd>
+        Determines the bit width of the value stored in the register.
+        All data inputs and outputs will use this width.
+    </dd>
 
-<dt>Trigger</dt>
-<dd>Configures how the clock input is interpreted. The value <q>rising edge</q>
-indicates that the register should update its value at the instant when the
-clock rises from 0 to 1. The <q>falling edge</q> value indicates that it should
-update at the instant the clock falls from 1 to 0. The <q>high level</q> value
-indicates that the register should update continuously whenever the clock
-input is 1. And the <q>low level</q> value indicates that it should update
-continuously when the clock input is 0.</dd>
+    <dt>Trigger</dt>
+    <dd>
+        Specifies how the clock input is interpreted.
+        <ul>
+            <li><q>rising edge</q>: updates when the clock transitions (rises) from 0 to 1;</li>
+            <li><q>falling edge</q>: updates when the clock transitions (falls) from 1 to 0;</li>
+            <li><q>high level</q>: updates continuously while the clock is 1;</li>
+            <li><q>low level</q>: updates continuously while the clock is 0.</li>
+        </ul>
+    </dd>
 
-<dt>Label</dt>
-<dd>The text within the label associated with the register.</dd>
+    <dt>Reset Type</dt>
+    <dd>
+        Defines how the <var>rst</var> input affects the register.
+        <ul>
+            <li><q>Synchronous</q>: the register loads the reset value only on the configured clock trigger;</li>
+            <li><q>Asynchronous</q>: the register loads the reset value immediately, regardless of the clock;</li>
+            <li><q>No Reset</q>: the component has no reset behavior and no <var>rst</var> pin is shown.</li>
+        </ul>
+    </dd>
 
-<dt>Label Font</dt>
-<dd>The font with which to render the label.</dd>
+    <dt>Reset Polarity</dt>
+    <dd>
+        Determines which logical level activates the reset signal:
+        <q>Active High</q> (reset when <var>rst</var> = 1)
+        or <q>Active Low</q> (reset when <var>rst</var> = 0).
+    </dd>
+
+    <dt>Reset Value</dt>
+    <dd>
+        Specifies the constant loaded into the register when Reset is active.
+        The value is interpreted according to the current data width.
+    </dd>
+
+    <dt>Include Enable</dt>
+    <dd>
+        Controls whether the register has an enable pin (<var>en</var>).
+        If set to <q>No</q>, the pin is omitted and the register always updates on each valid clock event.
+    </dd>
+
+    <dt>Enable Polarity</dt>
+    <dd>
+        Determines which logical level makes the enable signal active.
+        When the enable input is inactive, clock triggers are ignored and the register holds its current value.
+    </dd>
+
+    <dt>Label</dt>
+    <dd>
+        The text displayed as the component's label.
+    </dd>
+
+    <dt>Label Font</dt>
+    <dd>
+        Specifies the font used to draw the label.
+    </dd>
 
 </dl>
 

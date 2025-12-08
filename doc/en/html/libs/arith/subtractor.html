@@ -13,6 +13,8 @@
 	<td><a href="index.html">Arithmetic</a></td></tr>
 <tr><td><strong>Introduced:</strong></td>
 	<td>2.0 Beta 11</td></tr>
+<tr><td><strong>Updated:</strong></td>
+    <td>LogisimCL - 3.0.0</td></tr>
 <tr><td valign="top"><strong>Appearance:</strong></td>
 	<td valign="top"><img src="../../../img-libs/subtractor.png"></td></tr>
 </table></p>
@@ -66,6 +68,10 @@ values coming in the west edge, minus the
 as unsigned values yield a negative value, then this bit will be 1;
 otherwise, it will be 0.
 
+<dt>South edge, labeled <var>Sign select</var> (input, bit width 1, only when selected mode sign <var>Decide on Pin</var>)
+<dd>The selection of the sign mode controlled by the circuit.
+    When 1, the component behaves as <q>Signed mode</q>, while 0 or disconnected it computes with <q>Unsigned mode</q>.
+
 </dl>
 
 <h2>Attributes</h2>
@@ -77,6 +83,19 @@ Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
 
 <dt>Data Bits</dt>
 <dd>The bit width of the values to be subtracted and of the result.</dd>
+
+<dt>Signedness</dt>
+<dd>
+    Controls how the component interprets its operands:
+    <ul>
+        <li><q>Unsigned</q>: all ports are treated as unsigned.</li>
+        <li><q>Signed</q>: all ports are treated as two's-complement signed.</li>
+        <li><q>Auto-detect Signedness</q>: the component selects a
+            signed or unsigned based on the MSB on the second operand.</li>
+        <li><q>Decide on pin</q> (if present): the sign mode is
+            chosen at simulation time based on an external input.</li>
+    </ul>
+</dd>
 
 </dl>
 

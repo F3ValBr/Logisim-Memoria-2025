@@ -32,6 +32,9 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Constant extends InstanceFactory {
+
+    public static final String _ID = "Constant";
+
 	public static final Attribute<Integer> ATTR_VALUE
 		= Attributes.forHexInteger("value", Strings.getter("constantValueAttr"));
 
@@ -106,7 +109,7 @@ public class Constant extends InstanceFactory {
 	}
 	
 	public Constant() {
-		super("Constant", Strings.getter("constantComponent"));
+		super(_ID, Strings.getter("constantComponent"));
 		setFacingAttribute(StdAttr.FACING);
 		setKeyConfigurator(JoinedConfigurator.create(
 				new ConstantConfigurator(),

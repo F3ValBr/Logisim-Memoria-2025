@@ -1,0 +1,147 @@
+<html>
+<head>
+    <title>Priority Multiplexer (PMUX)</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1><img align="center" height="32" width="32" src="../../../icons/pmultiplexer.gif">
+    <em>Priority Multiplexer</em></h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Yosys Components</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/pmux.png"></td></tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The Priority Multiplexer (PMUX) selects between multiple data inputs
+    using a <em>priority-encoded</em> select vector.
+    It faithfully models the behavior of the Yosys <code>$pmux</code> cell.
+</p>
+
+<p>
+    The component has:
+</p>
+
+<ul>
+    <li>A default input <var>A</var>,</li>
+    <li>A vector of alternative inputs <var>B</var> grouped into slices,</li>
+    <li>A select bus <var>S</var> whose bits determine which slice of <var>B</var> is chosen.</li>
+</ul>
+
+<p>
+    The output is determined by scanning the select bits from index <code>0</code>
+    upwards.
+    The <em>first</em> bit <code>S[i]</code> that is <code>1</code> causes the
+    corresponding slice <code>B[i]</code> to be selected.
+    If no select bit is active, the output defaults to <var>A</var>.
+</p>
+
+<p>
+    Undefined (<em>X</em>) bits in <var>S</var> or <var>B</var> propagate according to
+    Yosys semantics: an <code>X</code> in a higher-priority slice overrides
+    lower slices and may cause the entire output to become <em>X</em>.
+</p>
+
+<h2>Formal Behavior</h2>
+
+For <var>Data Bits</var> = <em>W</em> and <q>Select Width</q> = <em>K</em>:
+
+<center>
+    <code>B</code> is divided into <em>K</em> slices of width <em>W</em>:
+    <br>
+    <code>B = { B[K-1], B[K-2], ..., B[0] }</code>
+</center>
+
+The output:
+
+<center>
+    <code>
+        Y = A, unless exists i such that S[i] = 1, in which case Y = B[i] for the smallest such i.
+    </code>
+</center>
+
+This implements a left-to-right priority structure identical to the hardware-level
+definition of the Yosys <code>$pmux</code>.
+
+<h2>Pins (assuming component faces east)</h2>
+
+<dl>
+
+    <dt>West edge, labeled <var>A</var> (input, width = Data Bits)</dt>
+    <dd>
+        Default data input. Used when no select bit is active.
+    </dd>
+
+    <dt>West edge, labeled <var>B</var> (input, width = Data Bits * Select Width < 32)</dt>
+    <dd>
+        Contains multiple concatenated candidate inputs.
+        Each slice has width equal to <var>Data Bits</var>.
+        The slice associated with the lowest-index active select bit is chosen.
+    </dd>
+
+    <dt>West edge, labeled <var>B2</var> (input, width = Data Bits * Select Width >= 32)</dt>
+    <dd>
+        When the 32 bit limit is exceeded on input B, an additional input B2 appears.
+        It extends the possible value of input B, and follows the same rules for that input.
+    </dd>
+
+    <dt>South edge, labeled <var>S</var> (input, width = Select Width)</dt>
+    <dd>
+        Priority select bus.
+        <code>S[0]</code> has highest priority, followed by <code>S[1]</code>, and so on.
+    </dd>
+
+    <dt>East edge, labeled <var>Y</var> (output, width = Data Bits)</dt>
+    <dd>
+        Output of the priority multiplexer.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Facing</dt>
+    <dd>
+        Determines orientation of the component (east, west, north, south).
+    </dd>
+
+    <dt>Data Bits</dt>
+    <dd>
+        Sets the width of <var>A</var>, each slice of <var>B</var>, and the output <var>Y</var>.
+    </dd>
+
+    <dt>"Select" Width</dt>
+    <dd>
+        Specifies how many candidate inputs exist in <var>B</var>.
+        The input <var>B</var> is split into this many slices.
+    </dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    The PMUX has no special poke behavior. Inputs may be modified using
+    attached input components, and the changes propagate immediately through
+    the priority selection logic.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    None.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>

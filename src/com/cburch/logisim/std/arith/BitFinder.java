@@ -22,7 +22,10 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class BitFinder extends InstanceFactory {
-	static final AttributeOption LOW_ONE
+
+    public static final String _ID = "BitFinder";
+
+    static final AttributeOption LOW_ONE
 		= new AttributeOption("low1", Strings.getter("bitFinderLowOption", "1"));
 	static final AttributeOption HIGH_ONE
 	= new AttributeOption("high1", Strings.getter("bitFinderHighOption", "1"));
@@ -35,7 +38,7 @@ public class BitFinder extends InstanceFactory {
 				new AttributeOption[] { LOW_ONE, HIGH_ONE, LOW_ZERO, HIGH_ZERO });
 	
 	public BitFinder() {
-		super("BitFinder", Strings.getter("bitFinderComponent"));
+		super(_ID, Strings.getter("bitFinderComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.WIDTH, TYPE
 			}, new Object[] {

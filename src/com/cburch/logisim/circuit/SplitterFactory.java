@@ -10,7 +10,6 @@ import java.awt.event.InputEvent;
 import javax.swing.Icon;
 
 import com.cburch.logisim.LogisimVersion;
-import com.cburch.logisim.circuit.Strings;
 import com.cburch.logisim.comp.AbstractComponentFactory;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentDrawContext;
@@ -28,6 +27,9 @@ import com.cburch.logisim.util.Icons;
 import com.cburch.logisim.util.StringGetter;
 
 public class SplitterFactory extends AbstractComponentFactory {
+
+    public static final String _ID = "Splitter";
+
 	public static final SplitterFactory instance = new SplitterFactory();
 
 	private static final Icon toolIcon = Icons.getIcon("splitter.gif");
@@ -35,7 +37,7 @@ public class SplitterFactory extends AbstractComponentFactory {
 	private SplitterFactory() { }
 
 	@Override
-	public String getName() { return "Splitter"; }
+	public String getName() { return _ID; }
 
 	@Override
 	public StringGetter getDisplayGetter() {

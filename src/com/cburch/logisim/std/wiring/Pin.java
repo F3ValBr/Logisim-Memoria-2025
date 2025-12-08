@@ -42,6 +42,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 public class Pin extends InstanceFactory {
+
+    public static final String _ID = "Pin";
+
 	public static final Attribute<Boolean> ATTR_TRISTATE
 		= Attributes.forBoolean("tristate", Strings.getter("pinThreeStateAttr"));
 	public static final Attribute<Boolean> ATTR_TYPE
@@ -67,7 +70,7 @@ public class Pin extends InstanceFactory {
 	private static final Color ICON_WIDTH_COLOR = Value.WIDTH_ERROR_COLOR.darker();
 
 	public Pin() {
-		super("Pin", Strings.getter("pinComponent"));
+		super(_ID, Strings.getter("pinComponent"));
 		setFacingAttribute(StdAttr.FACING);
 		setKeyConfigurator(JoinedConfigurator.create(
 			new BitWidthConfigurator(StdAttr.WIDTH),

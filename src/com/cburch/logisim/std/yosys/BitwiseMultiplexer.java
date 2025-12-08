@@ -11,13 +11,16 @@ import java.awt.*;
 import static com.cburch.logisim.data.Direction.*;
 
 public class BitwiseMultiplexer extends InstanceFactory {
+
+    public static final String _ID = "Bitwise Multiplexer";
+
     static final int A  = 0;
     static final int B  = 1;
     static final int S  = 2;
     static final int Y  = 3;
 
     public BitwiseMultiplexer() {
-        super("Bitwise Multiplexer", Strings.getter("bwmuxComponent"));
+        super(_ID, Strings.getter("bwmuxComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.FACING, StdAttr.WIDTH },
                 new Object[]   { EAST, BitWidth.create(8) }

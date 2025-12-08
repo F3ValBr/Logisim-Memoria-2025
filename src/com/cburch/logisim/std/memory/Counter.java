@@ -25,6 +25,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.StringUtil;
 
 public class Counter extends InstanceFactory {
+
+    public static final String _ID = "Counter";
+
 	static final AttributeOption ON_GOAL_WRAP = new AttributeOption("wrap",
 			"wrap", Strings.getter("counterGoalWrap"));
 	static final AttributeOption ON_GOAL_STAY = new AttributeOption("stay",
@@ -51,7 +54,7 @@ public class Counter extends InstanceFactory {
 	private static final int CARRY = 6;
 
 	public Counter() {
-		super("Counter", Strings.getter("counterComponent"));
+		super(_ID, Strings.getter("counterComponent"));
 		setOffsetBounds(Bounds.create(-30, -20, 30, 40));
 		setIconName("counter.gif");
 		setInstancePoker(RegisterPoker.class);

@@ -22,7 +22,10 @@ import com.cburch.logisim.instance.InstanceState;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Text extends InstanceFactory {
-	public static Attribute<String> ATTR_TEXT = Attributes.forString("text",
+
+    public static final String _ID = "Text";
+
+    public static Attribute<String> ATTR_TEXT = Attributes.forString("text",
 			Strings.getter("textTextAttr"));
 	public static Attribute<Font> ATTR_FONT = Attributes.forFont("font",
 		Strings.getter("textFontAttr"));
@@ -50,7 +53,7 @@ public class Text extends InstanceFactory {
 	public static final Text FACTORY = new Text();
 
 	private Text() {
-		super("Text", Strings.getter("textComponent"));
+		super(_ID, Strings.getter("textComponent"));
 		setIconName("text.gif");
 		setShouldSnap(false);
 	}

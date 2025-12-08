@@ -1,55 +1,108 @@
 <html>
 <head>
-<title>Negator</title>
+    <title>Negator</title>
 </head>
 
 <body bgcolor="FFFFFF">
 
 <h1><img align="center" height="32" width="32" src="../../../icons/negator.gif">
-<em>Negator</em></h1>
+    <em>Negator</em></h1>
 
 <p><table>
-<tr><td><strong>Library:</strong></td>
-	<td><a href="index.html">Arithmetic</a></td></tr>
-<tr><td><strong>Introduced:</strong></td>
-	<td>2.0 Beta 22</td></tr>
-<tr><td valign="top"><strong>Appearance:</strong></td>
-	<td valign="top"><img src="../../../img-libs/negator.png"></td></tr>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Arithmetic</a></td></tr>
+    <tr><td><strong>Introduced:</strong></td>
+        <td>2.0 Beta 22</td></tr>
+    <tr><td><strong>Updated:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top"><img src="../../../img-libs/negator.png"></td></tr>
 </table></p>
 
 <h2>Behavior</h2>
 
-<p>Computes the two's-complement negation of the input.  This negation
-is performed by maintaining all the lower-order bits up to the
-lowest-order 1, and complementing all bits above that.</p>
+<p>
+    The Negator computes the numerical negation of its input, following the rules of
+    two's-complement arithmetic when operating in signed mode.
+    The negation is performed by inverting all bits above the lowest-order <code>1</code> and
+    adding one, reproducing the standard two's-complement negation behavior.
+</p>
 
-<p>If the value to be negated happens to be the least negative value,
-then its negation (which cannot be represented in two's-complement
-form), is still the least negative value.</p>
+<p>
+    When operating in <strong>unsigned mode</strong>, the component instead performs a modular negation
+    with respect to the input's bit width, i.e., <code>(2^n - x) mod 2^n</code>, where <code>n</code> is the
+    configured Data Bits value.
+</p>
+
+<p>
+    If the input value corresponds to the most negative representable value in two's-complement
+    (e.g., <code>1000...0</code>), its negation cannot be represented; in this case, the output remains unchanged,
+    matching standard hardware semantics.
+</p>
+
+<p>
+    The effective signedness used by the Negator depends on the selected <q>Signedness</q>
+    attribute: it may be fixed (signed/unsigned), automatically determined, or controlled
+    dynamically through an input pin.
+</p>
 
 <h2>Pins</h2>
 
 <dl>
 
-<dt>West edge (input, bit width matches Data Bits attribute)
-<dd>The value to negate.
+    <dt>West edge (input, bit width matches Data Bits attribute)</dt>
+    <dd>
+        The value to negate. Its interpretation depends on the configured signedness mode.
+    </dd>
 
-<dt>East edge, labeled -<var>x</var> (output, bit width matches Data Bits attribute)
-<dd>The negation of the input. If the input happens to be the least
-negative value representable in <var>dataBits</var> bits, however, then
-the output matches the input.
+    <dt>East edge, labeled -<var>x</var> (output, bit width matches Data Bits attribute)</dt>
+    <dd>
+        The negated value of the input. In signed mode, standard two's-complement semantics apply.
+        In unsigned mode, the result is the modular negation.
+        If the input corresponds to the unrepresentable negation case in signed mode, the output
+        matches the input.
+    </dd>
+
+    <dt>South edge, labeled <var>Sign Select</var> (input, bit width 1 - only when <q>Decide on pin</q> is selected)</dt>
+    <dd>
+        Controls the signedness at simulation time.
+        A value of <code>1</code> selects <q>Signed</q> mode; a value of <code>0</code> or an unconnected input selects
+        <q>Unsigned</q> mode.
+        This allows circuits to dynamically determine how the Negator interprets its input.
+    </dd>
 
 </dl>
 
 <h2>Attributes</h2>
 
-<p>When the component is selected or being added,
-Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.</p>
+<p>
+    When the component is selected or being added,
+    Alt-0 through Alt-9 alter its <q>Data Bits</q> attribute.
+</p>
 
 <dl>
 
-<dt>Data Bits</dt>
-<dd>The bit width of the component's input and output.</dd>
+    <dt>Data Bits</dt>
+    <dd>
+        Sets the width of both the input and output buses.
+    </dd>
+
+    <dt>Signedness</dt>
+    <dd>
+        Controls how the component interprets its operand:
+        <ul>
+            <li><q>Unsigned</q>: performs modular negation.</li>
+            <li><q>Signed</q>: performs two's-complement negation.</li>
+            <li><q>Auto-detect Signedness</q>: the mode is inferred based on the MSB of the input.</li>
+            <li><q>Decide on pin</q>: the signedness is selected dynamically via the <var>Sign Select</var> input.</li>
+        </ul>
+    </dd>
+
+    <dt>Label</dt>
+    <dd>The text associated with the component.</dd>
+
+    <dt>Label Font</dt>
+    <dd>The font used to draw the label.</dd>
 
 </dl>
 

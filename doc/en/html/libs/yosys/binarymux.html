@@ -1,0 +1,131 @@
+<html>
+<head>
+    <title>Binary Multiplexer</title>
+</head>
+
+<body bgcolor="FFFFFF">
+
+<h1>
+    <img align="center" height="32" width="32" src="../../../icons/bmultiplexer.gif">
+    <em>Binary Multiplexer</em>
+</h1>
+
+<p><table>
+    <tr><td><strong>Library:</strong></td>
+        <td><a href="index.html">Yosys Components</a></td></tr>
+
+    <tr><td><strong>Introduced:</strong></td>
+        <td>LogisimCL - 3.0.0</td></tr>
+
+    <tr><td valign="top"><strong>Appearance:</strong></td>
+        <td valign="top">
+            <img src="../../../img-libs/bmux.png">
+        </td>
+    </tr>
+</table></p>
+
+<h2>Behavior</h2>
+
+<p>
+    The Binary Multiplexer (BMUX) selects one contiguous slice of the input bus
+    <var>A</var> based on the binary value present at the select input <var>S</var>.
+</p>
+
+<p>
+    The input <var>A</var> is interpreted as the concatenation of
+    <code>2^(Select Bits)</code> slices, each of width equal to the
+    <q>Data Bits</q> attribute. The value of <var>S</var> (treated as an
+    unsigned integer) selects which slice is forwarded to the output <var>Y</var>.
+</p>
+
+<p>
+    For example, if <q>Data Bits</q> = 8 and <q>Select Bits</q> = 1,
+    then <var>A</var> contains 16 bits, divided into two slices:
+</p>
+
+<ul>
+    <li><code>A[7:0]</code> → slice 0</li>
+    <li><code>A[15:8]</code> → slice 1</li>
+</ul>
+
+<p>
+    If <var>S</var> = 0, the output <var>Y</var> is <code>A[7:0]</code>;
+    if <var>S</var> = 1, the output is <code>A[15:8]</code>.
+</p>
+
+<p>
+    For larger values of <q>Select Bits</q>, the number of slices grows
+    exponentially, matching the semantics of the Yosys <code>$bmux</code> cell.
+</p>
+
+<h2>Pins</h2>
+
+<dl>
+
+    <dt>West edge, labeled <var>A</var>
+        (input, bit width = Data Bits * 2^(Select Bits)) < 32</dt>
+    <dd>
+        Multi-slice data input. The bus is conceptually divided into
+        equal-sized segments, from which the output slice is selected.
+    </dd>
+
+    <dt>West edge, labeled <var>A Extra</var>
+        (input, bit width = Data Bits * 2^(Select Bits)) >= 32</dt>
+    <dd>
+        Multi-slice data input, same as input A. It extends that input when
+        the bit width exceeds 32 bit limit. It follows the same rules as A.
+    </dd>
+
+    <dt>West edge, labeled <var>S</var> (input, bit width = Select Bits)</dt>
+    <dd>
+        Select input. Interpreted as an unsigned binary index selecting
+        which slice of <var>A</var> is forwarded to the output.
+    </dd>
+
+    <dt>East edge, labeled <var>Y</var> (output, bit width = Data Bits)</dt>
+    <dd>
+        The slice of <var>A</var> indexed by <var>S</var>.
+    </dd>
+
+</dl>
+
+<h2>Attributes</h2>
+
+<dl>
+
+    <dt>Facing</dt>
+    <dd>
+        Specifies the orientation of the component.
+    </dd>
+
+    <dt>Select Bits</dt>
+    <dd>
+        Determines the width of the select input <var>S</var>, and therefore
+        how many slices <var>A</var> is divided into. The number of slices is:
+        <center><code>2^(Select Bits)</code></center>
+    </dd>
+
+    <dt>Data Bits</dt>
+    <dd>
+        The width of each slice of <var>A</var> and of the output <var>Y</var>.
+    </dd>
+
+</dl>
+
+<h2>Poke Tool Behavior</h2>
+
+<p>
+    None.
+</p>
+
+<h2>Text Tool Behavior</h2>
+
+<p>
+    None.
+</p>
+
+<p><a href="../index.html">Back to <em>Library Reference</em></a></p>
+
+</body>
+</html>
+

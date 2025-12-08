@@ -35,7 +35,10 @@ import com.cburch.logisim.util.GraphicsUtil;
 import com.cburch.logisim.util.Icons;
 
 class NotGate extends InstanceFactory {
-	public static final AttributeOption SIZE_NARROW
+
+    public static final String _ID = "NOT Gate";
+
+    public static final AttributeOption SIZE_NARROW
 		= new AttributeOption(Integer.valueOf(20),
 			Strings.getter("gateSizeNarrowOpt"));
 	public static final AttributeOption SIZE_WIDE
@@ -53,7 +56,7 @@ class NotGate extends InstanceFactory {
 	public static InstanceFactory FACTORY = new NotGate();
 
 	private NotGate() {
-		super("NOT Gate", Strings.getter("notGateComponent"));
+		super(_ID, Strings.getter("notGateComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, StdAttr.WIDTH, ATTR_SIZE,
 				GateAttributes.ATTR_OUTPUT,

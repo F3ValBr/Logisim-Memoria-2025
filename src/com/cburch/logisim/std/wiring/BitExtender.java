@@ -25,6 +25,9 @@ import com.cburch.logisim.tools.key.JoinedConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class BitExtender extends InstanceFactory {
+
+    public static final String _ID = "Bit Extender";
+
 	private static final Attribute<BitWidth> ATTR_IN_WIDTH
 		= Attributes.forBitWidth("in_width", Strings.getter("extenderInAttr"));
 	private static final Attribute<BitWidth> ATTR_OUT_WIDTH
@@ -41,7 +44,7 @@ public class BitExtender extends InstanceFactory {
 	public static final BitExtender FACTORY = new BitExtender();
 
 	public BitExtender() {
-		super("Bit Extender", Strings.getter("extenderComponent"));
+		super(_ID, Strings.getter("extenderComponent"));
 		setIconName("extender.gif");
 		setAttributes(new Attribute[] {
 				ATTR_IN_WIDTH, ATTR_OUT_WIDTH, ATTR_TYPE

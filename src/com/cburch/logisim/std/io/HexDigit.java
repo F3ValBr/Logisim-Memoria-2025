@@ -16,8 +16,11 @@ import com.cburch.logisim.instance.InstanceState;
 import com.cburch.logisim.instance.Port;
 
 public class HexDigit extends InstanceFactory {
-	public HexDigit() {
-		super("Hex Digit Display", Strings.getter("hexDigitComponent"));
+
+    public static final String _ID = "Hex Digit Display";
+
+    public HexDigit() {
+		super(_ID, Strings.getter("hexDigitComponent"));
 		setAttributes(new Attribute[] { Io.ATTR_ON_COLOR, Io.ATTR_OFF_COLOR,
 					Io.ATTR_BACKGROUND },
 				new Object[] { new Color(240, 0, 0), SevenSegment.DEFAULT_OFF,

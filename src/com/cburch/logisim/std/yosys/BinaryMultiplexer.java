@@ -11,6 +11,9 @@ import com.cburch.logisim.util.GraphicsUtil;
 import java.awt.*;
 
 public class BinaryMultiplexer extends InstanceFactory {
+
+    public static final String _ID = "Binary Multiplexer";
+
     private static final int DELAY = 3;
 
     // Puertos (índices estables)
@@ -20,7 +23,7 @@ public class BinaryMultiplexer extends InstanceFactory {
     static final int Y  = 3;
 
     public BinaryMultiplexer() {
-        super("Binary Multiplexer", Strings.getter("bmuxComponent"));
+        super(_ID, Strings.getter("bmuxComponent"));
         setAttributes(
                 new Attribute[] { StdAttr.FACING, Plexers.ATTR_SELECT, StdAttr.WIDTH },
                 new Object[]    { Direction.EAST, BitWidth.ONE, BitWidth.create(8) }

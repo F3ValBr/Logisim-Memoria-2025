@@ -12,40 +12,40 @@ import java.util.Map;
 public final class GatesPortMapRegister implements PortMapRegister {
     @Override
     public void register(LogisimFile lf) {
-        Library gatesLib = lf.getLibrary("Gates");
+        Library gatesLib = lf.getLibrary(Gates.LIB_NAME);
         if (gatesLib == null) return;
 
         // Resolvedores genéricos para puertas con N entradas
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "AND Gate",
+                gatesLib.getName(), AndGate._ID,
                 GatesPortMapRegister::resolveNaryGate);
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "NAND Gate",
+                gatesLib.getName(), NandGate._ID,
                 GatesPortMapRegister::resolveNaryGate);
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "OR Gate",
+                gatesLib.getName(), OrGate._ID,
                 GatesPortMapRegister::resolveNaryGate);
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "NOR Gate",
+                gatesLib.getName(), NorGate._ID,
                 GatesPortMapRegister::resolveNaryGate);
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "XOR Gate",
+                gatesLib.getName(), XorGate._ID,
                 GatesPortMapRegister::resolveNaryGate);
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "XNOR Gate",
+                gatesLib.getName(), XnorGate._ID,
                 GatesPortMapRegister::resolveNaryGate);
 
         // Unarias
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "NOT Gate",
+                gatesLib.getName(), NotGate._ID,
                 GatesPortMapRegister::resolveUnaryGate);
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "Buffer",
+                gatesLib.getName(), Buffer._ID,
                 GatesPortMapRegister::resolveUnaryGate);
 
         // Buffer controlado (Y, A, EN) => 3 pines fijos
         BuiltinPortMaps.registerResolverByName(
-                gatesLib.getName(), "Controlled Buffer",
+                gatesLib.getName(), ControlledBuffer.BUFFER_ID,
                 GatesPortMapRegister::resolveControlledBuffer);
     }
 

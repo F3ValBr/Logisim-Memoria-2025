@@ -19,6 +19,9 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.tools.key.BitWidthConfigurator;
 
 public class Comparator extends InstanceFactory {
+
+    public static final String _ID = "Comparator";
+
     private static final AttributeOption SIGNED_OPTION
             = new AttributeOption("twosComplement", "twosComplement", Strings.getter("twosComplementOption"));
     private static final AttributeOption UNSIGNED_OPTION
@@ -36,7 +39,7 @@ public class Comparator extends InstanceFactory {
     static final int LT    = 4;
 
     public Comparator() {
-        super("Comparator", Strings.getter("comparatorComponent"));
+        super(_ID, Strings.getter("comparatorComponent"));
         setAttributes(
                 new Attribute[] { StdAttr.WIDTH, MODE_ATTRIBUTE, ATTR_STRICT_EQ },
                 new Object[]   { BitWidth.create(8), SIGNED_OPTION, Boolean.FALSE }

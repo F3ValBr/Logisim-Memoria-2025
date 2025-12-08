@@ -12,26 +12,26 @@ import java.util.Map;
 public class YosysComponentsPortMapRegister implements PortMapRegister {
     @Override
     public void register(LogisimFile lf) {
-        Library YCLib = lf.getLibrary("Yosys Components");
+        Library YCLib = lf.getLibrary(YosysComponent.LIB_NAME);
         if (YCLib == null) return;
 
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Logical NOT Gate",
+        BuiltinPortMaps.registerByName(YCLib.getName(), LogicalNotGate._ID,
                 Map.of("A", LogicalNotGate.A, "Y", LogicalNotGate.OUT));
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Logical AND Gate",
+        BuiltinPortMaps.registerByName(YCLib.getName(), LogicalAndGate._ID,
                 Map.of("A", LogicalAndGate.A, "B", LogicalAndGate.B, "Y", LogicalAndGate.OUT));
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Logical OR Gate",
+        BuiltinPortMaps.registerByName(YCLib.getName(), LogicalOrGate._ID,
                 Map.of("A", LogicalOrGate.A, "B", LogicalOrGate.B, "Y", LogicalOrGate.OUT));
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Exponent",
+        BuiltinPortMaps.registerByName(YCLib.getName(), Exponent._ID,
                 Map.of("A", Exponent.IN0, "B", Exponent.IN1, "Y", Exponent.OUT));
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Dynamic Shifter",
+        BuiltinPortMaps.registerByName(YCLib.getName(), DynamicShifter._ID,
                 Map.of("A", DynamicShifter.IN_A, "B", DynamicShifter.IN_B, "Y", DynamicShifter.OUT_Y));
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Bitwise Multiplexer",
+        BuiltinPortMaps.registerByName(YCLib.getName(), BitwiseMultiplexer._ID,
                 Map.of("A", BitwiseMultiplexer.A, "B", BitwiseMultiplexer.B, "S", BitwiseMultiplexer.S, "Y", BitwiseMultiplexer.Y));
-        BuiltinPortMaps.registerByName(YCLib.getName(), "Binary Multiplexer",
+        BuiltinPortMaps.registerByName(YCLib.getName(), BinaryMultiplexer._ID,
                 Map.of("A", BinaryMultiplexer.A, "AX", BinaryMultiplexer.A_X, "S", BinaryMultiplexer.S, "Y", BinaryMultiplexer.Y));
         BuiltinPortMaps.registerResolverByName(
                 YCLib.getName(),
-                "Priority Multiplexer",
+                PriorityMultiplexer._ID,
                 YosysComponentsPortMapRegister::resolvePriMuxPorts
         );
     }

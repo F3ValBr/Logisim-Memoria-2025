@@ -24,8 +24,11 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Decoder extends InstanceFactory {
+
+    public static final String _ID = "Decoder";
+
 	public Decoder() {
-		super("Decoder", Strings.getter("decoderComponent"));
+		super(_ID, Strings.getter("decoderComponent"));
 		setAttributes(new Attribute[] {
 				StdAttr.FACING, Plexers.ATTR_SELECT_LOC, Plexers.ATTR_SELECT,
 				Plexers.ATTR_TRISTATE, Plexers.ATTR_DISABLED, Plexers.ATTR_ENABLE

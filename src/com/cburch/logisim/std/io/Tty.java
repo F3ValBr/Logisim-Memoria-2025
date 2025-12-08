@@ -23,7 +23,10 @@ import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Tty extends InstanceFactory {
-	private static final int CLR = 0;
+
+    public static final String _ID = "TTY";
+
+    private static final int CLR = 0;
 	private static final int CK = 1;
 	private static final int WE = 2;
 	private static final int IN = 3;
@@ -43,7 +46,7 @@ public class Tty extends InstanceFactory {
 			Strings.getter("ttyRowsAttr"), 1, 48);
 
 	public Tty() {
-		super("TTY", Strings.getter("ttyComponent"));
+		super(_ID, Strings.getter("ttyComponent"));
 		setAttributes(new Attribute[] {
 				ATTR_ROWS, ATTR_COLUMNS, StdAttr.EDGE_TRIGGER,
 				Io.ATTR_COLOR, Io.ATTR_BACKGROUND

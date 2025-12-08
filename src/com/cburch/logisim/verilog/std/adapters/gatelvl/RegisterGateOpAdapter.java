@@ -6,16 +6,13 @@ import com.cburch.logisim.circuit.CircuitException;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.*;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.PortGeom;
 import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
-import com.cburch.logisim.tools.Library;
+import com.cburch.logisim.std.memory.Memory;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
-import com.cburch.logisim.verilog.comp.specs.gatelvl.RegisterGateOp;
 import com.cburch.logisim.verilog.comp.specs.gatelvl.RegisterGateOpParams;
 import com.cburch.logisim.verilog.comp.specs.gatelvl.RegisterGateUtils;
 import com.cburch.logisim.verilog.std.AbstractComponentAdapter;
@@ -48,24 +45,14 @@ public final class RegisterGateOpAdapter extends AbstractComponentAdapter
 
     private final ModuleBlackBoxAdapter fallback = new ModuleBlackBoxAdapter();
 
-    private record LibFactory(Library lib, ComponentFactory factory) { }
-
     @Override
     public boolean accepts(CellType t) {
-        if (t == null) return false;
-        String id = safeTypeId(t);
-        if (id == null) return false;
-        String norm = id.toUpperCase(java.util.Locale.ROOT);
-        return RegisterGateOp.matchesRGOp(norm);
-    }
-
-    private static String safeTypeId(CellType t) {
-        try { return t.typeId(); } catch (Throwable ignore) { return null; }
+        return t != null && t.isGateLevel() && t.isFlipFlop();
     }
 
     @Override
     public InstanceHandle create(Project proj, Circuit circ, Graphics g, VerilogCell cell, Location where) {
-        LibFactory rf = pickRegisterFactory(proj);
+        LibFactory rf = pickFactory(proj);
         if (rf == null) return fallback.create(proj, circ, g, cell, where);
 
         final String typeId      = cell.type().typeId();
@@ -123,7 +110,7 @@ public final class RegisterGateOpAdapter extends AbstractComponentAdapter
                         : (isSyncResetFamily ? OPT_RST_SYNC : OPT_RST_ASYNC);
 
         try {
-            AttributeSet attrs = rf.factory.createAttributeSet();
+            AttributeSet attrs = rf.factory().createAttributeSet();
             safeSet(attrs, StdAttr.WIDTH, BitWidth.create(width));
             safeSet(attrs, StdAttr.LABEL, cleanCellName(cell.name()));
 
@@ -147,8 +134,8 @@ public final class RegisterGateOpAdapter extends AbstractComponentAdapter
                 setStringByName(attrs, A_RESET_VALUE, rstVal);
             }
 
-            Component comp = addComponent(proj, circ, g, rf.factory, where, attrs);
-            Map<String,Integer> nameToIdx = BuiltinPortMaps.forFactory(rf.lib, rf.factory, comp);
+            Component comp = addComponent(proj, circ, g, rf.factory(), where, attrs);
+            Map<String,Integer> nameToIdx = BuiltinPortMaps.forFactory(rf.lib(), rf.factory(), comp);
             PortGeom pg = PortGeom.of(comp, nameToIdx);
             return new InstanceHandle(comp, pg);
         } catch (CircuitException e) {
@@ -158,19 +145,17 @@ public final class RegisterGateOpAdapter extends AbstractComponentAdapter
 
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
-        LibFactory rf = pickRegisterFactory(proj);
-        return rf == null ? null : rf.factory;
+        LibFactory rf = pickFactory(proj);
+        return rf == null ? null : rf.factory();
     }
 
     /* ===================== helpers ===================== */
 
-    private static LibFactory pickRegisterFactory(Project proj) {
-        LogisimFile f = proj.getLogisimFile();
-        if (f == null) return null;
-        Library mem = f.getLibrary("Memory");
-        if (mem == null) return null;
-        ComponentFactory cf = FactoryLookup.findFactory(mem, "Register");
-        return (cf == null) ? null : new LibFactory(mem, cf);
+    private static LibFactory pickFactory(Project proj) {
+        String libName = Memory.LIB_NAME;
+        String compName = Memory.REGISTER_ID;
+
+        return resolveFactory(proj, libName, compName);
     }
 
     static <T> void safeSet(AttributeSet attrs, Attribute<T> attr, T val) {

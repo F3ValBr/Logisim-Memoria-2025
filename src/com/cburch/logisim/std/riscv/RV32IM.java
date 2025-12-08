@@ -10,6 +10,9 @@ import java.awt.*;
 import java.util.List;
 
 public class RV32IM extends Processor{
+
+    public static final String _ID = "RV32IM";
+
     static final int SIZE=150;
     static final AttributeOption SHOW_REGISTER
             = new AttributeOption("showRegister", Strings.getter("processorShowRegister"));
@@ -19,14 +22,16 @@ public class RV32IM extends Processor{
             = Attributes.forOption("displayRegister",Strings.getter("processorDisplayRegister"),
             new AttributeOption[] { SHOW_REGISTER,HIDE_REGISTER});
     public RV32IM() {
-        super("RV32IM","processorRV32IM","riscvproc.gif");
+        super(_ID,"processorRV32IM","riscvproc.gif");
         setOffsetBounds(Bounds.create(-SIZE, -SIZE, 2*SIZE, 2*SIZE));
     }
+
     @Override
     public AttributeSet createAttributeSet() {
         java.util.List<Attribute<?>> add = List.of(DISPLAY_REGISTER);
         return new ProcessorAttributes(add);
     }
+
     @Override
     void configurePorts(Instance instance) {
         Port[] ps = new Port[MEM_INPUTS];
@@ -40,6 +45,7 @@ public class RV32IM extends Processor{
         configureTipPorts(ps);
         instance.setPorts(ps);
     }
+
     @Override
     public void paintInstance(InstancePainter painter) {
         Graphics g = painter.getGraphics();
@@ -65,5 +71,5 @@ public class RV32IM extends Processor{
         if(painter.getAttributeValue(DISPLAY_REGISTER)==SHOW_REGISTER && data!=null){
             data.paint(g,bds.getX(), bds.getY());
         }
-}
+    }
 }

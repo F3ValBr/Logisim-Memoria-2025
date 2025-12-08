@@ -12,6 +12,9 @@ import com.cburch.logisim.tools.key.BitWidthConfigurator;
 import com.cburch.logisim.util.GraphicsUtil;
 
 public class Adder extends InstanceFactory {
+
+    public static final String _ID = "Adder";
+
 	static final int PER_DELAY = 1;
 
     static final int IN0   = 0;
@@ -36,7 +39,7 @@ public class Adder extends InstanceFactory {
                     new AttributeOption[]{ MODE_UNSIGNED, MODE_SIGNED, MODE_PIN, MODE_AUTO });
 
     public Adder() {
-        super("Adder", Strings.getter("adderComponent"));
+        super(_ID, Strings.getter("adderComponent"));
         setAttributes(
                 new Attribute[]{ StdAttr.WIDTH, SIGN_MODE },
                 new Object[]   { BitWidth.create(8), MODE_UNSIGNED }

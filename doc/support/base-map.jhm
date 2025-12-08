@@ -83,6 +83,7 @@
 	<mapID target="wiring_pin" url="html/libs/wiring/pin.html" />
 	<mapID target="wiring_probe" url="html/libs/wiring/probe.html" />
 	<mapID target="wiring_tunnel" url="html/libs/wiring/tunnel.html" />
+    <mapID target="wiring_bitlabeledtunnel" url="html/libs/wiring/bitlabeledtunnel.html" />
 	<mapID target="wiring_pull" url="html/libs/wiring/pull.html" />
 	<mapID target="wiring_clock" url="html/libs/wiring/clock.html" />
 	<mapID target="wiring_constant" url="html/libs/wiring/constant.html" />
@@ -120,6 +121,7 @@
 	<mapID target="mem_random" url="html/libs/mem/random.html" />
 	<mapID target="mem_ram" url="html/libs/mem/ram.html" />
 	<mapID target="mem_rom" url="html/libs/mem/rom.html" />
+    <mapID target="mem_timer" url="html/libs/mem/timer.html" />
 	<mapID target="io" url="html/libs/io/index.html" />
 	<mapID target="io_button" url="html/libs/io/button.html" />
 	<mapID target="io_joystick" url="html/libs/io/joystick.html" />
@@ -129,6 +131,16 @@
 	<mapID target="io_hexdig" url="html/libs/io/hexdig.html" />
 	<mapID target="io_dotmat" url="html/libs/io/dotmat.html" />
 	<mapID target="io_tty" url="html/libs/io/tty.html" />
+    <mapID target="riscv" url="html/libs/riscv/index.html" />
+    <mapID target="riscv_rv32im" url="html/libs/riscv/rv32im.html" />
+    <mapID target="riscv_rv32im_micro" url="html/libs/riscv/rv32im_micro.html" />
+    <mapID target="yosys" url="html/libs/yosys/index.html" />
+    <mapID target="yosys_logicgates" url="html/libs/yosys/logicgates.html" />
+    <mapID target="yosys_pow" url="html/libs/yosys/pow.html" />
+    <mapID target="yosys_dynshift" url="html/libs/yosys/dynshift.html" />
+    <mapID target="yosys_bitwisemux" url="html/libs/yosys/bitwisemux.html" />
+    <mapID target="yosys_prioritymux" url="html/libs/yosys/prioritymux.html" />
+    <mapID target="yosys_binarymux" url="html/libs/yosys/binarymux.html" />
 	<mapID target="base" url="html/libs/base/index.html" />
 	<mapID target="base_poke" url="html/libs/base/poke.html" />
 	<mapID target="base_edit" url="html/libs/base/edit.html" />
@@ -147,6 +159,7 @@
 	<mapID target="icon_splitter" url="icons/splitter.gif" />
 	<mapID target="icon_pin" url="icons/pinInput.gif" />
 	<mapID target="icon_tunnel" url="icons/tunnel.gif" />
+    <mapID target="icon_bitlabeledtunnel" url="icons/bltunnel.gif" />
 	<mapID target="icon_pull" url="icons/pullshap.gif" />
 	<mapID target="icon_probe" url="icons/probe.gif" />
 	<mapID target="icon_clock" url="icons/clock.gif" />
@@ -182,6 +195,7 @@
 	<mapID target="icon_random" url="icons/random.gif" />
 	<mapID target="icon_ram" url="icons/ram.gif" />
 	<mapID target="icon_rom" url="icons/rom.gif" />
+    <mapID target="icon_timer" url="icons/timer.gif" />
 	<mapID target="icon_button" url="icons/button.gif" />
 	<mapID target="icon_joystick" url="icons/joystick.gif" />
 	<mapID target="icon_keyboard" url="icons/keyboard.gif" />
@@ -190,4 +204,12 @@
 	<mapID target="icon_hexdig" url="icons/hexdig.gif" />
 	<mapID target="icon_dotmat" url="icons/dotmat.gif" />
 	<mapID target="icon_tty" url="icons/tty.gif" />
+    <mapID target="icon_logicgates" url="icons/logicand.gif" />
+    <mapID target="icon_pow" url="icons/exponent.gif" />
+    <mapID target="icon_dynshift" url="icons/dynamicShifter.gif" />
+    <mapID target="icon_bitwisemux" url="icons/bwmultiplexer.gif" />
+    <mapID target="icon_prioritymux" url="icons/pmultiplexer.gif" />
+    <mapID target="icon_binarymux" url="icons/bmultiplexer.gif" />
+    <mapID target="icon_rv32im" url="icons/riscvproc.gif" />
+    <mapID target="icon_rv32im_micro" url="icons/riscvprocmicro.gif" />
 </map>

@@ -9,6 +9,9 @@ import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.Direction;
 import com.cburch.logisim.data.Location;
 import com.cburch.logisim.instance.StdAttr;
+import com.cburch.logisim.std.arith.Arithmetic;
+import com.cburch.logisim.std.gates.Gates;
+import com.cburch.logisim.std.wiring.Wiring;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOp;
 import com.cburch.logisim.verilog.comp.specs.wordlvl.UnaryOpParams;
@@ -30,7 +33,7 @@ public final class UnaryOpComposer extends BaseComposer {
     /** $reduce_or/$reduce_bool(A) := NOT( A == 0 ). */
     public InstanceHandle buildReduceOrAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth, boolean isBool)
             throws CircuitException {
-        require(ctx.fx.cmpF, "Comparator"); require(ctx.fx.notF, "NOT Gate"); require(ctx.fx.pinF, "Pin");
+        require(ctx.fx.cmpF, Arithmetic.COMPARATOR_ID); require(ctx.fx.notF, Gates.NOT_ID); require(ctx.fx.pinF, Wiring.PIN_ID);
         final String name = MacroSubcktKit.macroName(isBool ? "reduce_bool" : "reduce_or", aWidth);
 
         UnaryOpParams p = new UnaryOpParams(UnaryOp.REDUCE_OR, cell.params().asMap());
@@ -67,7 +70,7 @@ public final class UnaryOpComposer extends BaseComposer {
     /** $reduce_and(A) := (A == 2^N - 1). */
     public InstanceHandle buildReduceAndAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth)
             throws CircuitException {
-        require(ctx.fx.cmpF, "Comparator"); require(ctx.fx.pinF, "Pin");
+        require(ctx.fx.cmpF, Arithmetic.COMPARATOR_ID); require(ctx.fx.pinF, Wiring.PIN_ID);
         final String name = MacroSubcktKit.macroName("reduce_and", aWidth);
 
         UnaryOpParams p = new UnaryOpParams(UnaryOp.REDUCE_AND, cell.params().asMap());
@@ -100,8 +103,8 @@ public final class UnaryOpComposer extends BaseComposer {
     public InstanceHandle buildReduceXorAsSubckt(ComposeCtx ctx, VerilogCell cell, Location where, int aWidth, boolean odd)
             throws CircuitException {
         ComponentFactory pf = odd ? ctx.fx.oddParityF : ctx.fx.evenParityF;
-        require(ctx.fx.bitExtendF, "Bit Extender"); require(ctx.fx.pinF, "Pin");
-        require(pf, odd ? "Odd Parity" : "Even Parity");
+        require(ctx.fx.bitExtendF, Wiring.BIT_EXTENDER_ID); require(ctx.fx.pinF, Wiring.PIN_ID);
+        require(pf, odd ? Gates.ODD_PARITY_ID : Gates.EVEN_PARITY_ID);
         final String name = MacroSubcktKit.macroName(odd ? "reduce_xor" : "reduce_xnor", aWidth);
 
         BiConsumer<ComposeCtx, Circuit> populate = (in, macro) -> {
