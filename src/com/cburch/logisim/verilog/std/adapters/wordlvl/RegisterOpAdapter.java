@@ -7,13 +7,10 @@ import com.cburch.logisim.circuit.CircuitException;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.*;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.memory.Memory;
-import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
@@ -53,7 +50,7 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
 
     @Override
     public InstanceHandle create(Project proj, Circuit circ, Graphics g, VerilogCell cell, Location where) {
-        LibFactory lf = pickRegisterFactory(proj);
+        LibFactory lf = pickFactory(proj);
         if (lf == null) {
             return fallback.create(proj, circ, g, cell, where);
         }
@@ -152,19 +149,17 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
 
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
-        LibFactory lf = pickRegisterFactory(proj);
+        LibFactory lf = pickFactory(proj);
         return lf == null ? null : lf.factory();
     }
 
     /* ================= helpers ================= */
 
-    private static LibFactory pickRegisterFactory(Project proj) {
-        LogisimFile lf = proj.getLogisimFile();
-        if (lf == null) return null;
-        Library mem = lf.getLibrary(Memory.LIB_NAME);
-        if (mem == null) return null;
-        ComponentFactory f = FactoryLookup.findFactory(mem, Memory.REGISTER_ID);
-        return (f == null) ? null : new LibFactory(mem, f);
+    private static LibFactory pickFactory(Project proj) {
+        String libName = Memory.LIB_NAME;
+        String compName = Memory.REGISTER_ID;
+
+        return resolveFactory(proj, libName, compName);
     }
 
     private static int guessWidth(CellParams p) {
@@ -201,7 +196,7 @@ public final class RegisterOpAdapter extends AbstractComponentAdapter
             String val  = stringDefault(m.get("SRST_VALUE"), "0");
             return ResetInfo.sync(pol, val);
         }
-        // TODO: $dffsr / $dffsre: modela como async por simplicidad (ajusta si necesitas)
+        // TODO: $dffsr / $dffsre: modela como async por simplicidad
         if (t.contains("dffsr") || t.contains("dffsre")) {
             // si hay SRST/ARST_* en params, respétalos
             return ResetInfo.none();

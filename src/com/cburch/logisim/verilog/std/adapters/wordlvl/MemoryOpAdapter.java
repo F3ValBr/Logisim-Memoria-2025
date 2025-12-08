@@ -9,10 +9,7 @@ import com.cburch.logisim.data.Location;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.memory.Memory;
-import com.cburch.logisim.std.yosys.YosysComponent;
-import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.LogicalMemory;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
@@ -205,18 +202,11 @@ public final class MemoryOpAdapter extends AbstractComponentAdapter
 
     private static LibFactory pickMemoryFactory(Project proj, boolean hasWrite) {
         if (proj == null || proj.getLogisimFile() == null) return null;
+
+        // RAM si hay escritura, ROM si no
+        String libName = Memory.LIB_NAME;
         String compName = hasWrite ? Memory.RAM_ID : Memory.ROM_ID;
 
-        Library mem = proj.getLogisimFile().getLibrary(Memory.LIB_NAME);
-        if (mem != null) {
-            ComponentFactory f = FactoryLookup.findFactory(mem, compName);
-            if (f != null) return new LibFactory(mem, f);
-        }
-        Library yosys = proj.getLogisimFile().getLibrary(YosysComponent.LIB_NAME);
-        if (yosys != null) {
-            ComponentFactory f = FactoryLookup.findFactory(yosys, compName);
-            if (f != null) return new LibFactory(yosys, f);
-        }
-        return null;
+        return resolveFactory(proj, libName, compName);
     }
 }

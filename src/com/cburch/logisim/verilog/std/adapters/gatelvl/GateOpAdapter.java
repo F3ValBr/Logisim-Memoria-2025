@@ -7,15 +7,12 @@ import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Location;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.PortGeom;
 import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.gates.Gates;
 import com.cburch.logisim.std.plexers.Plexers;
-import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.gatelvl.GateOp;
@@ -54,7 +51,7 @@ public final class GateOpAdapter extends AbstractComponentAdapter
         InstanceHandle composed = tryComposeWithMacroOrNull(proj, circ, g, cell, where, registry);
         if (composed != null) return composed;
 
-        LibFactory lf = pickFactoryOrNull(proj, op);
+        LibFactory lf = pickFactory(proj, op);
         if (lf == null || lf.factory() == null) {
             return fallback.create(proj, circ, g, cell, where);
         }
@@ -101,22 +98,22 @@ public final class GateOpAdapter extends AbstractComponentAdapter
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         GateOp op = GateOp.fromYosys(cell.type().typeId());
-        LibFactory lf = pickFactoryOrNull(proj, op);
+        LibFactory lf = pickFactory(proj, op);
         return lf == null ? null : lf.factory();
     }
 
     /** Selección de Factory según GateOp. */
-    private static LibFactory pickFactoryOrNull(Project proj, GateOp op) {
-        LogisimFile lf = proj.getLogisimFile();
+    private static LibFactory pickFactory(Project proj, GateOp op) {
+
+        String libName;
+        String compName;
 
         switch (op.category()) {
 
             // === 1) Puertas simples (Gates) ===
             case SIMPLE -> {
-                Library lib = lf.getLibrary(Gates.LIB_NAME);
-                if (lib == null) return null;
-
-                String name = switch (op) {
+                libName = Gates.LIB_NAME;
+                compName = switch (op) {
                     case AND  -> Gates.AND_ID;
                     case OR   -> Gates.OR_ID;
                     case XOR  -> Gates.XOR_ID;
@@ -127,40 +124,30 @@ public final class GateOpAdapter extends AbstractComponentAdapter
                     case BUF  -> Gates.BUFFER_ID;
                     default   -> null;
                 };
-                if (name == null) return null;
-
-                ComponentFactory f = FactoryLookup.findFactory(lib, name);
-                return (f == null) ? null : new LibFactory(lib, f);
             }
 
-            // === 2) Combinadas (AOI/OAI) — por ahora placeholder a AND/OR base ===
+            // === 2) Combinadas — AND/OR base ===
             case COMBINED -> {
-                Library lib = lf.getLibrary(Gates.LIB_NAME);
-                if (lib == null) return null;
-
-                String base = switch (op) {
+                libName = Gates.LIB_NAME;
+                compName = switch (op) {
                     case ANDNOT -> Gates.AND_ID;
                     case ORNOT  -> Gates.OR_ID;
-                    default -> null;
+                    default     -> null;
                 };
-                if (base == null) return null;
-
-                ComponentFactory f = FactoryLookup.findFactory(lib, base);
-                return (f == null) ? null : new LibFactory(lib, f);
             }
 
             // === 3) MUX family ===
             case MUX_FAMILY -> {
-                Library lib = lf.getLibrary(Plexers.LIB_NAME);
-                if (lib == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(lib, Plexers.MULTIPLEXER_ID);
-                return (f == null) ? null : new LibFactory(lib, f);
+                libName  = Plexers.LIB_NAME;
+                compName = Plexers.MULTIPLEXER_ID;
             }
 
             default -> {
                 return null;
             }
         }
+
+        return resolveFactory(proj, libName, compName);
     }
 
     /* ===================== Helpers de atributos ===================== */

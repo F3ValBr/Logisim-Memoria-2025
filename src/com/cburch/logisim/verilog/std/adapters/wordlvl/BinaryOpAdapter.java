@@ -9,15 +9,12 @@ import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.AttributeSet;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Location;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.*;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.arith.Arithmetic;
 import com.cburch.logisim.std.gates.Gates;
 import com.cburch.logisim.std.yosys.YosysComponent;
-import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
@@ -56,7 +53,7 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
         if (composed != null) return composed;
 
         // 1) Elegir factory según operación ($and/$or/$xor/$xnor → Gates; $add/$sub/$mul → Arithmetic)
-        LibFactory lf = pickFactoryOrNull(proj, op);
+        LibFactory lf = pickFactory(proj, op);
         if (lf == null || lf.factory() == null) {
             // no soportado nativamente → subcircuito (en el circuito destino)
             return fallback.create(proj, circ, g, cell, where);
@@ -157,93 +154,83 @@ public final class BinaryOpAdapter extends AbstractComponentAdapter
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
         BinaryOp op = BinaryOp.fromYosys(cell.type().typeId());
-        LibFactory lf = pickFactoryOrNull(proj, op);
+        LibFactory lf = pickFactory(proj, op);
         return lf == null ? null : lf.factory();
     }
 
     /** Selecciona el ComponentFactory nativo de Logisim según la operación. */
-    private static LibFactory pickFactoryOrNull(Project proj, BinaryOp op) {
-        LogisimFile lf = proj.getLogisimFile();
+    private static LibFactory pickFactory(Project proj, BinaryOp op) {
 
-        // Gates clásicos
+        String libName;
+        String compName;
+
         switch (op.category()) {
             case BITWISE -> {
-                Library gates = lf.getLibrary(Gates.LIB_NAME);
-                if (gates == null) return null;
-                String gateName = switch (op) {
+                libName = Gates.LIB_NAME;
+                compName = switch (op) {
                     case AND  -> Gates.AND_ID;
                     case OR   -> Gates.OR_ID;
                     case XOR  -> Gates.XOR_ID;
                     case XNOR -> Gates.XNOR_ID;
                     default   -> null;
                 };
-                ComponentFactory f = FactoryLookup.findFactory(gates, gateName);
-                return (f == null) ? null : new LibFactory(gates, f);
             }
+
             case LOGIC -> {
-                // Tus “Logical AND/OR” viven en tu librería Yosys Components
-                Library yosys = lf.getLibrary(YosysComponent.LIB_NAME);
-                if (yosys == null) return null;
-                String gateName = switch (op) {
+                libName = YosysComponent.LIB_NAME;
+                compName = switch (op) {
                     case LOGIC_AND -> YosysComponent.LOGIC_AND_ID;
                     case LOGIC_OR  -> YosysComponent.LOGIC_OR_ID;
                     default        -> null;
                 };
-                ComponentFactory f = FactoryLookup.findFactory(yosys, gateName);
-                return (f == null) ? null : new LibFactory(yosys, f);
             }
+
             case ARITH -> {
                 if (op == BinaryOp.POW) {
-                    Library yosys = lf.getLibrary(YosysComponent.LIB_NAME);
-                    if (yosys == null) return null;
-                    ComponentFactory f = FactoryLookup.findFactory(yosys, YosysComponent.EXPONENT_ID);
-                    return (f == null) ? null : new LibFactory(yosys, f);
+                    // POW → Exponent (Yosys components)
+                    libName  = YosysComponent.LIB_NAME;
+                    compName = YosysComponent.EXPONENT_ID;
+                } else {
+                    // Aritméticos clásicos: ADD/SUB/MUL/DIV/MOD/…
+                    libName = Arithmetic.LIB_NAME;
+                    compName = switch (op) {
+                        case ADD -> Arithmetic.ADDER_ID;
+                        case SUB -> Arithmetic.SUBTRACTOR_ID;
+                        case MUL -> Arithmetic.MULTIPLIER_ID;
+                        case DIV, MOD, DIVFLOOR, MODFLOOR -> Arithmetic.DIVIDER_ID;
+                        default -> null;
+                    };
                 }
-                // Aritméticos (suma/resta/mult/div/mod/…)
-                Library arith = lf.getLibrary(Arithmetic.LIB_NAME);
-                if (arith == null) return null;
-                String name = switch (op) {
-                    case ADD -> Arithmetic.ADDER_ID;
-                    case SUB -> Arithmetic.SUBTRACTOR_ID;
-                    case MUL -> Arithmetic.MULTIPLIER_ID;
-                    case DIV, MOD, DIVFLOOR, MODFLOOR -> Arithmetic.DIVIDER_ID;
-                    default -> null;
-                };
-                ComponentFactory f = FactoryLookup.findFactory(arith, name);
-                return (f == null) ? null : new LibFactory(arith, f);
             }
-            case COMPARE -> {
-                // Comparadores → usar Comparator (con pines eq/lt/gt)
-                Library arith = lf.getLibrary(Arithmetic.LIB_NAME);
-                if (arith == null) return null;
-                ComponentFactory f = FactoryLookup.findFactory(arith, Arithmetic.COMPARATOR_ID);
-                return (f == null) ? null : new LibFactory(arith, f);
-            }
-            case SHIFT -> {
-                ComponentFactory f = null;
-                Library lib;
 
+            case COMPARE -> {
+                // Comparadores → Comparator
+                libName  = Arithmetic.LIB_NAME;
+                compName = Arithmetic.COMPARATOR_ID;
+            }
+
+            case SHIFT -> {
+                // SHIFT/SHIFTX → DynamicShifter (Yosys lib)
+                // resto (SHL/SSHL/SHR/SSHR) → Shifter clásico (Arithmetic lib)
                 switch (op) {
                     case SHIFT, SHIFTX -> {
-                        lib = lf.getLibrary(YosysComponent.LIB_NAME);
-                        if (lib != null)
-                            f = FactoryLookup.findFactory(lib, YosysComponent.DYNAMIC_SHIFT_ID);
+                        libName  = YosysComponent.LIB_NAME;
+                        compName = YosysComponent.DYNAMIC_SHIFT_ID;
                     }
                     default -> {
-                        lib = lf.getLibrary(Arithmetic.LIB_NAME);
-                        if (lib != null)
-                            f = FactoryLookup.findFactory(lib, Arithmetic.SHIFTER_ID);
+                        libName  = Arithmetic.LIB_NAME;
+                        compName = Arithmetic.SHIFTER_ID;
                     }
                 }
-
-                if (lib == null || f == null) return null;
-                return new LibFactory(lib, f);
             }
+
             default -> {
-                // Otros binarios (mashups raros) → no mapeados aquí
+                // Otros binarios no mapeados aquí
                 return null;
             }
         }
+
+        return resolveFactory(proj, libName, compName);
     }
 
     /** Heurística para WIDTH en binarios Yosys. */

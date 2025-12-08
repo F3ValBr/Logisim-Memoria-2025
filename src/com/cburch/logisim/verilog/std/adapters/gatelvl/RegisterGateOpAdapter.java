@@ -6,14 +6,11 @@ import com.cburch.logisim.circuit.CircuitException;
 import com.cburch.logisim.comp.Component;
 import com.cburch.logisim.comp.ComponentFactory;
 import com.cburch.logisim.data.*;
-import com.cburch.logisim.file.LogisimFile;
 import com.cburch.logisim.instance.PortGeom;
 import com.cburch.logisim.instance.StdAttr;
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.std.memory.Memory;
-import com.cburch.logisim.tools.Library;
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
-import com.cburch.logisim.verilog.comp.auxiliary.FactoryLookup;
 import com.cburch.logisim.verilog.comp.auxiliary.SupportsFactoryLookup;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.specs.gatelvl.RegisterGateOpParams;
@@ -53,13 +50,9 @@ public final class RegisterGateOpAdapter extends AbstractComponentAdapter
         return t != null && t.isGateLevel() && t.isFlipFlop();
     }
 
-    private static String safeTypeId(CellType t) {
-        try { return t.typeId(); } catch (Throwable ignore) { return null; }
-    }
-
     @Override
     public InstanceHandle create(Project proj, Circuit circ, Graphics g, VerilogCell cell, Location where) {
-        LibFactory rf = pickRegisterFactory(proj);
+        LibFactory rf = pickFactory(proj);
         if (rf == null) return fallback.create(proj, circ, g, cell, where);
 
         final String typeId      = cell.type().typeId();
@@ -152,19 +145,17 @@ public final class RegisterGateOpAdapter extends AbstractComponentAdapter
 
     @Override
     public ComponentFactory peekFactory(Project proj, VerilogCell cell) {
-        LibFactory rf = pickRegisterFactory(proj);
+        LibFactory rf = pickFactory(proj);
         return rf == null ? null : rf.factory();
     }
 
     /* ===================== helpers ===================== */
 
-    private static LibFactory pickRegisterFactory(Project proj) {
-        LogisimFile f = proj.getLogisimFile();
-        if (f == null) return null;
-        Library mem = f.getLibrary(Memory.LIB_NAME);
-        if (mem == null) return null;
-        ComponentFactory cf = FactoryLookup.findFactory(mem, Memory.REGISTER_ID);
-        return (cf == null) ? null : new LibFactory(mem, cf);
+    private static LibFactory pickFactory(Project proj) {
+        String libName = Memory.LIB_NAME;
+        String compName = Memory.REGISTER_ID;
+
+        return resolveFactory(proj, libName, compName);
     }
 
     static <T> void safeSet(AttributeSet attrs, Attribute<T> attr, T val) {
