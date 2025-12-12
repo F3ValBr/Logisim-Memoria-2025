@@ -61,6 +61,8 @@ endmodule
 
    👉 [https://github.com/asinghani/open-eda-course/blob/main/yosys-tutorial/yosys-tutorial.md](https://github.com/asinghani/open-eda-course/blob/main/yosys-tutorial/yosys-tutorial.md)
 
+   ![stp1](https://github.com/user-attachments/assets/167a18ad-b80c-45ed-9d5b-bd8e8bfe962e)
+
 
 2. **Entregar archivo al importador**: Una vez el archivo ha sido convertido, obtendrás algo parecido a esto en su interior:
    ```
@@ -81,6 +83,8 @@ endmodule
     abrirá un cuadro de selección de archivo, donde deberás seleccionar el `json` que deseas importar a `LogisimCL`.
 
     ![example_import.png](resources/example_import.png)
+   
+    ![stp2](https://github.com/user-attachments/assets/12eff9c6-dc93-4ff2-a639-84a2845e302f)
 
 
 3. **Selecciona tus opciones adicionales**: Usualmente, el proceso de importar es tan sencillo como realizar los pasos 1 y 2. Sin
@@ -90,6 +94,8 @@ endmodule
     lo que esperas que cumpla el circuito final.
 
     ![example_options.png](resources/example_options.png)
+   
+    ![extrastep](https://github.com/user-attachments/assets/67e62e10-74a1-433f-a022-bba7c0addd7c)
 
 
 4. **¡Y listo!**: Ocurriese o no lo anterior, ya estás listo con la conversión. Se te preguntará mediante un cuadro de diálogo si
@@ -98,6 +104,9 @@ para tus necesidades, por lo que no es necesario que hagas nada más respecto al
 modificarlo según lo requieras. A continuación está el resultado de la conversión de `counter.sv`, el circuito que te mostré arriba.
 
     ![counter_ex.png](resources/counter_ex.png)
+
+    ![stp3](https://github.com/user-attachments/assets/c7082d67-efcd-42fa-a519-4d1e2bedc162)
+
 
 El sistema es increiblemente sencillo en apariencia, guardando una complejidad invisible al usuario que permite desde la síntesis de circuitos
 sencillos hasta los más complejos y enrevesados posibles (obviamente bajo los parámetros educativos que se consideraron para el diseño 
