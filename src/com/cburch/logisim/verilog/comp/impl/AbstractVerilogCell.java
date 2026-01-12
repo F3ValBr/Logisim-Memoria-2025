@@ -2,6 +2,7 @@ package com.cburch.logisim.verilog.comp.impl;
 
 import com.cburch.logisim.verilog.comp.auxiliary.CellType;
 import com.cburch.logisim.verilog.comp.auxiliary.PortEndpoint;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.PortDirection;
 import com.cburch.logisim.verilog.comp.specs.CellAttribs;
 import com.cburch.logisim.verilog.comp.specs.CellParams;
 
@@ -13,6 +14,8 @@ public abstract class AbstractVerilogCell implements VerilogCell {
     protected CellParams params;
     protected CellAttribs attribs;
     protected List<PortEndpoint> endpoints = new ArrayList<>();
+
+    private transient Map<String, PortDirection> cachedPortDirs;
 
     protected AbstractVerilogCell(String name, CellType type, CellParams params, CellAttribs attribs) {
         this.name = name;
@@ -67,10 +70,9 @@ public abstract class AbstractVerilogCell implements VerilogCell {
 
     @Override
     public void addPortEndpoint(PortEndpoint endpoint) {
-        if (endpoint == null) {
-            throw new IllegalArgumentException("PortEndpoint cannot be null");
-        }
+        if (endpoint == null) throw new IllegalArgumentException("PortEndpoint cannot be null");
         endpoints.add(endpoint);
+        cachedPortDirs = null;
     }
 
     @Override
@@ -131,5 +133,17 @@ public abstract class AbstractVerilogCell implements VerilogCell {
             }
         }
         return null;
+    }
+
+    public PortDirection getPortDirection(String portName) {
+        if (portName == null) return PortDirection.UNKNOWN;
+
+        if (cachedPortDirs == null) {
+            cachedPortDirs = new LinkedHashMap<>();
+            for (PortEndpoint ep : endpoints) {
+                cachedPortDirs.putIfAbsent(ep.getPortName(), ep.getDirection());
+            }
+        }
+        return cachedPortDirs.getOrDefault(portName, PortDirection.UNKNOWN);
     }
 }

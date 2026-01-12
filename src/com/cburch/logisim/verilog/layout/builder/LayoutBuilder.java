@@ -2,6 +2,8 @@ package com.cburch.logisim.verilog.layout.builder;
 
 import com.cburch.logisim.proj.Project;
 import com.cburch.logisim.verilog.comp.auxiliary.ModulePort;
+import com.cburch.logisim.verilog.comp.auxiliary.netconn.PortDirection;
+import com.cburch.logisim.verilog.comp.impl.AbstractVerilogCell;
 import com.cburch.logisim.verilog.layout.auxiliary.NodeSizer;
 import com.cburch.logisim.verilog.comp.impl.VerilogCell;
 import com.cburch.logisim.verilog.comp.impl.VerilogModuleImpl;
@@ -23,25 +25,32 @@ public final class LayoutBuilder {
 
     public static class Result {
         public ElkNode root;
+        // Nodos ELK
         public final Map<VerilogCell, ElkNode> cellNode = new HashMap<>();
         public final Map<ModulePort, ElkNode>  portNode = new HashMap<>();
+        // Puertos ELK
+        public final Map<CellPortKey, ElkPort> cellPorts = new HashMap<>();
+        public final Map<ModulePort, ElkPort>  topPorts  = new HashMap<>();
+
         public Result(ElkNode root){ this.root = root; }
     }
+
+    public record CellPortKey(VerilogCell cell, String portName) {}
 
     // --- Agrupadores/keys para buses -----------------------------------------
 
     /**
-     * Identifica un “extremo lógico” por (nodo, nombre-de-puerto) para no mezclar buses distintos por el mismo par de nodos.
+     * Identifica un “extremo lógico” por (puerto, nombre-de-puerto) para no mezclar buses distintos por el mismo par de nodos.
      */
-    private record EpKey(ElkNode node, String portName) {
+    private record EpKey(ElkPort port, String portName) {
         @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof EpKey k)) return false;
-            return node == k.node && Objects.equals(portName, k.portName);
+            return port == k.port && Objects.equals(portName, k.portName);
         }
 
         @Override public int hashCode() {
-            return 31 * System.identityHashCode(node) + Objects.hashCode(portName);
+            return 31 * System.identityHashCode(port) + Objects.hashCode(portName);
         }
     }
 
@@ -62,7 +71,7 @@ public final class LayoutBuilder {
         }
     }
 
-    private record RefInfo(ElkNode node, String portName, int bitIndex) { }
+    private record RefInfo(ElkPort port, String portName, int bitIndex) { }
 
     // --- Utilidades -----------------------------------------------------------
 
@@ -92,15 +101,69 @@ public final class LayoutBuilder {
         return "n" + netId;
     }
 
-    // ================= Overload para compatibilidad =================
-    public static Result build(Project proj,
-                               VerilogModuleImpl mod,
-                               ModuleNetIndex netIdx,
-                               NodeSizer sizer) {
-        return build(proj, mod, netIdx, sizer, Collections.emptyMap());
+    private static PortDirection dirOf(VerilogCell cell, String portName) {
+        if (cell instanceof AbstractVerilogCell ac) return ac.getPortDirection(portName);
+        return PortDirection.UNKNOWN;
     }
 
-    // ================= Versión con alias de celdas =================
+    private static void addCellElkPorts(Result r, VerilogCell cell, ElkNode n) {
+        List<String> ins = new ArrayList<>();
+        List<String> outs = new ArrayList<>();
+        List<String> inouts = new ArrayList<>();
+        List<String> other = new ArrayList<>();
+
+        for (String pname : cell.getPortNames()) {
+            PortDirection d = dirOf(cell, pname);
+            if (d == PortDirection.INPUT) ins.add(pname);
+            else if (d == PortDirection.OUTPUT) outs.add(pname);
+            else if (d == PortDirection.INOUT) inouts.add(pname);
+            else other.add(pname);
+        }
+
+        ins.sort(String::compareTo);
+        outs.sort(String::compareTo);
+        inouts.sort(String::compareTo);
+        other.sort(String::compareTo);
+
+        // Con Direction.RIGHT:
+        for (String pname : ins)   mkCellPort(r, cell, pname, n, org.eclipse.elk.core.options.PortSide.WEST);
+        for (String pname : outs)  mkCellPort(r, cell, pname, n, org.eclipse.elk.core.options.PortSide.EAST);
+
+        // INOUT/unknown a SOUTH (cámbialo si quieres)
+        for (String pname : inouts) mkCellPort(r, cell, pname, n, org.eclipse.elk.core.options.PortSide.SOUTH);
+        for (String pname : other)  mkCellPort(r, cell, pname, n, org.eclipse.elk.core.options.PortSide.SOUTH);
+    }
+
+    private static void mkCellPort(Result r, VerilogCell cell, String pname, ElkNode n,
+                                   org.eclipse.elk.core.options.PortSide side) {
+        ElkPort p = ElkGraphUtil.createPort(n);
+        p.setIdentifier(pname);
+        p.setWidth(6);
+        p.setHeight(6);
+        p.setProperty(CoreOptions.PORT_SIDE, side);
+
+        r.cellPorts.put(new CellPortKey(cell, pname), p);
+    }
+
+    private static void addTopElkPort(Result r, ModulePort mp, ElkNode n) {
+        ElkPort p = ElkGraphUtil.createPort(n);
+        p.setIdentifier(mp.name());
+        p.setWidth(6);
+        p.setHeight(6);
+
+        // Direction.RIGHT:
+        // INPUT del módulo -> hacia interior => EAST
+        // OUTPUT del módulo -> desde interior => WEST
+        var side = (mp.direction() == PortDirection.INPUT)
+                ? org.eclipse.elk.core.options.PortSide.EAST
+                : org.eclipse.elk.core.options.PortSide.WEST;
+
+        p.setProperty(CoreOptions.PORT_SIDE, side);
+        r.topPorts.put(mp, p);
+    }
+
+    /* ========== BUILDER ========== */
+
     public static Result build(Project proj,
                                VerilogModuleImpl mod,
                                ModuleNetIndex netIdx,
@@ -133,6 +196,10 @@ public final class LayoutBuilder {
         // padding del diagrama entero
         root.setProperty(CoreOptions.PADDING, new ElkPadding(20, 20, 20, 20));
 
+        root.setProperty(CoreOptions.PORT_CONSTRAINTS, org.eclipse.elk.core.options.PortConstraints.FIXED_SIDE);
+
+        root.setProperty(CoreOptions.PORT_CONSTRAINTS, org.eclipse.elk.core.options.PortConstraints.FIXED_ORDER);
+
         Result r = new Result(root);
 
         // --- 1) Celdas internas como nodos ---
@@ -153,6 +220,7 @@ public final class LayoutBuilder {
             lbl.setText(cell.name());
 
             r.cellNode.put(cell, n);
+            addCellElkPorts(r, cell, n);
         }
 
         // --- 2) Puertos top como nodos ---
@@ -170,6 +238,7 @@ public final class LayoutBuilder {
             lbl.setText(p.name());
 
             r.portNode.put(p, n);
+            addTopElkPort(r, p, n);
         }
 
         // --- 3) Aristas agrupadas por bus (src,dst,baseLabel) ---
@@ -187,29 +256,45 @@ public final class LayoutBuilder {
                 if (ModuleNetIndex.isTop(ref)) {
                     int pIdx = netIdx.resolveTopPortIdx(ref);
                     ModulePort p = mod.ports().get(pIdx);
-                    ElkNode node = r.portNode.get(p);
-                    String pname = p.name();
-                    infos.add(new RefInfo(node, pname, bit));
+
+                    ElkPort port = r.topPorts.get(p);
+
+                    infos.add(new RefInfo(port, p.name(), bit));
                 } else {
                     int cIdx = ModuleNetIndex.ownerIdx(ref);
                     VerilogCell owner = mod.cells().get(cIdx);
                     // Remapear al representante si es alias
                     VerilogCell repr = cellAlias.getOrDefault(owner, owner);
 
-                    ElkNode node = r.cellNode.get(repr);
-                    // Si por alguna razón el repr aún no está en el mapa, créalo on-demand.
-                    if (node == null) {
-                        node = ElkGraphUtil.createNode(root);
-                        Dimension d = (sizer != null) ? sizer.sizeForCell(proj, repr) : new Dimension(60, 60);
-                        node.setWidth(Math.max(30, d.width));
-                        node.setHeight(Math.max(20, d.height));
-                        ElkLabel lbl = ElkGraphUtil.createLabel(node);
-                        lbl.setText(repr.name());
-                        r.cellNode.put(repr, node);
+                    String pname = netIdx.resolveCellPortName(ref).orElse(null);
+
+                    ElkPort port = (pname == null) ? null : r.cellPorts.get(new CellPortKey(repr, pname));
+
+                    // fallback (evita perder arista)
+                    if (port == null) {
+                        ElkNode node = r.cellNode.get(repr);
+                        if (node == null) {
+                            node = ElkGraphUtil.createNode(root);
+                            Dimension d = (sizer != null) ? sizer.sizeForCell(proj, repr) : new Dimension(60, 60);
+                            node.setWidth(Math.max(30, d.width));
+                            node.setHeight(Math.max(20, d.height));
+                            ElkLabel lbl = ElkGraphUtil.createLabel(node);
+                            lbl.setText(repr.name());
+                            r.cellNode.put(repr, node);
+                            addCellElkPorts(r, repr, node);
+                        }
+
+                        ElkPort fp = ElkGraphUtil.createPort(node);
+                        fp.setIdentifier(pname != null ? pname : ("p" + ref));
+                        fp.setWidth(4);
+                        fp.setHeight(4);
+                        fp.setProperty(CoreOptions.PORT_SIDE, org.eclipse.elk.core.options.PortSide.SOUTH);
+
+                        port = fp;
+                        if (pname != null) r.cellPorts.put(new CellPortKey(repr, pname), port);
                     }
 
-                    String pname = netIdx.resolveCellPortName(ref).orElse(null);
-                    infos.add(new RefInfo(node, pname, bit));
+                    infos.add(new RefInfo(port, pname, bit));
                 }
             }
 
@@ -219,9 +304,12 @@ public final class LayoutBuilder {
                 RefInfo dst = infos.get(i);
 
                 String base = chooseBaseLabel(src.portName, dst.portName, netId);
-                PairKey key = new PairKey(new EpKey(src.node, src.portName),
-                        new EpKey(dst.node, dst.portName),
-                        base);
+
+                PairKey key = new PairKey(
+                        new EpKey(src.port, src.portName),
+                        new EpKey(dst.port, dst.portName),
+                        base
+                );
 
                 SortedSet<Integer> set = busGroups.computeIfAbsent(key, k -> new TreeSet<>());
                 set.add(src.bitIndex);
@@ -232,7 +320,9 @@ public final class LayoutBuilder {
         // Crear UNA arista por grupo y etiquetar con rangos de bits
         for (Map.Entry<PairKey, SortedSet<Integer>> e : busGroups.entrySet()) {
             PairKey k = e.getKey();
-            ElkEdge edge = ElkGraphUtil.createSimpleEdge(k.src.node, k.dst.node);
+            ElkEdge edge = ElkGraphUtil.createEdge(root);
+            edge.getSources().add(k.src.port());
+            edge.getTargets().add(k.dst.port());
 
             String idxs = compactRanges(e.getValue());
             String label = (k.baseLabel == null || k.baseLabel.isBlank())
