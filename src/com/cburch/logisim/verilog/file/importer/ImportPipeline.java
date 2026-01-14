@@ -262,6 +262,8 @@ final class ImportPipeline {
             try { org.eclipse.emf.ecore.util.EcoreUtil.delete(elk.root, true); } catch (Exception ignored) {}
             elk.cellNode.clear();
             elk.portNode.clear();
+            elk.cellPorts.clear();
+            elk.topPorts.clear();
             elk.root = null;
         }
     }
