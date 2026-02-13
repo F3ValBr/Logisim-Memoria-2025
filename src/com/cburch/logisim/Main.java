@@ -24,9 +24,9 @@ package com.cburch.logisim;
 import com.cburch.logisim.gui.start.Startup;
 
 public class Main {
-	public static final LogisimVersion VERSION = LogisimVersion.get(3, 0, 2);
+	public static final LogisimVersion VERSION = LogisimVersion.get(3, 0, 3);
 	public static final String VERSION_NAME = VERSION.toString();
-	public static final int COPYRIGHT_YEAR = 2025;
+	public static final int COPYRIGHT_YEAR = 2026;
 
 	public static void main(String[] args) {
 		Startup startup = Startup.parseArgs(args);
